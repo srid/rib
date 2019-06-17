@@ -1,23 +1,71 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 module Frontend where
 
-import qualified Data.Text as T
+import Data.Functor.Identity
+import Data.Functor.Sum
+import Data.Text (Text)
+-- import qualified Data.Text as T
+
 import Obelisk.Frontend
 import Obelisk.Route
+import Obelisk.Route.Frontend
 import Reflex.Dom.Core
 
-import Common.Api
 import Common.Route
-import Obelisk.Generated.Static
 
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
-  { _frontend_head = el "title" $ text "Obelisk Minimal Example"
-  , _frontend_body = do
-      text "Welcome to Obelisk!"
-      el "p" $ text $ T.pack commonStuff
-      elAttr "img" ("src" =: static @"obelisk.jpg") blank
+  { _frontend_head = do
+      el "title" $ text "Explaining Haskell"
+      elAttr "link" ("rel" =: "stylesheet" <> "href" =: semuiCdnUrl "semantic.min.css") blank
+
+  , _frontend_body = divClass "ui container" $ do
+      subRoute_ $ \case
+        FrontendRoute_Main -> do
+          elClass "h1" "ui header" $ text "Explaining Haskell"
+
+          elClass "h2" "ui header" $ do
+            text "Purpose of this site"
+            divClass "sub header" $ text "Else why do it?"
+          el "p" $ text "The purpose of this site is twofold:"
+          el "ol" $ do
+            el "li" $ text "Record everything I learn in regards to Haskell for future reference"
+            el "li" $ text "Attempt to teach what I understand to others in the hopes of strengthening my own understanding"
+
+          elClass "h2" "ui header" $ do
+            text "Game plan"
+            divClass "sub header" $ text "How I plan to finish this"
+          el "p" $ text "See README.md"
+
+          elClass "h2" "ui header" $ text "List of articles"
+          el "ul" $
+            el "li" $ routeLink (FrontendRoute_Article :/ "NixTutorial") $ text "Nix Tutorial"
+        FrontendRoute_Article -> do
+          articleContent <- getArticle =<< askRoute
+          widgetHold_ (text "Loading") $ ffor articleContent $ \case
+            Nothing -> text "nope"
+            -- TODO: Render HTML version
+            Just s -> divClass "ui segment" $ el "pre" $ el "tt" $ text s
   }
+  where
+    semuiVersion :: Text
+    semuiVersion = "2.4.2"
+    semuiCdnUrl :: Text -> Text
+    semuiCdnUrl file = "https://cdn.jsdelivr.net/npm/semantic-ui@" <> semuiVersion <> "/dist/" <> file
+
+
+getArticle
+  :: (MonadHold t m, PostBuild t m, Prerender js t m)
+  => Dynamic t Text -> m (Event t (Maybe Text))
+getArticle articleName =
+  fmap switchDyn $ prerender (pure never) $ do
+    pb <- getPostBuild
+    getAndDecode $ ffor (tag (current articleName) pb) $ \an ->
+      renderBackendRoute enc (BackendRoute_GetArticle :/ an)
+  where
+    Right (enc :: Encoder Identity Identity (R (Sum BackendRoute (ObeliskRoute FrontendRoute))) PageName) = checkEncoder backendRouteEncoder
