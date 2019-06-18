@@ -22,6 +22,7 @@ library
                , foldl
                , profunctors
                , snap
+               , megaparsec
   exposed-modules:
     Backend
     Backend.Markdown
@@ -47,3 +48,4 @@ executable backend
                , foldl
                , profunctors
                , snap
+               , megaparsec

@@ -15,10 +15,21 @@ project ./. ({ pkgs, hackGet, ... }: {
   ios.bundleName = "Explaining Haskell";
 
   packages = {
-    # mmark = hackGet ./dep/mmark;
+    # Newer mmark requires newer version of certain dependencies as well
+    mmark = hackGet ./dep/mmark;
+    mmark-ext = hackGet ./dep/mmark-ext;
+    megaparsec = hackGet ./dep/megaparsec;
+    hspec-megaparsec = hackGet ./dep/hspec-megaparsec;
+    modern-uri = hackGet ./dep/modern-uri;
+
+    # Use a version of neat-interpolation that works with the megaparsec version
+    # used by mmark above.
+    neat-interpolation = hackGet ./dep/neat-interpolation;
   };
 
   overrides = self: super: with pkgs.haskell.lib; {
     mmark = dontCheck super.mmark;
+    mmark-ext = dontCheck super.mmark-ext;
+    megaparsec = dontCheck super.megaparsec;
   };
 })
