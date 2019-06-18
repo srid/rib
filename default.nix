@@ -8,9 +8,17 @@
   }
 }:
 with obelisk;
-project ./. ({ ... }: {
+project ./. ({ pkgs, hackGet, ... }: {
   android.applicationId = "ca.srid.ExplainingHaskell";
   android.displayName = "Explaining Haskell";
   ios.bundleIdentifier = "ca.srid.ExplainingHaskell";
   ios.bundleName = "Explaining Haskell";
+
+  packages = {
+    # mmark = hackGet ./dep/mmark;
+  };
+
+  overrides = self: super: with pkgs.haskell.lib; {
+    mmark = dontCheck super.mmark;
+  };
 })

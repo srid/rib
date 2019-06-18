@@ -7,7 +7,16 @@ would explain the various Haskell concepts that I have come to understand since
 ## TODO
 
 - [x] Think of first article to write
-- [-] Write it
-- [-] Develop backend & frontend to serve an article
+- [ ] DOING: Write it
+- [ ] DOING: Develop backend & frontend to serve an article
 - [ ] Deploy to production
 - [ ] Share and get feedback on first article
+
+- [ ] Upgrade mmark (thus megaparsec, etc.)
+
+## Article Ideas
+
+See articles/ for existing stubs. In addition, consider these ideas:
+
+- Github CI for OSS haskell projects
+-

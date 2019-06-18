@@ -9,7 +9,6 @@ module Backend where
 import qualified Data.Aeson as Aeson
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy.Encoding as T
 import qualified Data.Text.Lazy.IO as T
 import Data.Profunctor
 
@@ -18,6 +17,8 @@ import Obelisk.Route
 import Snap
 
 import Common.Route
+
+import Backend.Markdown
 
 backend :: Backend BackendRoute FrontendRoute
 backend = Backend
