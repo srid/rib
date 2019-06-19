@@ -14,7 +14,6 @@ library
                , obelisk-route
                , text
                , mmark
-               , mmark-ext
                , modern-uri
                , yaml
                , reflex-dom-core
@@ -40,7 +39,6 @@ executable backend
                , obelisk-backend
                , text
                , mmark
-               , mmark-ext
                , modern-uri
                , yaml
                , reflex-dom-core

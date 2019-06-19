@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Frontend where
 
+import Control.Monad
 import Data.Functor.Identity
 import Data.Functor.Sum
 import Data.Text (Text)
@@ -16,7 +17,6 @@ import Obelisk.Route
 import Obelisk.Route.Frontend
 import Reflex.Dom.Core
 
-import Common.Markdown (elMarkdown)
 import Common.Route
 
 frontend :: Frontend (R FrontendRoute)
@@ -48,10 +48,12 @@ frontend = Frontend
             el "li" $ routeLink (FrontendRoute_Article :/ "NixTutorial") $ text "Nix Tutorial"
         FrontendRoute_Article -> do
           articleContent <- getArticle =<< askRoute
-          widgetHold_ (text "Loading") $ ffor articleContent $ \case
+          prerender_ (text "JavaScript is required to view this page") blank
+          widgetHold_ (el "div" $ text "Loading") $ ffor articleContent $ \case
             Nothing -> text "nope"
-            Just s -> divClass "ui segment" $
-              elMarkdown s
+            Just s -> divClass "ui segment" $ do
+              prerender_ blank $
+                void $ elDynHtml' "div" $ constDyn s
   }
   where
     semuiVersion :: Text

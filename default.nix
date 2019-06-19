@@ -17,7 +17,6 @@ project ./. ({ pkgs, hackGet, ... }: {
   packages = {
     # Newer mmark requires newer version of certain dependencies as well
     mmark = hackGet ./dep/mmark;
-    mmark-ext = hackGet ./dep/mmark-ext;
     megaparsec = hackGet ./dep/megaparsec;
     hspec-megaparsec = hackGet ./dep/hspec-megaparsec;
     modern-uri = hackGet ./dep/modern-uri;
@@ -28,8 +27,7 @@ project ./. ({ pkgs, hackGet, ... }: {
   };
 
   overrides = self: super: with pkgs.haskell.lib; {
-    mmark = dontCheck super.mmark;
-    mmark-ext = dontCheck super.mmark-ext;
+    mmark = dontHaddock (dontCheck super.mmark);  # Haddock fails on ghcjs
     megaparsec = dontCheck super.megaparsec;
     email-validate = dontCheck super.email-validate;
   };
