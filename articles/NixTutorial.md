@@ -17,7 +17,7 @@ the principles of Nix, you may alternatively install [NixOS](https://nixos.org/)
 Let's begin from the simplest scenario of all--running a single Haskell source
 file with no library dependencies.
 
-```
+```haskell
 $ cat > HelloWorld.hs
 module Main where
 
