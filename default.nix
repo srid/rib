@@ -31,5 +31,6 @@ project ./. ({ pkgs, hackGet, ... }: {
     mmark = dontCheck super.mmark;
     mmark-ext = dontCheck super.mmark-ext;
     megaparsec = dontCheck super.megaparsec;
+    email-validate = dontCheck super.email-validate;
   };
 })

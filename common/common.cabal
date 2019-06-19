@@ -9,9 +9,15 @@ library
                , obelisk-route
                , mtl
                , text
+               , mmark
+               , mmark-ext
+               , reflex-dom-core
+               , foldl
+               , megaparsec
   default-extensions:
     TypeFamilies
     PolyKinds
   exposed-modules:
     Common.Api
     Common.Route
+    Common.Markdown
