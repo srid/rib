@@ -18,8 +18,6 @@ import Snap
 
 import Common.Route
 
-import Backend.Markdown
-
 backend :: Backend BackendRoute FrontendRoute
 backend = Backend
   { _backend_run = \serve -> serve $ \case

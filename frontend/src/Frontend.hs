@@ -16,8 +16,8 @@ import Obelisk.Route
 import Obelisk.Route.Frontend
 import Reflex.Dom.Core
 
+import Common.Markdown (elMarkdown)
 import Common.Route
-
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -50,8 +50,8 @@ frontend = Frontend
           articleContent <- getArticle =<< askRoute
           widgetHold_ (text "Loading") $ ffor articleContent $ \case
             Nothing -> text "nope"
-            -- TODO: Render HTML version
-            Just s -> divClass "ui segment" $ el "pre" $ el "tt" $ text s
+            Just s -> divClass "ui segment" $
+              elMarkdown s
   }
   where
     semuiVersion :: Text
