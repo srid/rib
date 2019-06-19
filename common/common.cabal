@@ -4,14 +4,23 @@ cabal-version: >= 1.2
 build-type: Simple
 
 library
+  if impl(ghcjs)
+    ghc-options:    +RTS -K8G -RTS
   hs-source-dirs: src
   build-depends: base
                , obelisk-route
                , mtl
                , text
+               , mmark
+               , modern-uri
+               , reflex-dom-core
+               , megaparsec
+               , foldl
+
   default-extensions:
     TypeFamilies
     PolyKinds
   exposed-modules:
     Common.Api
     Common.Route
+    Common.Markdown

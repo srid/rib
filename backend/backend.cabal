@@ -13,18 +13,10 @@ library
                , obelisk-backend
                , obelisk-route
                , text
-               , mmark
-               , modern-uri
-               , yaml
-               , reflex-dom-core
                , aeson
-               , foldl
-               , profunctors
                , snap
-               , megaparsec
   exposed-modules:
     Backend
-    Backend.Markdown
   ghc-options: -Wall
 
 executable backend
@@ -38,12 +30,5 @@ executable backend
                , frontend
                , obelisk-backend
                , text
-               , mmark
-               , modern-uri
-               , yaml
-               , reflex-dom-core
                , aeson
-               , foldl
-               , profunctors
                , snap
-               , megaparsec

@@ -30,5 +30,6 @@ project ./. ({ pkgs, hackGet, ... }: {
     mmark = dontHaddock (dontCheck super.mmark);  # Haddock fails on ghcjs
     megaparsec = dontCheck super.megaparsec;
     email-validate = dontCheck super.email-validate;
+    common = dontHaddock super.common;  # https://github.com/haskell/haddock/issues/666
   };
 })

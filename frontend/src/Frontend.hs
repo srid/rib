@@ -6,11 +6,9 @@
 {-# LANGUAGE TypeFamilies #-}
 module Frontend where
 
-import Control.Monad
 import Data.Functor.Identity
 import Data.Functor.Sum
 import Data.Text (Text)
--- import qualified Data.Text as T
 
 import Obelisk.Frontend
 import Obelisk.Route
@@ -18,6 +16,7 @@ import Obelisk.Route.Frontend
 import Reflex.Dom.Core
 
 import Common.Route
+import Common.Markdown
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -51,9 +50,7 @@ frontend = Frontend
           prerender_ (text "JavaScript is required to view this page") blank
           widgetHold_ (el "div" $ text "Loading") $ ffor articleContent $ \case
             Nothing -> text "nope"
-            Just s -> divClass "ui segment" $ do
-              prerender_ blank $
-                void $ elDynHtml' "div" $ constDyn s
+            Just s -> divClass "ui segment" $ elMarkdown s
   }
   where
     semuiVersion :: Text
