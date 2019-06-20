@@ -18,3 +18,11 @@ See site/drafts/ for existing stubs. In addition, consider these ideas:
 
 - Github CI for OSS haskell projects
 -
+
+## Running
+
+```
+nix-build
+./result/bin/ExplainingHaskell-exe site
+nix-shell -p nodePackages.serve --run 'serve dist'
+```
