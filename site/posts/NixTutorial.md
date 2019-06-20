@@ -1,4 +1,11 @@
-# Nix tutorial for Haskellers
+---
+title: "Nix tutorial for Haskellers"
+author: Sridhar Ratnakumar
+date: Jul 19, 2019
+tags: [nix]
+description: How to develop Haskell projects using Nix
+image: battleship.jpg
+---
 
 The goal of this article is to get you comfortable managing simple Haskell
 programs and projects using the **Nix** package manager.
