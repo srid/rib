@@ -8,15 +8,21 @@ would explain the various Haskell concepts that I have come to understand since
 
 - [x] Think of first article to write
 - [ ] DOING: Write it
-- [ ] DOING: Develop backend & frontend to serve an article
+- [ ] DOING: Static site generation (Slick)
 - [ ] Deploy to production
 - [ ] Share and get feedback on first article
 
-- [ ] Upgrade mmark (thus megaparsec, etc.)
-
 ## Article Ideas
 
-See articles/ for existing stubs. In addition, consider these ideas:
+See site/drafts/ for existing stubs. In addition, consider these ideas:
 
 - Github CI for OSS haskell projects
 -
+
+## Running
+
+```
+nix-build
+./result/bin/ExplainingHaskell-exe site
+nix-shell -p nodePackages.serve --run 'serve dist'
+```
