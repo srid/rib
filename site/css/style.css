@@ -373,25 +373,6 @@ a.tag, a.category {
       color: #C00762;
       border-color: #C00762; }
 
-.social-buttons {
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-flex-flow: row nowrap;
-      -ms-flex-flow: row nowrap;
-          flex-flow: row nowrap;
-  -webkit-box-pack: center;
-  -webkit-justify-content: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  margin: 1em 0; }
-  .social-buttons > div {
-    /*margin: 0 1em;*/ }
-  .social-buttons .twitter-share-button {
-    max-width: 90px;
-    margin-right: 5px; }
-
 .center {
   text-align: center;
   margin: auto; }
@@ -552,17 +533,6 @@ a.tag, a.category {
 .ext-link img {
   width: 32px;
   height: 32px;
-}
-
-.right-sidebar {
-  position: absolute;
-  top: 0.75em;
-  right: 0.7em;
-  display: flex;
-}
-
-.right-sidebar > * {
-  margin-left: 12px;
 }
 
 /*# sourceMappingURL=style.css.map */
