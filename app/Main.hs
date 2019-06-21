@@ -92,7 +92,7 @@ srcToDest p = "dist" </> dropDirectory1 p
 
 -- | convert a source file path into a URL
 srcToURL :: FilePath -> String
-srcToURL = ("/" ++) . dropDirectory1 . (-<.> ".html")
+srcToURL = ("/" ++) . dropDirectory1 . (-<.> "")
 
 -- | Given a post source-file's file path as a cache key, load the Post object
 -- for it. This is used with 'jsonCache' to provide post caching.
