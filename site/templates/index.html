@@ -9,16 +9,14 @@
     <!-- TODO: Add a favicon for this site -->
     <link rel="icon" type="image/png" href="/images/favicon.png">
     <link rel="stylesheet" href="/css/style.css">
+    {{>site/templates/semui.html}}
 </head>
 <body>
     {{>site/templates/header.html}}
-<div id="page">
-            <section class="table-of-contents">
-                <h1>All Posts</h1>
-                <div class="metadata">
-                </div>
-                {{>site/templates/post-list.html}}
-        </section>
-</div>
+    <section class="table-of-contents">
+        <h1>All Posts</h1>
+        <div class="metadata"> </div>
+        {{>site/templates/post-list.html}}
+    </section>
 
 {{>site/templates/footer.html}}

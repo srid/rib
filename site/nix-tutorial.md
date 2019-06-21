@@ -11,6 +11,8 @@ programs and projects using the **Nix** package manager.
 
 ## Why Nix?
 
+TODO
+
 ## Prerequisitives
 
 Before proceeding make sure that Nix is installed in your environment by
@@ -20,7 +22,7 @@ the principles of Nix, you may alternatively install [NixOS](https://nixos.org/)
 
 ## Hello World
 
-Let's begin from the simplest scenario of all--running a single Haskell source
+Let's start with the simplest scenario of all--running a single Haskell source
 file with no library dependencies.
 
 ```haskell
@@ -108,3 +110,7 @@ Here, we tell `developPackage` that the root of our Cabal project is the same
 directory where default.nix lives. That's all is required to tell Nix about our
 Cabal project.
 
+
+## Adding build tools
+
+TODO: can we use `addBuildTools`

@@ -39,7 +39,7 @@ main =
         getDirectoryFiles "." ["site/css//*", "site/js//*", "site/images//*"]
       need (("dist" </>) . dropDirectory1 <$> staticFiles)
     -- Rule for handling static assets, just copy them from source to dest
-    ["dist/css//*", "dist/js//*", "dist/images//*"] |%> \out -> do
+    ["dist/css//*", "dist/js//*", "dist/images//*"] |%> \out ->
       copyFileChanged ("site" </> dropDirectory1 out) out
      -- Find and require every post to be built
     "posts" ~> requirePosts
