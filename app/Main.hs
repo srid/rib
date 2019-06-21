@@ -46,7 +46,7 @@ main =
     -- build the main table of contents
     "dist/index.html" %> buildIndex postCache
      -- rule for actually building posts
-    "dist/posts//*.html" %> buildPost postCache
+    "dist/*.html" %> buildPost postCache
 
 -- | Represents the template dependencies of the index page
 data IndexInfo = IndexInfo
@@ -80,7 +80,7 @@ newtype PostFilePath =
 
 -- | Discover all available post source files
 postNames :: Action [FilePath]
-postNames = getDirectoryFiles "." ["site/posts//*.md"]
+postNames = getDirectoryFiles "." ["site/*.md"]
 
 -- | convert 'build' filepaths into source file filepaths
 destToSrc :: FilePath -> FilePath
