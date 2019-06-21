@@ -13,20 +13,14 @@
 <body>
     {{>site/templates/header.html}}
 
-    <div "ui segment">
-        <h1 class="title">
-            {{title}}
-        </h1>
-
-        {{#image}}
-        <img class="post-image" src="/images/{{image}}">
-        {{/image}}
+    <h2 class="ui top attached inverted lightgreen header">
+        {{title}}
+    </h2>
+    <div class="ui attached segment">
 
         {{#author}}
-        <span class="byline">by {{author}}</span>
+        <div class="ui message">Author: {{author}}</div>
         {{/author}}
-
-        <span class="date">{{date}}</span>
 
         <article class="post">
             {{{content}}}
