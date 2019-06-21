@@ -16,29 +16,26 @@
 <div id="page">
     <div class="wrapper">
         <div class="masthead">
-            <span class="title">
+            <h1 class="title">
                 {{title}}
-            </span>
-            <br>
+            </h1>
 
             {{#image}}
             <img class="post-image" src="/images/{{image}}">
             {{/image}}
-            <br>
+
             {{#author}}
             <span class="byline">by {{author}}</span>
             {{/author}}
-            <br>
+
             <span class="date">{{date}}</span>
-            <br>
+
             <div class="metadata">
             </div>
         </div>
     </div>
     <article class="post">
         {{{content}}}
-        <br>
-        <br>
 </article>
 
 </div>
