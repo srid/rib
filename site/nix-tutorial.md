@@ -1,6 +1,7 @@
 ---
 title: "Nix tutorial for Haskellers"
 description: How to develop Haskell projects using Nix
+category: Programming
 ---
 
 The goal of this article is to get you comfortable managing simple Haskell

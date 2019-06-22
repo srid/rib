@@ -1,11 +1,25 @@
+<h2 class="ui header">Haskell & Nix notes</h2>
 <div class="ui segment">
-<div class="ui relaxed divided list">
-  {{#posts}}
-    <div class="item">
-      <a class="header" href="{{url}}">{{title}}</a>
-      {{description}}
-    </div>
-  {{/posts}}
+  <div class="ui relaxed divided list">
+    {{#programming_posts}}
+      <div class="item">
+        <a class="header" href="{{url}}">{{title}}</a>
+        {{description}}
+      </div>
+    {{/programming_posts}}
+  </div>
 </div>
+
+<h2 class="ui header">Other notes</h2>
+<div class="ui segment">
+  <div class="ui relaxed divided list">
+    {{#other_posts}}
+      <div class="item">
+        <a class="header" href="{{url}}">{{title}}</a>
+        {{description}}
+      </div>
+    {{/other_posts}}
+  </div>
 </div>
+
 <br/>

@@ -1,6 +1,6 @@
 ---
 title: "Carnivore diet"
-description: Nutrition is the new religion
+description: What I eat in a day
 ---
 
 I eat exclusively meat.

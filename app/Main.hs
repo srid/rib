@@ -11,10 +11,10 @@ import Control.Lens
 import Data.Aeson as A
 import Data.Aeson.Lens
 import Data.Function (on)
-import Data.List (sortBy)
-import Data.Map as M
+import Data.List (sortBy, partition)
+import qualified Data.Map as M
 import Data.Monoid
-import Data.Set as S
+import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Text.Lens
 import Data.Time
@@ -50,17 +50,27 @@ main =
 
 -- | Represents the template dependencies of the index page
 data IndexInfo = IndexInfo
-  { posts :: [Post]
+  { programming_posts :: [Post]
+  , other_posts :: [Post]
   } deriving (Generic, Show)
 
 instance FromJSON IndexInfo
 
 instance ToJSON IndexInfo
 
+data PostCategory
+  = Programming
+  | Other
+  deriving (Generic, Show, Eq, Ord)
+
+instance FromJSON PostCategory
+instance ToJSON PostCategory
+
 -- | A JSON serializable representation of a post's metadata
 data Post = Post
   { title :: String
   , description :: String
+  , category :: Maybe PostCategory
   , content :: String
   , url :: String
   } deriving (Generic, Eq, Ord, Show)
@@ -108,7 +118,7 @@ buildIndex :: (PostFilePath -> Action Post) -> FilePath -> Action ()
 buildIndex postCache out = do
   posts <- postNames >>= traverse (postCache . PostFilePath)
   indexT <- compileTemplate' "site/templates/index.html"
-  let indexInfo = IndexInfo posts
+  let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
       indexHTML = T.unpack $ substitute indexT (toJSON indexInfo)
   writeFile' out indexHTML
 
