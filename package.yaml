@@ -1,6 +1,6 @@
-name:                ExplainingHaskell
+name:                notesridca
 version:             0.1.0.0
-github:              "srid/ExplainingHaskell"
+github:              "srid/notes.srid.ca"
 license:             BSD3
 author:              "Sridhar Ratnakumar"
 maintainer:          "srid@srid.ca"
@@ -16,10 +16,10 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/srid/ExplainingHaskell>
+description:         Please see the README on GitHub at <https://github.com/srid/notes.srid.ca>
 
 executables:
-  ExplainingHaskell-exe:
+  notessridca:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -27,16 +27,16 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - shake
-    - slick
-    - base >= 4.7 && < 5
     - aeson
-    - lens-aeson
-    - lens
-    - pandoc
-    - text
+    - base >= 4.7 && < 5
     - binary
     - bytestring
     - containers
+    - lens
+    - lens-aeson
     - mustache
+    - pandoc
+    - shake
+    - slick
+    - text
     - time
