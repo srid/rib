@@ -1,5 +1,14 @@
 <div class="ui container">
-  <h2 class="ui top attached inverted lightgreen header">
-    {{title}}
+  <h2 class="ui top attached violet header">
+    <!-- If there is no (post) title, we are on the home page. -->
+    <div class="ui breadcrumb">
+      {{#title}}
+      <a class="section" href="/">Home</a>
+      <div class="divider"> / </div>
+      <div class="active section">{{title}}</div>
+      {{/title}}
+      {{^title}}
+      <div class="active section">Home</a>
+      {{/title}}
   </h2>
   <div class="ui attached segment">
