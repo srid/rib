@@ -13,14 +13,10 @@
 <body>
     {{>site/templates/header.html}}
 
-    <h1 class="ui header">{{title}}</h1>
+    <h1 class="ui huge header">{{title}}</h1>
 
-        {{#author}}
-        <div class="ui message">Author: {{author}}</div>
-        {{/author}}
-
-        <article class="post">
-            {{{content}}}
-        </article>
+    <article class="post">
+      {{{content}}}
+    </article>
 
 {{>site/templates/footer.html}}
