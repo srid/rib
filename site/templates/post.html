@@ -5,42 +5,18 @@
     <meta name="description" content="{{description}}">
     <meta name="author" content="{{author}}">
     <meta name=viewport content="width=device-width, initial-scale=1">
-    {{>site/templates/meta-data.html}}
     <title>{{title}}</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/syntax.css">
+    {{>site/templates/semui.html}}
 </head>
 <body>
     {{>site/templates/header.html}}
 
-<div id="page">
-    <div class="wrapper">
-        <div class="masthead">
-            <span class="title">
-                {{title}}
-            </span>
-            <br>
+    <h1 class="ui huge header">{{title}}</h1>
 
-            {{#image}}
-            <img class="post-image" src="/images/{{image}}">
-            {{/image}}
-            <br>
-            {{#author}}
-            <span class="byline">by {{author}}</span>
-            {{/author}}
-            <br>
-            <span class="date">{{date}}</span>
-            <br>
-            <div class="metadata">
-            </div>
-        </div>
-    </div>
     <article class="post">
-        {{{content}}}
-        <br>
-        <br>
-</article>
-
-</div>
+      {{{content}}}
+    </article>
 
 {{>site/templates/footer.html}}

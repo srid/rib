@@ -39,14 +39,14 @@ main =
         getDirectoryFiles "." ["site/css//*", "site/js//*", "site/images//*"]
       need (("dist" </>) . dropDirectory1 <$> staticFiles)
     -- Rule for handling static assets, just copy them from source to dest
-    ["dist/css//*", "dist/js//*", "dist/images//*"] |%> \out -> do
+    ["dist/css//*", "dist/js//*", "dist/images//*"] |%> \out ->
       copyFileChanged ("site" </> dropDirectory1 out) out
      -- Find and require every post to be built
     "posts" ~> requirePosts
     -- build the main table of contents
     "dist/index.html" %> buildIndex postCache
      -- rule for actually building posts
-    "dist/posts//*.html" %> buildPost postCache
+    "dist/*.html" %> buildPost postCache
 
 -- | Represents the template dependencies of the index page
 data IndexInfo = IndexInfo
@@ -61,6 +61,7 @@ instance ToJSON IndexInfo
 data Post = Post
   { title :: String
   , author :: String
+  , description :: String
   , content :: String
   , url :: String
   , date :: String
@@ -80,7 +81,7 @@ newtype PostFilePath =
 
 -- | Discover all available post source files
 postNames :: Action [FilePath]
-postNames = getDirectoryFiles "." ["site/posts//*.md"]
+postNames = getDirectoryFiles "." ["site/*.md"]
 
 -- | convert 'build' filepaths into source file filepaths
 destToSrc :: FilePath -> FilePath
@@ -92,7 +93,7 @@ srcToDest p = "dist" </> dropDirectory1 p
 
 -- | convert a source file path into a URL
 srcToURL :: FilePath -> String
-srcToURL = ("/" ++) . dropDirectory1 . (-<.> ".html")
+srcToURL = ("/" ++) . dropDirectory1 . (-<.> "")
 
 -- | Given a post source-file's file path as a cache key, load the Post object
 -- for it. This is used with 'jsonCache' to provide post caching.
@@ -110,7 +111,7 @@ buildIndex :: (PostFilePath -> Action Post) -> FilePath -> Action ()
 buildIndex postCache out = do
   posts <- postNames >>= traverse (postCache . PostFilePath)
   indexT <- compileTemplate' "site/templates/index.html"
-  let indexInfo = IndexInfo {posts}
+  let indexInfo = IndexInfo posts
       indexHTML = T.unpack $ substitute indexT (toJSON indexInfo)
   writeFile' out indexHTML
 

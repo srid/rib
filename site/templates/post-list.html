@@ -1,7 +1,11 @@
-<ul>
-    {{#posts}}
-        <li>
-            <a href="{{url}}">{{title}} <span class="date">{{date}}</span> </a>
-        </li>
-    {{/posts}}
-</ul>
+<div class="ui segment">
+<div class="ui relaxed divided list">
+  {{#posts}}
+    <div class="item">
+      <a class="header" href="{{url}}">{{title}}</a>
+      {{description}}
+    </div>
+  {{/posts}}
+</div>
+</div>
+<br/>

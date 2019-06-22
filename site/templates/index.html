@@ -6,18 +6,18 @@
     <meta name="author" content="Sridhar Ratnakumar">
     <meta name=viewport content="width=device-width, initial-scale=1">
     <title>Explaining Haskell</title>
+    <!-- TODO: Add a favicon for this site -->
     <link rel="icon" type="image/png" href="/images/favicon.png">
     <link rel="stylesheet" href="/css/style.css">
+    {{>site/templates/semui.html}}
 </head>
 <body>
     {{>site/templates/header.html}}
-<div id="page">
-            <section class="table-of-contents">
-                <h1>All Posts</h1>
-                <div class="metadata">
-                </div>
-                {{>site/templates/post-list.html}}
-        </section>
-</div>
+    <h1 class="ui header">Explaining Haskell</h1>
+    <p>Here I explain a bunch of Haskell related concepts that I understand in
+    the hopes it would be of use to others.
+    <section>
+        {{>site/templates/post-list.html}}
+    </section>
 
 {{>site/templates/footer.html}}

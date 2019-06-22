@@ -17,7 +17,10 @@ would explain the various Haskell concepts that I have come to understand since
 See site/drafts/ for existing stubs. In addition, consider these ideas:
 
 - Github CI for OSS haskell projects
--
+- Lens and friends
+- mtl
+- string types
+- personal nix cache
 
 ## Running
 
