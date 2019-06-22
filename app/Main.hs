@@ -60,12 +60,9 @@ instance ToJSON IndexInfo
 -- | A JSON serializable representation of a post's metadata
 data Post = Post
   { title :: String
-  , author :: String
   , description :: String
   , content :: String
   , url :: String
-  , date :: String
-  , image :: Maybe String
   } deriving (Generic, Eq, Ord, Show)
 
 instance FromJSON Post

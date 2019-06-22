@@ -32,3 +32,10 @@ article h2 {
 footer {
     text-align: center;
 }
+
+article img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}

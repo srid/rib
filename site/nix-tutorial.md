@@ -1,8 +1,5 @@
 ---
 title: "Nix tutorial for Haskellers"
-author: Sridhar Ratnakumar
-date: Jul 19, 2019
-tags: [nix]
 description: How to develop Haskell projects using Nix
 ---
 

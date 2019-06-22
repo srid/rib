@@ -1,20 +1,14 @@
-# Explaining Haskell
+# notes.srid.ca
 
-Source code for my planned "Explaining Haskell" documentation project wherein I
-would explain the various Haskell concepts that I have come to understand since
-2018.
+My public notes. Kind of a blog and wiki.
 
 ## TODO
 
-- [x] Think of first article to write
-- [ ] DOING: Write it
-- [ ] DOING: Static site generation (Slick)
-- [ ] Deploy to production
-- [ ] Share and get feedback on first article
+- Migrate from gitbook
+- Publish first Haskell article (nix tutorial)
+- Write default.nix that automates everything (including autoreload)
 
 ## Article Ideas
-
-See site/drafts/ for existing stubs. In addition, consider these ideas:
 
 - Github CI for OSS haskell projects
 - Lens and friends
@@ -26,6 +20,6 @@ See site/drafts/ for existing stubs. In addition, consider these ideas:
 
 ```
 nix-build
-./result/bin/ExplainingHaskell-exe site
+./result/bin/notessridca site
 nix-shell -p nodePackages.serve --run 'serve dist'
 ```
