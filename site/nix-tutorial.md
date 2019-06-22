@@ -13,104 +13,141 @@ programs and projects using the **Nix** package manager.
 
 TODO
 
-## Prerequisitives
+## Prerequisites
 
-Before proceeding make sure that Nix is installed in your environment by
-following the [installation instructions here](https://nixos.org/nix/). If you
-are feeling adventurous enough to try a new Linux distribution that is based on
-the principles of Nix, you may alternatively install [NixOS](https://nixos.org/).
+If you are on Linux or macOS follow the [installation instructions
+here](https://nixos.org/nix/) to install Nix. Alternatively, if you
+are feeling adventurous enough, install [NixOS](https://nixos.org/) (a Linux
+distribution based on Nix).
 
 ## Hello World
 
-Let's start with the simplest scenario of all--running a single Haskell source
-file with no library dependencies.
+We will begin with using Nix to run the simplest of Haskell code, a single
+module printing "Hello World".
 
 ```haskell
-$ cat > HelloWorld.hs
+-- HelloWorld.hs
 module Main where
 
 main :: IO ()
-main = do
-  putStrLn "Hello World"
-^D
-$
+main = putStrLn "Hello World"
 ```
 
-To compile and run this module let's use `runhaskell` (which in turn runs
-[`runghc`](https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/runghc.html)),
-which is part of the `ghc` Nix package. This raises a question: how do we
-install a Nix package? The `nix-env -i ghc` will do just that. However we do not
-*have* to install packages in the global user enviroment just to be able to use
-them (this is one of benefits of using Nix over other package managers). If
-`runhaskell` is only needed to run this HelloWorld module, instead we can enter
-a bash shell with the `ghc` package installed and activated within it (and only
-it). The `nix-shell`, command with its `-p` argument, does exactly that:
+In order to compile and run this program we must install the `ghc` Nix package.
+[Nix manual](https://nixos.org/nix/manual/#chap-package-management) informs us
+to use `nix-env -i ghc` to do this. A better approach would be to create a
+shell environment containing the requested package (instead of installing them
+in a global scope) using the `nix-shell -p ghc` command.
 
-```
-# This drops us in a shell with ghc package installed
+```bash
+# This drops us in a bash shell with ghc package installed and $PATH updated.
 $ nix-shell -p ghc
 ...
-# Now let's run our module
+# Now let's run our module.
 [nix-shell:~] runhaskell HelloWorld.hs
 Hello World
-
-# When you exit the shell the ghc package is no longer in scope (although still
-cached in the local nix store for future use)
-[nix-shell:~] ^D
 ```
 
+Running `nix-shell -p ghc` will be slower the first time, as Nix would be
+downloading ghc and its dependencies. The subsequent runs will be near
+instantaneous as packages will be cached in the Nix store.
 
 ## Package dependencies
 
-What if our `HelloWorld.hs` used an external library dependency?
+Let us extend our code to work with
+[brick](http://hackage.haskell.org/package/brick) UI library.
+
+```haskell
+module Main where
+
+import Brick
+
+ui :: Widget ()
+ui = str "Hello, world!"
+
+main :: IO ()
+main = simpleMain ui
+```
+
+We need to tell Nix of the new package dependency. Packages in Nix come from the
+official channel called [nixpkgs](https://github.com/NixOS/nixpkgs), which
+provides a function called `ghcWithPackages` that can be used to install the
+`ghc` package along with a custom list of dependencies.
 
 ```
-TODO
+$ nix-shell \
+    -p "haskellPackages.ghcWithPackages (ps: with ps; [pandoc])" \
+    --run "runhaskell HelloWorld.hs"
 ```
 
-This version of the module imports `Text.Pandoc` which comes from the `pandoc`
-Haskell package. Nix allows us to install individual Haskell packages as well.
-To enter a shell with the pandoc package installed:
-
-```
-# TODO: But why ghcWithPackages
-$ nix-shell -p "haskellPackages.ghcWithPackages (ps: with ps; [pandoc])"
-...
-[nix-shell:~] runhaskell HelloWorld.hs
-```
+Note how we directly ran the command instead of being dropped in shell. This
+allows us to treat our Haskell source file as a runnable script using the
+shebang.
 
 ## Cabal project
 
-Being able to develop with a single source file is the easiest path to
-developing in Haskell, however any non-trivial program will end up using the
-project facilities provided by tools like Cabal. Nix can integrate quite well
-with Cabal, thanks to its `callCabal2nix`.
+Nix can be used to create a reproducible development environment for your Cabal
+projects. First create a file called `default.nix` in your project root. This
+file is by default used by commands like `nix-build` and `nix-shell`.
 
-To illustrate this you may use your existing cabal project, or create one from
-scratch:
-
-```
-$ cabal init
-...
-```
-
-Nix's development tools (`nix-build`, `nix-shell`) by default use a filename
-called `default.nix`. And the nix package store (`nixpkgs`) provides us with a
-helper function called `haskellPackages.developPackage` to make Haskell
-developer easier. Let's use that for our newly created Cabal project:
-
-```
-$ cat > default.nix
+```nix
 (import <nixpkgs> { }).haskellPackages.developPackage {
   root = ./.;
 }
 ```
 
-Here, we tell `developPackage` that the root of our Cabal project is the same
-directory where default.nix lives. That's all is required to tell Nix about our
-Cabal project.
+Now if you run `nix-shell` it will you drop in a shell with all Haskell
+dependencies installed; from here you can run your `cabal` commands, and
+everything will be function as expected.
 
+```bash
+$ nix-shell
+...
+[nix-shell:~] cabal new-build
+..
+```
 
-## Adding build tools
+## Overriding dependencies
 
-TODO: can we use `addBuildTools`
+Your project may depend on a library that is not on Hackage, or it may depend on
+a forked version of an existing library. In Nix overriding packages is rather
+straightforward, and the `developPackage` function exposes it via the
+`source-overrides` attribute. Suppose your cabal project depends on the
+aeson-gadt-th package at this particular git revision, then you would modify
+your `default.nix` to look like:
+
+```nix
+let
+  pkgs = import <nixpkgs> { };
+  compilerVersion = "ghc844"; 
+  compiler = pkgs.haskell.packages."${compilerVersion}";
+in
+compiler.developPackage {
+  root = ./.;
+  source-overrides = { pkgs }: {
+    aeson-gadt-th = pkgs.fetchFromGitHub {
+      owner = "obsidiansystems";
+      repo = "aeson-gadt-th";
+      rev = "e40c293901a9cb9be4b0748109f4bc6806bfdb79";
+      sha256 = "08iqyzd4240g7af2lwgxmqbfglyxxii43i2zi01xmk1kg8inzs3v";
+    };
+  };
+}
+```
+
+In order you compute the `sha256` hash you can use `nix-prefetch-git`:
+
+```bash
+nix-prefetch-git \
+  --url https://github.com/obsidiansystems/aeson-gadt-th.git \
+  --rev e40c293901a9cb9be4b0748109f4bc6806bfdb79
+...
+hash is 08iqyzd4240g7af2lwgxmqbfglyxxii43i2zi01xmk1kg8inzs3v
+{
+  "url": "https://github.com/obsidiansystems/aeson-gadt-th.git",
+  "rev": "e40c293901a9cb9be4b0748109f4bc6806bfdb79",
+  "date": "2019-03-28T17:00:03-04:00",
+  "sha256": "08iqyzd4240g7af2lwgxmqbfglyxxii43i2zi01xmk1kg8inzs3v",
+  "fetchSubmodules": false
+}
+```
