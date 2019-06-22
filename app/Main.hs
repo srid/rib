@@ -61,6 +61,7 @@ instance ToJSON IndexInfo
 data Post = Post
   { title :: String
   , author :: String
+  , description :: String
   , content :: String
   , url :: String
   , date :: String
