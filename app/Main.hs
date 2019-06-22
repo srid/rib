@@ -51,6 +51,7 @@ main =
 -- | Represents the template dependencies of the index page
 data IndexInfo = IndexInfo
   { posts :: [Post]
+  , title :: String
   } deriving (Generic, Show)
 
 instance FromJSON IndexInfo
@@ -110,7 +111,7 @@ buildIndex :: (PostFilePath -> Action Post) -> FilePath -> Action ()
 buildIndex postCache out = do
   posts <- postNames >>= traverse (postCache . PostFilePath)
   indexT <- compileTemplate' "site/templates/index.html"
-  let indexInfo = IndexInfo {posts}
+  let indexInfo = IndexInfo posts "Explaining Haskell"
       indexHTML = T.unpack $ substitute indexT (toJSON indexInfo)
   writeFile' out indexHTML
 

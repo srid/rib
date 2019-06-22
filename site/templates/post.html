@@ -13,11 +13,6 @@
 <body>
     {{>site/templates/header.html}}
 
-    <h2 class="ui top attached inverted lightgreen header">
-        {{title}}
-    </h2>
-    <div class="ui attached segment">
-
         {{#author}}
         <div class="ui message">Author: {{author}}</div>
         {{/author}}
@@ -25,6 +20,5 @@
         <article class="post">
             {{{content}}}
         </article>
-    </div>
 
 {{>site/templates/footer.html}}
