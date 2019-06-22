@@ -27,3 +27,7 @@ article, body {
 article h2 {
     color: darkviolet;
 }
+
+footer {
+    text-align: center;
+}
