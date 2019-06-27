@@ -4,9 +4,8 @@ My public notes. Kind of a blog and wiki.
 
 ## TODO
 
-- Migrate from gitbook
-- Publish first Haskell article (nix tutorial)
 - Write default.nix that automates everything (including autoreload)
+  - Or revamp this whole thing, using Reflex.
 
 ## Article Ideas
 
@@ -18,8 +17,14 @@ My public notes. Kind of a blog and wiki.
 
 ## Running
 
-```
+```bash
 nix-build
 ./result/bin/notessridca site
 nix-shell -p nodePackages.serve --run 'serve dist'
+```
+
+Using ghcid:
+
+```bash
+nix-shell --run "hpack; ghcid"
 ```

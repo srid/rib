@@ -1,61 +1,91 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
+-- TODo: What if I make this literate haskell thus blog post?
 module Main where
 
 import Control.Lens
-import Data.Aeson as A
+import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens
-import Data.Function (on)
-import Data.List (sortBy, partition)
-import qualified Data.Map as M
-import Data.Monoid
-import qualified Data.Set as S
+import Data.List (partition)
 import qualified Data.Text as T
-import Data.Text.Lens
-import Data.Time
 import GHC.Generics (Generic)
 
-import Development.Shake
-import Development.Shake.Classes
-import Development.Shake.FilePath
-import Slick
+import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
+                          shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
+import Development.Shake.Classes (Binary, Hashable, NFData)
+import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
+
+import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
 main :: IO ()
-main =
-  shakeArgs shakeOptions {shakeVerbosity = Chatty} $
-    -- Set up caches
-   do
-    postCache <- jsonCache' loadPost
-    -- Require all the things we need to build the whole site
-    "site" ~> need ["static", "posts", "dist/index.html"]
-    -- Require all static assets
-    "static" ~> do
-      staticFiles <-
-        getDirectoryFiles "." ["site/css//*", "site/js//*", "site/images//*"]
-      need (("dist" </>) . dropDirectory1 <$> staticFiles)
-    -- Rule for handling static assets, just copy them from source to dest
-    ["dist/css//*", "dist/js//*", "dist/images//*"] |%> \out ->
-      copyFileChanged ("site" </> dropDirectory1 out) out
-     -- Find and require every post to be built
-    "posts" ~> requirePosts
-    -- build the main table of contents
-    "dist/index.html" %> buildIndex postCache
-     -- rule for actually building posts
-    "dist/*.html" %> buildPost postCache
+main = shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+  -- TODO: Understand how this works. The caching from Slick.
+  getPostCached <- jsonCache' getPost
+
+  want ["site"]
+
+  -- Require all the things we need to build the whole site
+  "site" ~>
+    need ["static", "posts", "dist/index.html"]
+
+  let staticFilePatterns = ["css//*", "js//*", "images//*"]
+      -- ^ Which files are considered to be static files.
+      postFilePatterns = ["*.md"]
+      -- ^ Which files are considered to be post files
+
+  -- Require all static assets
+  "static" ~> do
+    need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
+
+  -- Rule for handling static assets, just copy them from source to dest
+  ("dist" </>) <$> staticFilePatterns |%> \out ->
+    copyFileChanged (destToSrc out) out
+
+  -- Find and require every post to be built
+  "posts" ~> do
+    need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
+
+  -- build the main table of contents
+  "dist/index.html" %> \out -> do
+    posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
+    let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
+    writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
+
+  -- rule for actually building posts
+  "dist/*.html" %> \out -> do
+    post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
+    writeFile' out =<< renderTemplate "site/templates/post.html" post
+
+  where
+    -- | Read and parse a Markdown post
+    getPost (PostFilePath postPath) = do
+      -- | Given a post source-file's file path as a cache key, load the Post object
+      -- for it. This is used with 'jsonCache' to provide post caching.
+      let srcPath = destToSrc postPath -<.> "md"
+      postData <- markdownToHTML . T.pack =<< readFile' srcPath
+      let postURL = T.pack $ srcToURL postPath
+          withURL = _Object . at "url" ?~ Aeson.String postURL
+          withSrc = _Object . at "srcPath" ?~ Aeson.String (T.pack srcPath)
+      convert $ withSrc $ withURL postData
+
+    -- | Render a mustache template with the given object
+    -- TODO: Use reflex static renderer instead of mustache's compileTemplate'
+    renderTemplate t o = do
+      template <- compileTemplate' t
+      pure $ T.unpack $ substitute template $ Aeson.toJSON o
 
 -- | Represents the template dependencies of the index page
+-- TODO: Represent category of posts generically. dependent-map?
 data IndexInfo = IndexInfo
   { programming_posts :: [Post]
   , other_posts :: [Post]
   } deriving (Generic, Show)
 
 instance FromJSON IndexInfo
-
 instance ToJSON IndexInfo
 
 data PostCategory
@@ -67,6 +97,7 @@ instance FromJSON PostCategory
 instance ToJSON PostCategory
 
 -- | A JSON serializable representation of a post's metadata
+-- TODO: Use Text instead of String
 data Post = Post
   { title :: String
   , description :: String
@@ -76,64 +107,18 @@ data Post = Post
   } deriving (Generic, Eq, Ord, Show)
 
 instance FromJSON Post
-
 instance ToJSON Post
 
 
 -- A simple wrapper data-type which implements 'ShakeValue';
 -- Used as a Shake Cache key to build a cache of post objects.
-newtype PostFilePath =
-  PostFilePath String
+newtype PostFilePath = PostFilePath FilePath
   deriving (Show, Eq, Hashable, Binary, NFData)
-
--- | Discover all available post source files
-postNames :: Action [FilePath]
-postNames = getDirectoryFiles "." ["site/*.md"]
 
 -- | convert 'build' filepaths into source file filepaths
 destToSrc :: FilePath -> FilePath
 destToSrc p = "site" </> dropDirectory1 p
 
--- | convert source filepaths into build filepaths
-srcToDest :: FilePath -> FilePath
-srcToDest p = "dist" </> dropDirectory1 p
-
 -- | convert a source file path into a URL
 srcToURL :: FilePath -> String
-srcToURL = ("/" ++) . dropDirectory1 . (-<.> "")
-
--- | Given a post source-file's file path as a cache key, load the Post object
--- for it. This is used with 'jsonCache' to provide post caching.
-loadPost :: PostFilePath -> Action Post
-loadPost (PostFilePath postPath) = do
-  let srcPath = destToSrc postPath -<.> "md"
-  postData <- readFile' srcPath >>= markdownToHTML . T.pack
-  let postURL = T.pack . srcToURL $ postPath
-      withURL = _Object . at "url" ?~ String postURL
-      withSrc = _Object . at "srcPath" ?~ String (T.pack srcPath)
-  convert . withSrc . withURL $ postData
-
--- | given a cache of posts this will build a table of contents
-buildIndex :: (PostFilePath -> Action Post) -> FilePath -> Action ()
-buildIndex postCache out = do
-  posts <- postNames >>= traverse (postCache . PostFilePath)
-  indexT <- compileTemplate' "site/templates/index.html"
-  let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
-      indexHTML = T.unpack $ substitute indexT (toJSON indexInfo)
-  writeFile' out indexHTML
-
--- | Find all post source files and tell shake to build the corresponding html
--- pages.
-requirePosts :: Action ()
-requirePosts = do
-  pNames <- postNames
-  need ((\p -> srcToDest p -<.> "html") <$> pNames)
-
--- Build an html file for a given post given a cache of posts.
-buildPost :: (PostFilePath -> Action Post) -> FilePath -> Action ()
-buildPost postCache out = do
-  let srcPath = destToSrc out -<.> "md"
-      postURL = srcToURL srcPath
-  post <- postCache (PostFilePath srcPath)
-  template <- compileTemplate' "site/templates/post.html"
-  writeFile' out . T.unpack $ substitute template (toJSON post)
+srcToURL = ("/" ++) . dropDirectory1 . dropExtension
