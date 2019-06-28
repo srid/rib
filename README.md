@@ -2,6 +2,19 @@
 
 My public notes. Kind of a blog and wiki.
 
+## Local server when editing content
+
+```bash
+nix-build -A ghc.notessridca
+./result/bin/notessridca serve --watch
+```
+
+## Hacking on Main.hs
+
+```bash
+nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp (Main.Serve 8080 True)'"
+```
+
 ## TODO
 
 - Reflex based
@@ -11,25 +24,13 @@ My public notes. Kind of a blog and wiki.
     - [ ] Add `fsnotify` to re-run Shake on file modificaiton (warp server
           should serve the new files automatically)
           - Shake API to do this: https://hackage.haskell.org/package/shake-0.18.2/docs/Development-Shake-Database.html
+- Literate haskell
+  - Include rendered Main.lhs as a post in notes.srid.ca
 
-## Article Ideas
+### Article Ideas
 
 - Github CI for OSS haskell projects
 - Lens and friends
 - mtl
 - string types
 - personal nix cache
-
-## Running
-
-```bash
-nix-build -A ghc.notessridca
-./result/bin/notessridca
-nix-shell -p nodePackages.serve --run 'serve dist'
-```
-
-Using ghcid:
-
-```bash
-nix-shell -A shells.ghc --run ghcid
-```

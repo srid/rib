@@ -1,66 +1,150 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- TODo: What if I make this literate haskell thus blog post?
 module Main where
 
-import Control.Lens
+import Prelude hiding (init, last)
+
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently_)
+import Control.Lens (at, (?~))
+import Control.Monad (forever, guard, void, when)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
-import Data.Aeson.Lens
-import Data.List (partition)
+import Data.Aeson.Lens (_Object)
+import Data.List (isSuffixOf, partition)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import System.Environment (withArgs)
+
+import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
+import qualified Network.Wai.Handler.Warp as Warp
+import Safe (initMay, lastMay)
+import System.Console.CmdArgs (Data, Typeable, auto, cmdArgs, help, modes, (&=))
+import System.FSNotify (watchTree, withManager)
+import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
 
 import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-
-import Reflex.Dom.Core
-
 import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
+-- import Reflex.Dom.Core hiding (def)
+
+
+-- | The program will run in either of two modes
+--
+-- 1. Generate static files and exit immediately.
+--
+-- 1. Serve the generated static files, while automatically re-generating them
+-- when the source files change.
+data App
+  = Watch
+  | Serve { port :: Int, watch :: Bool }
+  | Generate
+  deriving (Data,Typeable,Show,Eq)
+
+cli :: App
+cli = modes
+  [ Watch
+      &= help "Watch for changes and generate"
+  , Serve
+      { port = 8080 &= help "Port to bind to"
+      , watch = False &= help "Watch in addition to serving generated files"
+      } &= help "Serve the generated site"
+  , Generate
+      &= help "Generate the site"
+      &= auto  -- | Generate is the default command.
+  ]
+
+-- | WAI Settings suited for serving statically generated websites.
+staticSiteServerSettings :: FilePath -> StaticSettings
+staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtmlExt }
+  where
+    settings = defaultFileServerSettings root
+
+    -- | Like upstream's `ssLookupFile` but ignores the ".html" suffix in the
+    -- URL when looking up the corresponding file in the filesystem.
+    --
+    -- This allows "clean urls" so to speak.
+    lookupFileForgivingHtmlExt :: Pieces -> IO LookupResult
+    lookupFileForgivingHtmlExt pieces = ssLookupFile settings pieces >>= \case
+      LRNotFound -> ssLookupFile settings (addHtmlExt pieces)
+      x -> pure x
+
+    -- | Add the ".html" suffix to the URL unless it already exists
+    addHtmlExt :: Pieces -> Pieces
+    addHtmlExt xs = fromMaybe xs $ do
+      init <- fmap fromPiece <$> initMay xs
+      last <- fromPiece <$> lastMay xs
+      guard $ not $ ".html" `isSuffixOf` T.unpack last
+      pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
+
+
 main :: IO ()
-main = shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
-  -- TODO: Understand how this works. The caching from Slick.
-  getPostCached <- jsonCache' getPost
+main = runApp =<< cmdArgs cli
 
-  want ["site"]
+runApp :: App -> IO ()
+runApp = \case
+  Watch -> withManager $ \mgr -> do
+    -- Generate once
+    runApp Generate
+    -- And then every time a file changes under the ./site directory.
+    void $ watchTree mgr "site" (const True) $ const $ runApp Generate
+    -- Wait forever, effectively.
+    forever $ threadDelay maxBound
 
-  -- Require all the things we need to build the whole site
-  "site" ~>
-    need ["static", "posts", "dist/index.html"]
+  Serve p w -> concurrently_
+    (when w $ runApp Watch)
+    (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
 
-  let staticFilePatterns = ["css//*", "js//*", "images//*"]
-      -- ^ Which files are considered to be static files.
-      postFilePatterns = ["*.md"]
-      -- ^ Which files are considered to be post files
+  Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+    -- ^ The withArgs above is to ensure that our own app arguments is not
+    -- confusing Shake.
 
-  -- Require all static assets
-  "static" ~> do
-    need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
+    -- TODO: Understand how this works. The caching from Slick.
+    getPostCached <- jsonCache' getPost
 
-  -- Rule for handling static assets, just copy them from source to dest
-  ("dist" </>) <$> staticFilePatterns |%> \out ->
-    copyFileChanged (destToSrc out) out
+    want ["site"]
 
-  -- Find and require every post to be built
-  "posts" ~> do
-    need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
+    -- Require all the things we need to build the whole site
+    "site" ~>
+      need ["static", "posts", "dist/index.html"]
 
-  -- build the main table of contents
-  "dist/index.html" %> \out -> do
-    posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
-    let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
-    writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
+    let staticFilePatterns = ["css//*", "js//*", "images//*"]
+        -- ^ Which files are considered to be static files.
+        postFilePatterns = ["*.md"]
+        -- ^ Which files are considered to be post files
 
-  -- rule for actually building posts
-  "dist/*.html" %> \out -> do
-    post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-    writeFile' out =<< renderTemplate "site/templates/post.html" post
+    -- Require all static assets
+    "static" ~> do
+      need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
+
+    -- Rule for handling static assets, just copy them from source to dest
+    ("dist" </>) <$> staticFilePatterns |%> \out ->
+      copyFileChanged (destToSrc out) out
+
+    -- Find and require every post to be built
+    "posts" ~> do
+      need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
+
+    -- build the main table of contents
+    "dist/index.html" %> \out -> do
+      posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
+      let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
+      writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
+
+    -- rule for actually building posts
+    "dist/*.html" %> \out -> do
+      post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
+      writeFile' out =<< renderTemplate "site/templates/post.html" post
 
   where
     -- | Read and parse a Markdown post
