@@ -10,13 +10,14 @@ module Main where
 
 import Prelude hiding (init, last)
 
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (concurrently_)
 import Control.Lens
-import Control.Monad (guard, when)
+import Control.Monad (forever, guard, void)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens
-import Data.List (partition)
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, partition)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -33,6 +34,7 @@ import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece,
 -- import Network.Wai.Parse
 -- import Network.Wai.Middleware.CleanPath (cleanPath)
 import System.Console.CmdArgs
+import System.FSNotify
 
 -- import Reflex.Dom.Core hiding (def)
 
@@ -45,18 +47,18 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 -- 1. Serve the generated static files, while automatically re-generating them
 -- when the source files change.
 data App
-  = Serve
-    { port :: Int
-    , watch :: Bool
-    }
+  = Watch
+  | Serve { port :: Int , watch :: Bool}
   | Generate
   deriving (Data,Typeable,Show,Eq)
 
 cli :: App
 cli = modes
-  [ Serve
+  [ Watch
+      &= help "Watch for changes and generate"
+  , Serve
       { port = 8080 &= help "Port to bind to"
-      , watch = False &= help "Watch for file changes and regenerate"
+      , watch = False &= help "Watch in addition to serving generated files"
       } &= help "Serve the generated site"
         &= auto  -- | Serve is the default command.
   , Generate
@@ -92,11 +94,18 @@ main = runApp =<< cmdArgs cli
 
 runApp :: App -> IO ()
 runApp = \case
-  Serve p w -> do
-    when w $ -- TODO: actually watch
-      runApp Generate
-    putStrLn $ "Serving at " <> show p
-    Warp.run p $ staticApp $ staticSiteServerSettings "dist"
+  Watch -> withManager $ \mgr -> do
+    -- Generate once
+    runApp Generate
+    -- And then every time a file changes under the ./site directory.
+    void $ watchTree mgr "site" (const True) $ const $ runApp Generate
+    -- Wait forever, effectively.
+    forever $ threadDelay 1000000
+
+  Serve p _w -> concurrently_
+    (runApp Watch)
+    (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
+
   Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost
