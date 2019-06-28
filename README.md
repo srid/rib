@@ -10,6 +10,7 @@ My public notes. Kind of a blog and wiki.
     - [ ] Use `warp` to serve the current dist directory.
     - [ ] Add `fsnotify` to re-run Shake on file modificaiton (warp server
           should serve the new files automatically)
+          - Shake API to do this: https://hackage.haskell.org/package/shake-0.18.2/docs/Development-Shake-Database.html
 
 ## Article Ideas
 
@@ -30,5 +31,5 @@ nix-shell -p nodePackages.serve --run 'serve dist'
 Using ghcid:
 
 ```bash
-nix-shell -A shells.ghc --run "hpack; ghcid"
+nix-shell -A shells.ghc --run ghcid
 ```
