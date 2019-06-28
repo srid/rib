@@ -21,6 +21,7 @@ import Data.List (isSuffixOf, partition)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
+import System.Environment (withArgs)
 
 import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
@@ -106,7 +107,10 @@ runApp = \case
     (runApp Watch)
     (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
 
-  Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+  Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+    -- ^ The withArgs above is to ensure that our own app arguments is not
+    -- confusing Shake.
+
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost
 

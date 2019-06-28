@@ -26,8 +26,8 @@ My public notes. Kind of a blog and wiki.
 
 ```bash
 nix-build -A ghc.notessridca
-./result/bin/notessridca
-nix-shell -p nodePackages.serve --run 'serve dist'
+./result/bin/notessridca generate
+./result/bin/notessridca serve
 ```
 
 Running server with iterative compilation:
