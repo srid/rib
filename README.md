@@ -4,8 +4,13 @@ My public notes. Kind of a blog and wiki.
 
 ## TODO
 
-- Write default.nix that automates everything (including autoreload)
-  - Or revamp this whole thing, using Reflex.
+- Reflex based
+  - What I'd like to do *first*: write a server that serves static files which
+    gets auto-generated on file change. Basically combine `warp` with `fsnotify`.
+    - [ ] Use `warp` to serve the current dist directory.
+    - [ ] Add `fsnotify` to re-run Shake on file modificaiton (warp server
+          should serve the new files automatically)
+          - Shake API to do this: https://hackage.haskell.org/package/shake-0.18.2/docs/Development-Shake-Database.html
 
 ## Article Ideas
 
@@ -18,13 +23,13 @@ My public notes. Kind of a blog and wiki.
 ## Running
 
 ```bash
-nix-build
-./result/bin/notessridca site
+nix-build -A ghc.notessridca
+./result/bin/notessridca
 nix-shell -p nodePackages.serve --run 'serve dist'
 ```
 
 Using ghcid:
 
 ```bash
-nix-shell --run "hpack; ghcid"
+nix-shell -A shells.ghc --run ghcid
 ```

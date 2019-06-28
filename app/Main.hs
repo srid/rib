@@ -19,6 +19,8 @@ import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 
+import Reflex.Dom.Core
+
 import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
 main :: IO ()
