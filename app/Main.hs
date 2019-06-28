@@ -21,11 +21,10 @@ import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 
-import Network.HTTP.Types
-import Network.Wai
--- import Network.Wai.Application.Static
+import Network.Wai.Application.Static (staticApp, defaultFileServerSettings)
 import qualified Network.Wai.Handler.Warp as Warp
 -- import Network.Wai.Parse
+-- import Network.Wai.Middleware.CleanPath (cleanPath)
 import System.Console.CmdArgs
 
 -- import Reflex.Dom.Core hiding (def)
@@ -56,9 +55,8 @@ cli = modes
 
 main :: IO ()
 main = cmdArgs cli >>= \case
-  Serve p -> do
-    Warp.run p $ \_req send -> do
-      send $ responseLBS status200 [("Content-Type", "text/html; charset=utf-8")] "Hey <b>there</b>"
+  Serve p ->
+    Warp.run p $ staticApp $ defaultFileServerSettings "dist"
   Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost
