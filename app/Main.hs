@@ -1,8 +1,9 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 
 -- TODo: What if I make this literate haskell thus blog post?
 module Main where
@@ -15,11 +16,17 @@ import Data.List (partition)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import System.Console.CmdArgs
 import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
+
+import Network.HTTP.Types
+import Network.Wai
+-- import Network.Wai.Application.Static
+import qualified Network.Wai.Handler.Warp as Warp
+-- import Network.Wai.Parse
+import System.Console.CmdArgs
 
 -- import Reflex.Dom.Core hiding (def)
 
@@ -32,15 +39,14 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 -- 1. Serve the generated static files, while automatically re-generating them
 -- when the source files change.
 data App
-  = Serve {port :: Maybe Int}
+  = Serve {port :: Int}
   | Generate
   deriving (Data,Typeable,Show,Eq)
 
 cli :: App
 cli = modes
   [ Serve
-      {  port = def
-      &= help "Port to bind to"
+      { port = 8080 &= help "Port to bind to"
       } &= help "Serve the generated site"
         &= auto  -- | Serve is the default command.
   , Generate
@@ -49,10 +55,11 @@ cli = modes
 
 
 main :: IO ()
-main = do
-  a <- cmdArgs cli
-  print a
-  shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+main = cmdArgs cli >>= \case
+  Serve p -> do
+    Warp.run p $ \_req send -> do
+      send $ responseLBS status200 [("Content-Type", "text/html; charset=utf-8")] "Hey <b>there</b>"
+  Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost
 

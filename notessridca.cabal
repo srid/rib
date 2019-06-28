@@ -31,6 +31,7 @@ executable notessridca
     , bytestring
     , cmdargs
     , containers
+    , http-types
     , lens
     , lens-aeson
     , mustache
@@ -40,4 +41,8 @@ executable notessridca
     , slick
     , text
     , time
+    , wai
+    , wai-app-static
+    , wai-extra
+    , warp
   default-language: Haskell2010
