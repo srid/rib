@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 -- TODo: What if I make this literate haskell thus blog post?
 module Main where
@@ -14,53 +15,80 @@ import Data.List (partition)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
+import System.Console.CmdArgs
 import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 
-import Reflex.Dom.Core
+-- import Reflex.Dom.Core hiding (def)
 
 import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
+-- | The program will run in either of two modes
+--
+-- 1. Generate static files and exit immediately.
+--
+-- 1. Serve the generated static files, while automatically re-generating them
+-- when the source files change.
+data App
+  = Serve {port :: Maybe Int}
+  | Generate
+  deriving (Data,Typeable,Show,Eq)
+
+cli :: App
+cli = modes
+  [ Serve
+      {  port = def
+      &= help "Port to bind to"
+      } &= help "Serve the generated site"
+        &= auto  -- | Serve is the default command.
+  , Generate
+      &= help "Generate the site"
+  ]
+
+
 main :: IO ()
-main = shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
-  -- TODO: Understand how this works. The caching from Slick.
-  getPostCached <- jsonCache' getPost
+main = do
+  a <- cmdArgs cli
+  print a
+  shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+    -- TODO: Understand how this works. The caching from Slick.
+    getPostCached <- jsonCache' getPost
 
-  want ["site"]
+    want ["site"]
 
-  -- Require all the things we need to build the whole site
-  "site" ~>
-    need ["static", "posts", "dist/index.html"]
+    -- Require all the things we need to build the whole site
+    "site" ~>
+      need ["static", "posts", "dist/index.html"]
 
-  let staticFilePatterns = ["css//*", "js//*", "images//*"]
-      -- ^ Which files are considered to be static files.
-      postFilePatterns = ["*.md"]
-      -- ^ Which files are considered to be post files
+    let staticFilePatterns = ["css//*", "js//*", "images//*"]
+        -- ^ Which files are considered to be static files.
+        postFilePatterns = ["*.md"]
+        -- ^ Which files are considered to be post files
 
-  -- Require all static assets
-  "static" ~> do
-    need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
+    -- Require all static assets
+    "static" ~> do
+      need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
 
-  -- Rule for handling static assets, just copy them from source to dest
-  ("dist" </>) <$> staticFilePatterns |%> \out ->
-    copyFileChanged (destToSrc out) out
+    -- Rule for handling static assets, just copy them from source to dest
+    ("dist" </>) <$> staticFilePatterns |%> \out ->
+      copyFileChanged (destToSrc out) out
 
-  -- Find and require every post to be built
-  "posts" ~> do
-    need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
+    -- Find and require every post to be built
+    "posts" ~> do
+      need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
 
-  -- build the main table of contents
-  "dist/index.html" %> \out -> do
-    posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
-    let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
-    writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
+    -- build the main table of contents
+    "dist/index.html" %> \out -> do
+      posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
+      let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
+      writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
 
-  -- rule for actually building posts
-  "dist/*.html" %> \out -> do
-    post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-    writeFile' out =<< renderTemplate "site/templates/post.html" post
+    -- rule for actually building posts
+    "dist/*.html" %> \out -> do
+      post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
+      writeFile' out =<< renderTemplate "site/templates/post.html" post
 
   where
     -- | Read and parse a Markdown post

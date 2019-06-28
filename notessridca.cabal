@@ -29,6 +29,7 @@ executable notessridca
     , base >=4.7 && <5
     , binary
     , bytestring
+    , cmdargs
     , containers
     , lens
     , lens-aeson
