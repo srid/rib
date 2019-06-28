@@ -18,13 +18,13 @@ My public notes. Kind of a blog and wiki.
 ## Running
 
 ```bash
-nix-build
-./result/bin/notessridca site
+nix-build -A ghc.notessridca
+./result/bin/notessridca
 nix-shell -p nodePackages.serve --run 'serve dist'
 ```
 
 Using ghcid:
 
 ```bash
-nix-shell --run "hpack; ghcid"
+nix-shell -A shells.ghc --run "hpack; ghcid"
 ```

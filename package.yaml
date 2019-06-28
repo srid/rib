@@ -41,3 +41,4 @@ executables:
     - slick
     - text
     - time
+    - reflex-dom-core
