@@ -8,11 +8,16 @@
 -- TODo: What if I make this literate haskell thus blog post?
 module Main where
 
+import Prelude hiding (init, last)
+
 import Control.Lens
+import Control.Monad (guard, when)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens
 import Data.List (partition)
+import Data.List (isSuffixOf)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
@@ -20,10 +25,11 @@ import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
+import Safe (initMay, lastMay)
 
-import Network.Wai.Application.Static (staticApp, defaultFileServerSettings, ssLookupFile)
-import WaiAppStatic.Types (LookupResult(..), fromPiece, unsafeToPiece, Pieces)
+import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
+import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
 -- import Network.Wai.Parse
 -- import Network.Wai.Middleware.CleanPath (cleanPath)
 import System.Console.CmdArgs
@@ -39,7 +45,10 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 -- 1. Serve the generated static files, while automatically re-generating them
 -- when the source files change.
 data App
-  = Serve {port :: Int}
+  = Serve
+    { port :: Int
+    , watch :: Bool
+    }
   | Generate
   deriving (Data,Typeable,Show,Eq)
 
@@ -47,35 +56,47 @@ cli :: App
 cli = modes
   [ Serve
       { port = 8080 &= help "Port to bind to"
+      , watch = False &= help "Watch for file changes and regenerate"
       } &= help "Serve the generated site"
         &= auto  -- | Serve is the default command.
   , Generate
       &= help "Generate the site"
   ]
 
+-- | WAI Settings suited for serving statically generated websites.
+staticSiteServerSettings :: FilePath -> StaticSettings
+staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtmlExt }
+  where
+    settings = defaultFileServerSettings root
+
+    -- | Like upstream's `ssLookupFile` but ignores the ".html" suffix in the
+    -- URL when looking up the corresponding file in the filesystem.
+    --
+    -- This allows "clean urls" so to speak.
+    lookupFileForgivingHtmlExt :: Pieces -> IO LookupResult
+    lookupFileForgivingHtmlExt pieces = ssLookupFile settings pieces >>= \case
+      LRNotFound -> ssLookupFile settings (addHtmlExt pieces)
+      x -> pure x
+
+    -- | Add the ".html" suffix to the URL unless it already exists
+    addHtmlExt :: Pieces -> Pieces
+    addHtmlExt xs = fromMaybe xs $ do
+      init <- fmap fromPiece <$> initMay xs
+      last <- fromPiece <$> lastMay xs
+      guard $ not $ ".html" `isSuffixOf` T.unpack last
+      pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
+
 
 main :: IO ()
-main = cmdArgs cli >>= \case
-  Serve p -> do
-    -- ugly ass code to handle "/foo" serving /foo.html
-    let s = defaultFileServerSettings "dist"
-        s' = s { ssLookupFile = newLookup }
-        fixPs :: Pieces -> Pieces
-        fixPs = \case
-          [] -> []
-          xl:[] -> [unsafeToPiece $ fromPiece xl <> ".html"]
-          x:xs -> x : fixPs xs
-        newLookup :: Pieces -> IO LookupResult
-        newLookup ps = do
-          v :: LookupResult <- ssLookupFile s ps
-          case v of
-            LRNotFound -> do
-              v' :: LookupResult <- ssLookupFile s (fixPs ps)
-              case v' of
-                x@(LRFile _) -> pure x
-                _ -> pure LRNotFound
-            x -> pure x
-    Warp.run p $ staticApp s'
+main = runApp =<< cmdArgs cli
+
+runApp :: App -> IO ()
+runApp = \case
+  Serve p w -> do
+    when w $ -- TODO: actually watch
+      runApp Generate
+    putStrLn $ "Serving at " <> show p
+    Warp.run p $ staticApp $ staticSiteServerSettings "dist"
   Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost

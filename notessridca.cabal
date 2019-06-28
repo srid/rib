@@ -37,6 +37,7 @@ executable notessridca
     , mustache
     , pandoc
     , reflex-dom-core
+    , safe
     , shake
     , slick
     , text
