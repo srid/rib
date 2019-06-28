@@ -2,6 +2,19 @@
 
 My public notes. Kind of a blog and wiki.
 
+## Local server when editing content
+
+```bash
+nix-build -A ghc.notessridca
+./result/bin/notessridca serve --watch
+```
+
+## Hacking on Main.hs
+
+```bash
+nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp (Main.Serve 8080 True)'"
+```
+
 ## TODO
 
 - Reflex based
@@ -14,24 +27,10 @@ My public notes. Kind of a blog and wiki.
 - Literate haskell
   - Include rendered Main.lhs as a post in notes.srid.ca
 
-## Article Ideas
+### Article Ideas
 
 - Github CI for OSS haskell projects
 - Lens and friends
 - mtl
 - string types
 - personal nix cache
-
-## Running
-
-```bash
-nix-build -A ghc.notessridca
-./result/bin/notessridca generate
-./result/bin/notessridca serve
-```
-
-Running server with iterative compilation:
-
-```bash
-nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp (Main.Serve 8080 True)'"
-```
