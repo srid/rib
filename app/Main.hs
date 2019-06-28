@@ -21,7 +21,8 @@ import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 
-import Network.Wai.Application.Static (staticApp, defaultFileServerSettings)
+import Network.Wai.Application.Static (staticApp, defaultFileServerSettings, ssLookupFile)
+import WaiAppStatic.Types (LookupResult(..), fromPiece, unsafeToPiece, Pieces)
 import qualified Network.Wai.Handler.Warp as Warp
 -- import Network.Wai.Parse
 -- import Network.Wai.Middleware.CleanPath (cleanPath)
@@ -55,8 +56,26 @@ cli = modes
 
 main :: IO ()
 main = cmdArgs cli >>= \case
-  Serve p ->
-    Warp.run p $ staticApp $ defaultFileServerSettings "dist"
+  Serve p -> do
+    -- ugly ass code to handle "/foo" serving /foo.html
+    let s = defaultFileServerSettings "dist"
+        s' = s { ssLookupFile = newLookup }
+        fixPs :: Pieces -> Pieces
+        fixPs = \case
+          [] -> []
+          xl:[] -> [unsafeToPiece $ fromPiece xl <> ".html"]
+          x:xs -> x : fixPs xs
+        newLookup :: Pieces -> IO LookupResult
+        newLookup ps = do
+          v :: LookupResult <- ssLookupFile s ps
+          case v of
+            LRNotFound -> do
+              v' :: LookupResult <- ssLookupFile s (fixPs ps)
+              case v' of
+                x@(LRFile _) -> pure x
+                _ -> pure LRNotFound
+            x -> pure x
+    Warp.run p $ staticApp s'
   Generate -> shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- TODO: Understand how this works. The caching from Slick.
     getPostCached <- jsonCache' getPost
