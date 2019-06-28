@@ -4,8 +4,12 @@ My public notes. Kind of a blog and wiki.
 
 ## TODO
 
-- Write default.nix that automates everything (including autoreload)
-  - Or revamp this whole thing, using Reflex.
+- Reflex based
+  - What I'd like to do *first*: write a server that serves static files which
+    gets auto-generated on file change. Basically combine `warp` with `fsnotify`.
+    - [ ] Use `warp` to serve the current dist directory.
+    - [ ] Add `fsnotify` to re-run Shake on file modificaiton (warp server
+          should serve the new files automatically)
 
 ## Article Ideas
 
