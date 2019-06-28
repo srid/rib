@@ -12,34 +12,32 @@ import Prelude hiding (init, last)
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Lens
-import Control.Monad (forever, guard, void)
+import Control.Lens (at, (?~))
+import Control.Monad (forever, guard, void, when)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
-import Data.Aeson.Lens
+import Data.Aeson.Lens (_Object)
 import Data.List (isSuffixOf, partition)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import System.Environment (withArgs)
 
+import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
+import qualified Network.Wai.Handler.Warp as Warp
+import Safe (initMay, lastMay)
+import System.Console.CmdArgs (Data, Typeable, auto, cmdArgs, help, modes, (&=))
+import System.FSNotify (watchTree, withManager)
+import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
+
 import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
                           shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-import Safe (initMay, lastMay)
-
-import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
-import qualified Network.Wai.Handler.Warp as Warp
-import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
--- import Network.Wai.Parse
--- import Network.Wai.Middleware.CleanPath (cleanPath)
-import System.Console.CmdArgs
-import System.FSNotify
+import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
 -- import Reflex.Dom.Core hiding (def)
 
-import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
 -- | The program will run in either of two modes
 --
@@ -49,7 +47,7 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 -- when the source files change.
 data App
   = Watch
-  | Serve { port :: Int , watch :: Bool}
+  | Serve { port :: Int, watch :: Bool }
   | Generate
   deriving (Data,Typeable,Show,Eq)
 
@@ -61,9 +59,9 @@ cli = modes
       { port = 8080 &= help "Port to bind to"
       , watch = False &= help "Watch in addition to serving generated files"
       } &= help "Serve the generated site"
-        &= auto  -- | Serve is the default command.
   , Generate
       &= help "Generate the site"
+      &= auto  -- | Generate is the default command.
   ]
 
 -- | WAI Settings suited for serving statically generated websites.
@@ -101,10 +99,10 @@ runApp = \case
     -- And then every time a file changes under the ./site directory.
     void $ watchTree mgr "site" (const True) $ const $ runApp Generate
     -- Wait forever, effectively.
-    forever $ threadDelay 1000000
+    forever $ threadDelay maxBound
 
-  Serve p _w -> concurrently_
-    (runApp Watch)
+  Serve p w -> concurrently_
+    (when w $ runApp Watch)
     (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
 
   Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
