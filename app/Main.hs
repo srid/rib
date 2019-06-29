@@ -14,17 +14,16 @@ import Prelude hiding (div, init, last, (**))
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Lens (at, (?~))
 import Control.Monad (forM_, forever, guard, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
-import Data.Aeson.Lens (_Object)
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
 import Data.List (isSuffixOf, partition)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
@@ -42,7 +41,7 @@ import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChan
                           (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-import Slick (convert, jsonCache', markdownToHTML)
+import Slick (jsonCache')
 
 -- | HTML & CSS imports
 import Clay (Css, article, block, body, center, code, color, darkviolet, display, div, fontFamily, footer, h1,
@@ -50,7 +49,8 @@ import Clay (Css, article, block, body, center, code, color, darkviolet, display
              textAlign, width, ( # ), (**), (?))
 import qualified Clay
 import Reflex.Dom.Core hiding (Link, Space, def, display)
-import Text.Pandoc
+import Text.Pandoc hiding (trace)
+import Text.Pandoc.UTF8 (fromStringLazy)
 
 
 data App
@@ -127,6 +127,7 @@ runApp = \case
           , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
           }
     shakeArgs opts $ do
+      -- TODO: Write my own jsonCache and stop depending on `Slick`
       getPostCached <- jsonCache' getPost
 
       want ["site"]
@@ -169,18 +170,11 @@ runApp = \case
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
     getPost (PostFilePath postPath) = do
-      -- TODO: revamp Post type and remove complexity
-      -- | Given a post source-file's file path as a cache key, load the Post object
-      -- for it. This is used with 'jsonCache' to provide post caching.
       let srcPath = destToSrc postPath -<.> "md"
-      m <- T.pack <$> readFile' srcPath
-      postData <- markdownToHTML m
-      let pm = either (error . show) id $ runPure $ readMarkdown markdownOptions m
-      let postURL = T.pack $ srcToURL postPath
-          withURL = _Object . at "url" ?~ Aeson.String postURL
-          withMdContent = _Object . at "pandocDoc" ?~ Aeson.toJSON pm
-          withSrc = _Object . at "srcPath" ?~ Aeson.String (T.pack srcPath)
-      convert $ withSrc $ withURL $ withMdContent postData
+      content <- T.pack <$> readFile' srcPath
+      let doc = either (error . show) id $ runPure $ readMarkdown markdownOptions content
+          postURL = T.pack $ srcToURL postPath
+      pure $ Post doc postURL
 
 -- | Represents a HTML page that will be generated
 data Page
@@ -189,15 +183,11 @@ data Page
   deriving (Generic, Show, FromJSON, ToJSON)
 
 -- | A JSON serializable representation of a post's metadata
--- TODO: Use Text instead of String
 data Post = Post
-  { title :: String
-  , description :: String
-  , category :: Maybe PostCategory
-  , content :: String
-  , pandocDoc :: Pandoc
-  , url :: String
-  } deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
+  { _post_doc :: Pandoc
+  , _post_url :: Text
+  }
+  deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
 
 data PostCategory
   = Programming
@@ -217,13 +207,13 @@ newtype PostFilePath = PostFilePath FilePath
 pageHTML :: DomBuilder t m => Page -> m ()
 pageHTML page = do
   let pageTitle = case page of
-        Page_Index _ -> "Srid's notes"
-        Page_Post post -> T.pack $ title post
+        Page_Index _ -> text "Srid's notes"
+        Page_Post post -> postTitleHTML post
   el "head" $ do
     elMeta "description" "Sridhar's notes"
     elMeta "author" "Sridhar Ratnakumar"
     elMeta "viewport" "width=device-width, initial-scale=1"
-    el "title" $ text pageTitle
+    el "title" pageTitle
     elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ render siteStyle
     elAttr "link" ("rel" =: "stylesheet" <> "href" =: semUiCdn) blank
   el "body" $ do
@@ -232,10 +222,10 @@ pageHTML page = do
       divClass "ui raised segment" $ do
         elAttr "a" ("class" =: "ui violet ribbon label" <> "href" =: "/") $ text "Srid's notes"
 
-        elClass "h1" "ui huge header" $ text pageTitle
+        elClass "h1" "ui huge header" pageTitle
         case page of
           Page_Index posts -> do
-            let (progPosts, otherPosts) = partition ((== Just Programming) . category) posts
+            let (progPosts, otherPosts) = partition ((== Just Programming) . getPostCategory) posts
             elClass "h2" "ui header" $ text "Haskell & Nix notes"
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
@@ -243,13 +233,32 @@ pageHTML page = do
           Page_Post post ->
             elClass "article" "post" $
               -- TODO: code syntax highlighting
-              pandocHTML $ pandocDoc post
+              pandocHTML $ _post_doc post
 
         elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
     el "br" blank
     el "br" blank
     mapM_ elLinkGoogleFont ["Open+Sans","Comfortaa", "Roboto+Mono"]
   where
+    postTitleHTML :: DomBuilder t m => Post -> m ()
+    postTitleHTML post =
+      let (Pandoc meta _) = _post_doc post
+      in case Map.lookup "title" (unMeta meta) of
+        Just (MetaInlines inlines) -> pandocHTML $ Pandoc meta [Plain inlines]
+        _ -> blank
+    postDescriptionHTML :: DomBuilder t m => Post -> m ()
+    postDescriptionHTML post =
+      let (Pandoc meta _) = _post_doc post
+      in case Map.lookup "description" (unMeta meta) of
+        Just (MetaInlines inlines) -> pandocHTML $ Pandoc meta [Plain inlines]
+        _ -> blank
+    getPostCategory :: Post -> Maybe PostCategory
+    getPostCategory post =
+      let (Pandoc meta _) = _post_doc post
+      in case Map.lookup "category" (unMeta meta) of
+        -- HACK: wraping in quotes to make valid json.
+        Just (MetaInlines [Str v]) -> Aeson.decode $ fromStringLazy $ "\"" <> v <> "\""
+        _ -> Nothing
     semUiCdn = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     elLinkGoogleFont name =
       elAttr "link" ("href" =: fontUrl <> "rel" =: "stylesheet" <> "type" =: "text/css") blank
@@ -258,8 +267,8 @@ pageHTML page = do
     elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
     postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p -> do
       divClass "item" $ do
-        elAttr "a" ("class" =: "header" <> "href" =: T.pack (url p)) $ text $ T.pack $ title p
-        el "small" $ text $ T.pack $ description p
+        elAttr "a" ("class" =: "header" <> "href" =: _post_url p) $ postTitleHTML p
+        el "small" $ postDescriptionHTML p
 
 
 -- | Convert a Reflex DOM widget into HTML
