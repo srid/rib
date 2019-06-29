@@ -160,9 +160,9 @@ runApp = \case
       -- | Given a post source-file's file path as a cache key, load the Post object
       -- for it. This is used with 'jsonCache' to provide post caching.
       let srcPath = destToSrc postPath -<.> "md"
-      m <- fmap T.pack $ readFile' srcPath
+      m <- T.pack <$> readFile' srcPath
       postData <- markdownToHTML m
-      let pm = either (error . show) id $ runPure $ readMarkdown def m
+      let pm = either (error . show) id $ runPure $ readMarkdown markdownOptions m
       let postURL = T.pack $ srcToURL postPath
           withURL = _Object . at "url" ?~ Aeson.String postURL
           withMdContent = _Object . at "pandocDoc" ?~ Aeson.toJSON pm
@@ -205,6 +205,19 @@ renderHTML = fmap snd . renderStatic
 siteStyle :: Css
 siteStyle = body ? do
   background white
+
+-- | Reasonable options for reading a markdown file
+markdownOptions :: ReaderOptions
+markdownOptions = def { readerExtensions = exts }
+ where
+  exts = mconcat
+    [ extensionsFromList
+      [ Ext_yaml_metadata_block
+      , Ext_fenced_code_attributes
+      , Ext_auto_identifiers
+      ]
+    , githubMarkdownExtensions
+    ]
 
 -- | Represents the template dependencies of the index page
 -- TODO: Represent category of posts generically. dependent-map?
