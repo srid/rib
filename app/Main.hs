@@ -20,6 +20,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens (_Object)
+import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
 import Data.List (isSuffixOf, partition)
 import qualified Data.Map as Map
@@ -35,8 +36,9 @@ import System.Console.CmdArgs (Data, Typeable, auto, cmdArgs, help, modes, (&=))
 import System.FSNotify (watchTree, withManager)
 import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
 
-import Development.Shake (Action, Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile',
-                          shakeArgs, shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
+import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need,
+                          readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, writeFile',
+                          (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (convert, jsonCache', markdownToHTML)
@@ -50,7 +52,7 @@ import Text.Pandoc
 data App
   = Watch
   | Serve { port :: Int, watch :: Bool }
-  | Generate
+  | Generate { force :: Bool }
   deriving (Data,Typeable,Show,Eq)
 
 cli :: App
@@ -62,8 +64,9 @@ cli = modes
       , watch = False &= help "Watch in addition to serving generated files"
       } &= help "Serve the generated site"
   , Generate
-      &= help "Generate the site"
-      &= auto  -- | Generate is the default command.
+      { force = False &= help "Force generation of all files"
+      } &= help "Generate the site"
+        &= auto  -- | Generate is the default command.
   ]
 
 -- | WAI Settings suited for serving statically generated websites.
@@ -101,10 +104,10 @@ main = runApp =<< cmdArgs cli
 runApp :: App -> IO ()
 runApp = \case
   Watch -> withManager $ \mgr -> do
-    -- Generate once
-    runApp Generate
+    -- Begin with a *full* generation as the HTML layout may have been changed.
+    runApp $ Generate True
     -- And then every time a file changes under the content directory.
-    void $ watchTree mgr contentDir (const True) $ const $ runApp Generate
+    void $ watchTree mgr contentDir (const True) $ const $ runApp $ Generate False
     -- Wait forever, effectively.
     (_,bs) <- renderStatic $ do
       el "p" $ text "hello world"
@@ -115,47 +118,51 @@ runApp = \case
     (when w $ runApp Watch)
     (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings destDir))
 
-  Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
+  Generate forceGen -> withArgs [] $ do
     -- ^ The withArgs above is to ensure that our own app arguments is not
     -- confusing Shake.
+    let opts = shakeOptions
+          { shakeVerbosity = Chatty
+          , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
+          }
+    shakeArgs opts $ do
+      -- TODO: Understand how this works. The caching from Slick.
+      getPostCached <- jsonCache' getPost
 
-    -- TODO: Understand how this works. The caching from Slick.
-    getPostCached <- jsonCache' getPost
+      want ["site"]
 
-    want ["site"]
+      -- Require all the things we need to build the whole site
+      "site" ~>
+        need ["static", "posts", destDir </> "index.html"]
 
-    -- Require all the things we need to build the whole site
-    "site" ~>
-      need ["static", "posts", destDir </> "index.html"]
+      let staticFilePatterns = ["css//*", "js//*", "images//*"]
+          -- ^ Which files are considered to be static files.
+          postFilePatterns = ["*.md"]
+          -- ^ Which files are considered to be post files
 
-    let staticFilePatterns = ["css//*", "js//*", "images//*"]
-        -- ^ Which files are considered to be static files.
-        postFilePatterns = ["*.md"]
-        -- ^ Which files are considered to be post files
+      -- Require all static assets
+      "static" ~> do
+        need . fmap (destDir </>) =<< getDirectoryFiles contentDir staticFilePatterns
 
-    -- Require all static assets
-    "static" ~> do
-      need . fmap (destDir </>) =<< getDirectoryFiles contentDir staticFilePatterns
+      -- Rule for handling static assets, just copy them from source to dest
+      (destDir </>) <$> staticFilePatterns |%> \out ->
+        copyFileChanged (destToSrc out) out
 
-    -- Rule for handling static assets, just copy them from source to dest
-    (destDir </>) <$> staticFilePatterns |%> \out ->
-      copyFileChanged (destToSrc out) out
+      -- Find and require every post to be built
+      "posts" ~> do
+        need . fmap ((destDir </>) . (-<.> "html")) =<< getDirectoryFiles contentDir postFilePatterns
 
-    -- Find and require every post to be built
-    "posts" ~> do
-      need . fmap ((destDir </>) . (-<.> "html")) =<< getDirectoryFiles contentDir postFilePatterns
+      -- build the main table of contents
+      (destDir </> "index.html") %> \out -> do
+        posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) =<< getDirectoryFiles contentDir postFilePatterns
+        html <- liftIO $ renderHTML $ pageHTML $ Page_Index posts
+        writeFile' out $ BS8.unpack html
 
-    -- build the main table of contents
-    (destDir </> "index.html") %> \out -> do
-      posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) =<< getDirectoryFiles contentDir postFilePatterns
-      html <- liftIO $ renderHTML $ pageHTML $ Page_Index posts
-      writeFile' out $ BS8.unpack html
-
-    -- rule for actually building posts
-    (destDir </> "*.html") %> \out -> do
-      post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
-      html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
-      writeFile' out $ BS8.unpack html
+      -- rule for actually building posts
+      (destDir </> "*.html") %> \out -> do
+        post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
+        html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
+        writeFile' out $ BS8.unpack html
 
   where
     -- | Read and parse a Markdown post
