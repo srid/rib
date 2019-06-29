@@ -37,6 +37,7 @@ executable notessridca
     , lens-aeson
     , mustache
     , pandoc
+    , pandoc-types
     , reflex-dom-core
     , safe
     , shake

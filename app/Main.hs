@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -34,8 +34,8 @@ import System.Console.CmdArgs (Data, Typeable, auto, cmdArgs, help, modes, (&=))
 import System.FSNotify (watchTree, withManager)
 import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
 
-import Development.Shake (Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile', shakeArgs,
-                          shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
+import Development.Shake (Action, Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need, readFile',
+                          shakeArgs, shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
@@ -43,6 +43,7 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 -- | HTML & CSS imports
 import Clay (Css, background, body, white, (?))
 import Reflex.Dom.Core hiding (def)
+import Text.Pandoc
 
 
 data App
@@ -106,6 +107,7 @@ runApp = \case
 
   Serve p w -> concurrently_
     (when w $ runApp Watch)
+    -- FIXME: don't use "dist" as it is shared by cabal.
     (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
 
   Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
@@ -143,7 +145,7 @@ runApp = \case
       posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
       let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
       -- NOTE: compileTemplate' does a `need` on the template file.
-      writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
+      writeFile' out =<< renderTemplate'' "site/templates/index.html" indexInfo
 
     -- rule for actually building posts
     "dist/*.html" %> \out -> do
@@ -153,19 +155,23 @@ runApp = \case
 
   where
     -- | Read and parse a Markdown post
+    getPost :: PostFilePath -> Action Post
     getPost (PostFilePath postPath) = do
       -- | Given a post source-file's file path as a cache key, load the Post object
       -- for it. This is used with 'jsonCache' to provide post caching.
       let srcPath = destToSrc postPath -<.> "md"
-      postData <- markdownToHTML . T.pack =<< readFile' srcPath
+      m <- fmap T.pack $ readFile' srcPath
+      postData <- markdownToHTML m
+      let pm = either (error . show) id $ runPure $ readMarkdown def m
       let postURL = T.pack $ srcToURL postPath
           withURL = _Object . at "url" ?~ Aeson.String postURL
+          withMdContent = _Object . at "pandocDoc" ?~ Aeson.toJSON pm
           withSrc = _Object . at "srcPath" ?~ Aeson.String (T.pack srcPath)
-      convert $ withSrc $ withURL postData
+      convert $ withSrc $ withURL $ withMdContent postData
 
     -- | Render a mustache template with the given object
     -- TODO: Use reflex static renderer instead of mustache's compileTemplate'
-    renderTemplate t o = do
+    renderTemplate'' t o = do
       template <- compileTemplate' t
       pure $ T.unpack $ substitute template $ Aeson.toJSON o
 
@@ -188,8 +194,10 @@ pageHTML page = do
         el "tt" $ text $ T.pack $ show posts
       Page_Post post -> do
         el "h2" $ text "Single post"
-        -- TODO: Switch from pandoc to mmark so I can render straight using Reflex.
-        el "tt" $ text $ T.pack $ content post
+        -- TODO: Render Pandoc document straight to reflex
+        -- https://hackage.haskell.org/package/pandoc-types-1.19/docs/Text-Pandoc-Definition.html#t:Block
+        -- Is the pandoc `Walk` class of any use here?
+        el "tt" $ text $ T.pack $ show $ pandocDoc post
 
 renderHTML :: StaticWidget x a -> IO BS8.ByteString
 renderHTML = fmap snd . renderStatic
@@ -223,6 +231,7 @@ data Post = Post
   , description :: String
   , category :: Maybe PostCategory
   , content :: String
+  , pandocDoc :: Pandoc
   , url :: String
   } deriving (Generic, Eq, Ord, Show)
 
