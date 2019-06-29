@@ -90,7 +90,7 @@ staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtm
       pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
 
 destDir :: FilePath
-destDir = "dist"
+destDir = "generated"
 
 contentDir :: FilePath
 contentDir = "site"
@@ -146,14 +146,14 @@ runApp = \case
       need . fmap ((destDir </>) . (-<.> "html")) =<< getDirectoryFiles contentDir postFilePatterns
 
     -- build the main table of contents
-    (destDir <> "index.html") %> \out -> do
+    (destDir </> "index.html") %> \out -> do
       posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) =<< getDirectoryFiles contentDir postFilePatterns
       let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
       -- NOTE: compileTemplate' does a `need` on the template file.
-      writeFile' out =<< renderTemplate'' (contentDir <> "templates/index.html") indexInfo
+      writeFile' out =<< renderTemplate'' (contentDir </> "templates/index.html") indexInfo
 
     -- rule for actually building posts
-    (destDir <> "*.html") %> \out -> do
+    (destDir </> "*.html") %> \out -> do
       post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
       html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
       writeFile' out $ BS8.unpack html
