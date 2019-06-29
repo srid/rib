@@ -19,8 +19,6 @@ source-repository head
 
 executable notessridca
   main-is: Main.hs
-  other-modules:
-      Paths_notesridca
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
@@ -30,6 +28,7 @@ executable notessridca
     , base >=4.7 && <5
     , binary
     , bytestring
+    , clay
     , cmdargs
     , containers
     , fsnotify

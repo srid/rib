@@ -1,6 +1,8 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,9 +16,11 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Lens (at, (?~))
 import Control.Monad (forever, guard, void, when)
+import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens (_Object)
+import qualified Data.ByteString.Char8 as BS8
 import Data.List (isSuffixOf, partition)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
@@ -36,15 +40,11 @@ import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
--- import Reflex.Dom.Core hiding (def)
+-- | HTML & CSS imports
+import Clay (Css, background, body, white, (?))
+import Reflex.Dom.Core hiding (def)
 
 
--- | The program will run in either of two modes
---
--- 1. Generate static files and exit immediately.
---
--- 1. Serve the generated static files, while automatically re-generating them
--- when the source files change.
 data App
   = Watch
   | Serve { port :: Int, watch :: Bool }
@@ -99,6 +99,9 @@ runApp = \case
     -- And then every time a file changes under the ./site directory.
     void $ watchTree mgr "site" (const True) $ const $ runApp Generate
     -- Wait forever, effectively.
+    (_,bs) <- renderStatic $ do
+      el "p" $ text "hello world"
+    BS8.putStrLn bs
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
@@ -139,12 +142,14 @@ runApp = \case
     "dist/index.html" %> \out -> do
       posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
       let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
+      -- NOTE: compileTemplate' does a `need` on the template file.
       writeFile' out =<< renderTemplate "site/templates/index.html" indexInfo
 
     -- rule for actually building posts
     "dist/*.html" %> \out -> do
       post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-      writeFile' out =<< renderTemplate "site/templates/post.html" post
+      html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
+      writeFile' out $ BS8.unpack html
 
   where
     -- | Read and parse a Markdown post
@@ -163,6 +168,35 @@ runApp = \case
     renderTemplate t o = do
       template <- compileTemplate' t
       pure $ T.unpack $ substitute template $ Aeson.toJSON o
+
+-- | Represents a HTML page that will be generated
+data Page
+  = Page_Index [Post]
+  | Page_Post Post
+  deriving (Generic, Show, FromJSON, ToJSON)
+
+-- TODO: Tell Shake to regenerate when this function changes. How??
+pageHTML :: DomBuilder t m => Page -> m ()
+pageHTML page = do
+  el "head" $ do
+    el "title" $ text "TODO"
+  el "body" $ do
+    el "h1" $ text "This is page title"
+    case page of
+      Page_Index posts -> do
+        el "h2" $ text "Index of posts"
+        el "tt" $ text $ T.pack $ show posts
+      Page_Post post -> do
+        el "h2" $ text "Single post"
+        -- TODO: Switch from pandoc to mmark so I can render straight using Reflex.
+        el "tt" $ text $ T.pack $ content post
+
+renderHTML :: StaticWidget x a -> IO BS8.ByteString
+renderHTML = fmap snd . renderStatic
+
+siteStyle :: Css
+siteStyle = body ? do
+  background white
 
 -- | Represents the template dependencies of the index page
 -- TODO: Represent category of posts generically. dependent-map?
@@ -199,7 +233,7 @@ instance ToJSON Post
 -- A simple wrapper data-type which implements 'ShakeValue';
 -- Used as a Shake Cache key to build a cache of post objects.
 newtype PostFilePath = PostFilePath FilePath
-  deriving (Show, Eq, Hashable, Binary, NFData)
+  deriving (Show, Eq, Hashable, Binary, NFData, Generic)
 
 -- | convert 'build' filepaths into source file filepaths
 destToSrc :: FilePath -> FilePath
