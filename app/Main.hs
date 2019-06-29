@@ -89,6 +89,11 @@ staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtm
       guard $ not $ ".html" `isSuffixOf` T.unpack last
       pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
 
+destDir :: FilePath
+destDir = "dist"
+
+contentDir :: FilePath
+contentDir = "site"
 
 main :: IO ()
 main = runApp =<< cmdArgs cli
@@ -98,8 +103,8 @@ runApp = \case
   Watch -> withManager $ \mgr -> do
     -- Generate once
     runApp Generate
-    -- And then every time a file changes under the ./site directory.
-    void $ watchTree mgr "site" (const True) $ const $ runApp Generate
+    -- And then every time a file changes under the content directory.
+    void $ watchTree mgr contentDir (const True) $ const $ runApp Generate
     -- Wait forever, effectively.
     (_,bs) <- renderStatic $ do
       el "p" $ text "hello world"
@@ -108,8 +113,7 @@ runApp = \case
 
   Serve p w -> concurrently_
     (when w $ runApp Watch)
-    -- FIXME: don't use "dist" as it is shared by cabal.
-    (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings "dist"))
+    (putStrLn ("Serving at " <> show p) >> Warp.run p (staticApp $ staticSiteServerSettings destDir))
 
   Generate -> withArgs [] $ shakeArgs shakeOptions {shakeVerbosity = Chatty} $ do
     -- ^ The withArgs above is to ensure that our own app arguments is not
@@ -122,7 +126,7 @@ runApp = \case
 
     -- Require all the things we need to build the whole site
     "site" ~>
-      need ["static", "posts", "dist/index.html"]
+      need ["static", "posts", destDir </> "index.html"]
 
     let staticFilePatterns = ["css//*", "js//*", "images//*"]
         -- ^ Which files are considered to be static files.
@@ -131,25 +135,25 @@ runApp = \case
 
     -- Require all static assets
     "static" ~> do
-      need . fmap ("dist" </>) =<< getDirectoryFiles "site" staticFilePatterns
+      need . fmap (destDir </>) =<< getDirectoryFiles contentDir staticFilePatterns
 
     -- Rule for handling static assets, just copy them from source to dest
-    ("dist" </>) <$> staticFilePatterns |%> \out ->
+    (destDir </>) <$> staticFilePatterns |%> \out ->
       copyFileChanged (destToSrc out) out
 
     -- Find and require every post to be built
     "posts" ~> do
-      need . fmap (("dist" </>) . (-<.> "html")) =<< getDirectoryFiles "site" postFilePatterns
+      need . fmap ((destDir </>) . (-<.> "html")) =<< getDirectoryFiles contentDir postFilePatterns
 
     -- build the main table of contents
-    "dist/index.html" %> \out -> do
-      posts <- traverse (getPostCached . PostFilePath . ("site" </>)) =<< getDirectoryFiles "site" postFilePatterns
+    (destDir <> "index.html") %> \out -> do
+      posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) =<< getDirectoryFiles contentDir postFilePatterns
       let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
       -- NOTE: compileTemplate' does a `need` on the template file.
-      writeFile' out =<< renderTemplate'' "site/templates/index.html" indexInfo
+      writeFile' out =<< renderTemplate'' (contentDir <> "templates/index.html") indexInfo
 
     -- rule for actually building posts
-    "dist/*.html" %> \out -> do
+    (destDir <> "*.html") %> \out -> do
       post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
       html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
       writeFile' out $ BS8.unpack html
@@ -228,11 +232,11 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       Div attr xs -> elPandocAttr "div" attr $
         renderBlocks xs
       Null -> blank
-    renderAttr (identifier, classes, attrs) =
-       ( "id" =: T.pack identifier
-      <> "class" =: T.pack (unwords classes)
-       ) <> (Map.fromList $ fmap (\(x,y) -> (T.pack x, T.pack y)) attrs)
     elPandocAttr name = elAttr name . renderAttr
+    renderAttr (identifier, classes, attrs) =
+         "id" =: T.pack identifier
+      <> "class" =: T.pack (unwords classes)
+      <> Map.fromList ((\(x,y) -> (T.pack x, T.pack y)) <$> attrs)
     headerElement level = case level of
       1 -> "h1"
       2 -> "h2"
