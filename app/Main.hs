@@ -39,7 +39,7 @@ import Development.Shake (Action, Verbosity (Chatty), copyFileChanged, getDirect
                           shakeArgs, shakeOptions, shakeVerbosity, want, writeFile', (%>), (|%>), (~>))
 import Development.Shake.Classes (Binary, Hashable, NFData)
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
+import Slick (convert, jsonCache', markdownToHTML)
 
 -- | HTML & CSS imports
 import Clay (Css, background, body, white, (?))
@@ -148,9 +148,8 @@ runApp = \case
     -- build the main table of contents
     (destDir </> "index.html") %> \out -> do
       posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) =<< getDirectoryFiles contentDir postFilePatterns
-      let indexInfo = uncurry IndexInfo $ partition ((== Just Programming) . category) posts
-      -- NOTE: compileTemplate' does a `need` on the template file.
-      writeFile' out =<< renderTemplate'' (contentDir </> "templates/index.html") indexInfo
+      html <- liftIO $ renderHTML $ pageHTML $ Page_Index posts
+      writeFile' out $ BS8.unpack html
 
     -- rule for actually building posts
     (destDir </> "*.html") %> \out -> do
@@ -174,12 +173,6 @@ runApp = \case
           withSrc = _Object . at "srcPath" ?~ Aeson.String (T.pack srcPath)
       convert $ withSrc $ withURL $ withMdContent postData
 
-    -- | Render a mustache template with the given object
-    -- TODO: Use reflex static renderer instead of mustache's compileTemplate'
-    renderTemplate'' t o = do
-      template <- compileTemplate' t
-      pure $ T.unpack $ substitute template $ Aeson.toJSON o
-
 -- | Represents a HTML page that will be generated
 data Page
   = Page_Index [Post]
@@ -195,14 +188,19 @@ pageHTML page = do
     el "h1" $ text "This is page title"
     case page of
       Page_Index posts -> do
-        el "h2" $ text "Index of posts"
-        el "tt" $ text $ T.pack $ show posts
+        let (progPosts, otherPosts) = partition ((== Just Programming) . category) posts
+        el "h2" $ text "Haskell & Nix notes"
+        postList progPosts
+        el "h2" $ text "Other notes"
+        postList otherPosts
       Page_Post post -> do
-        el "h2" $ text "Single post"
-        -- TODO: Render Pandoc document straight to reflex
-        -- https://hackage.haskell.org/package/pandoc-types-1.19/docs/Text-Pandoc-Definition.html#t:Block
-        -- Is the pandoc `Walk` class of any use here?
+        el "h2" $ text $ T.pack $ title post
         pandocHTML $ pandocDoc post
+  where
+    postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p -> do
+      divClass "item" $
+        elAttr "a" ("class" =: "header" <> "href" =: T.pack (url p)) $ text $ T.pack $ title p
+
 
 pandocHTML :: DomBuilder t m => Pandoc -> m ()
 pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
