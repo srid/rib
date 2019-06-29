@@ -48,7 +48,7 @@ import Slick (convert, jsonCache', markdownToHTML)
 import Clay (Css, article, block, body, center, code, color, darkviolet, display, div, fontFamily, footer, h1,
              h2, h3, h4, h5, h6, img, marginLeft, marginRight, monospace, pct, pre, render, sansSerif,
              textAlign, width, ( # ), (**), (?))
-import qualified Clay as Clay
+import qualified Clay
 import Reflex.Dom.Core hiding (Link, Space, def, display)
 import Text.Pandoc
 
@@ -113,9 +113,6 @@ runApp = \case
     -- And then every time a file changes under the content directory.
     void $ watchTree mgr contentDir (const True) $ const $ runApp $ Generate False
     -- Wait forever, effectively.
-    (_,bs) <- renderStatic $ do
-      el "p" $ text "hello world"
-    BS8.putStrLn bs
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
@@ -130,7 +127,6 @@ runApp = \case
           , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
           }
     shakeArgs opts $ do
-      -- TODO: Understand how this works. The caching from Slick.
       getPostCached <- jsonCache' getPost
 
       want ["site"]
@@ -139,7 +135,7 @@ runApp = \case
       "site" ~>
         need ["static", "posts", destDir </> "index.html"]
 
-      let staticFilePatterns = ["css//*", "js//*", "images//*"]
+      let staticFilePatterns = ["images//*"]
           -- ^ Which files are considered to be static files.
           postFilePatterns = ["*.md"]
           -- ^ Which files are considered to be post files
@@ -154,7 +150,8 @@ runApp = \case
 
       -- Find and require every post to be built
       "posts" ~> do
-        need . fmap ((destDir </>) . (-<.> "html")) =<< getDirectoryFiles contentDir postFilePatterns
+        files <- getDirectoryFiles contentDir postFilePatterns
+        need $ (destDir </>) . (-<.> "html") <$> files
 
       -- build the main table of contents
       (destDir </> "index.html") %> \out -> do
@@ -164,7 +161,7 @@ runApp = \case
 
       -- rule for actually building posts
       (destDir </> "*.html") %> \out -> do
-        post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
+        post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
         html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
         writeFile' out $ BS8.unpack html
 
@@ -172,6 +169,7 @@ runApp = \case
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
     getPost (PostFilePath postPath) = do
+      -- TODO: revamp Post type and remove complexity
       -- | Given a post source-file's file path as a cache key, load the Post object
       -- for it. This is used with 'jsonCache' to provide post caching.
       let srcPath = destToSrc postPath -<.> "md"
@@ -190,7 +188,9 @@ data Page
   | Page_Post Post
   deriving (Generic, Show, FromJSON, ToJSON)
 
--- TODO: Tell Shake to regenerate when this function changes. How??
+-- | The entire HTML layout is here.
+--
+-- see `pandocHTML` for markdown HTML layout.
 pageHTML :: DomBuilder t m => Page -> m ()
 pageHTML page = do
   let pageTitle = case page of
@@ -217,7 +217,7 @@ pageHTML page = do
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
             postList otherPosts
-          Page_Post post -> do
+          Page_Post post ->
             elClass "article" "post" $
               -- TODO: code syntax highlighting
               pandocHTML $ pandocDoc post
@@ -241,6 +241,76 @@ pageHTML page = do
         el "small" $ text $ T.pack $ description p
 
 
+-- | Convert a Reflex DOM widget into HTML
+renderHTML :: StaticWidget x a -> IO BS8.ByteString
+renderHTML = fmap snd . renderStatic
+
+siteStyle :: Css
+siteStyle = body ? do
+  div # "#thesite" ? do
+    fontFamily ["Open Sans"] [sansSerif]
+    forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \header -> header ?
+      fontFamily ["Comfortaa"] [sansSerif]
+    forM_ [pre, code, "tt"] $ \s -> s ?
+      fontFamily ["Roboto Mono"] [monospace]
+    h1 ? textAlign center
+    (article ** h2) ? color darkviolet
+    (article ** img) ? do
+      display block
+      marginLeft Clay.auto
+      marginRight Clay.auto
+      width $ pct 50
+    footer ? textAlign center
+
+
+-- | Reasonable options for reading a markdown file
+markdownOptions :: ReaderOptions
+markdownOptions = def { readerExtensions = exts }
+ where
+  exts = mconcat
+    [ extensionsFromList
+      [ Ext_yaml_metadata_block
+      , Ext_fenced_code_attributes
+      , Ext_auto_identifiers
+      ]
+    , githubMarkdownExtensions
+    ]
+
+data PostCategory
+  = Programming
+  | Other
+  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
+
+-- | A JSON serializable representation of a post's metadata
+-- TODO: Use Text instead of String
+data Post = Post
+  { title :: String
+  , description :: String
+  , category :: Maybe PostCategory
+  , content :: String
+  , pandocDoc :: Pandoc
+  , url :: String
+  } deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
+
+
+-- A simple wrapper data-type which implements 'ShakeValue';
+-- Used as a Shake Cache key to build a cache of post objects.
+newtype PostFilePath = PostFilePath FilePath
+  deriving (Show, Eq, Hashable, Binary, NFData, Generic)
+
+-- | convert 'build' filepaths into source file filepaths
+destToSrc :: FilePath -> FilePath
+destToSrc p = "site" </> dropDirectory1 p
+
+-- | convert a source file path into a URL
+srcToURL :: FilePath -> String
+srcToURL = ("/" ++) . dropDirectory1 . dropExtension
+
+
+-- Innards
+--
+
+-- | Convert Markdown to HTML
 pandocHTML :: DomBuilder t m => Pandoc -> m ()
 pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
   where
@@ -313,83 +383,3 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
     notImplemented x = do
       el "strong" $ text "NOTIMPL"
       el "tt" $ text $ T.pack $ show x
-
-renderHTML :: StaticWidget x a -> IO BS8.ByteString
-renderHTML = fmap snd . renderStatic
-
-siteStyle :: Css
-siteStyle = body ? do
-  div # "#thesite" ? do
-    fontFamily ["Open Sans"] [sansSerif]
-    forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \header -> header ?
-      fontFamily ["Comfortaa"] [sansSerif]
-    forM_ [pre, code, "tt"] $ \s -> s ?
-      fontFamily ["Roboto Mono"] [monospace]
-    h1 ? textAlign center
-    (article ** h2) ? color darkviolet
-    (article ** img) ? do
-      display block
-      marginLeft Clay.auto
-      marginRight Clay.auto
-      width $ pct 50
-    footer ? textAlign center
-
-
--- | Reasonable options for reading a markdown file
-markdownOptions :: ReaderOptions
-markdownOptions = def { readerExtensions = exts }
- where
-  exts = mconcat
-    [ extensionsFromList
-      [ Ext_yaml_metadata_block
-      , Ext_fenced_code_attributes
-      , Ext_auto_identifiers
-      ]
-    , githubMarkdownExtensions
-    ]
-
--- | Represents the template dependencies of the index page
--- TODO: Represent category of posts generically. dependent-map?
-data IndexInfo = IndexInfo
-  { programming_posts :: [Post]
-  , other_posts :: [Post]
-  } deriving (Generic, Show)
-
-instance FromJSON IndexInfo
-instance ToJSON IndexInfo
-
-data PostCategory
-  = Programming
-  | Other
-  deriving (Generic, Show, Eq, Ord)
-
-instance FromJSON PostCategory
-instance ToJSON PostCategory
-
--- | A JSON serializable representation of a post's metadata
--- TODO: Use Text instead of String
-data Post = Post
-  { title :: String
-  , description :: String
-  , category :: Maybe PostCategory
-  , content :: String
-  , pandocDoc :: Pandoc
-  , url :: String
-  } deriving (Generic, Eq, Ord, Show)
-
-instance FromJSON Post
-instance ToJSON Post
-
-
--- A simple wrapper data-type which implements 'ShakeValue';
--- Used as a Shake Cache key to build a cache of post objects.
-newtype PostFilePath = PostFilePath FilePath
-  deriving (Show, Eq, Hashable, Binary, NFData, Generic)
-
--- | convert 'build' filepaths into source file filepaths
-destToSrc :: FilePath -> FilePath
-destToSrc p = "site" </> dropDirectory1 p
-
--- | convert a source file path into a URL
-srcToURL :: FilePath -> String
-srcToURL = ("/" ++) . dropDirectory1 . dropExtension
