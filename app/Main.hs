@@ -15,13 +15,14 @@ import Prelude hiding (init, last)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Lens (at, (?~))
-import Control.Monad (forever, guard, void, when)
+import Control.Monad (forM_, forever, guard, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Aeson.Lens (_Object)
 import qualified Data.ByteString.Char8 as BS8
 import Data.List (isSuffixOf, partition)
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -42,7 +43,7 @@ import Slick (compileTemplate', convert, jsonCache', markdownToHTML, substitute)
 
 -- | HTML & CSS imports
 import Clay (Css, background, body, white, (?))
-import Reflex.Dom.Core hiding (def)
+import Reflex.Dom.Core hiding (Link, Space, def)
 import Text.Pandoc
 
 
@@ -149,7 +150,7 @@ runApp = \case
 
     -- rule for actually building posts
     "dist/*.html" %> \out -> do
-      post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
+      post <- getPost$ PostFilePath $ destToSrc out -<.> "md"
       html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
       writeFile' out $ BS8.unpack html
 
@@ -197,7 +198,80 @@ pageHTML page = do
         -- TODO: Render Pandoc document straight to reflex
         -- https://hackage.haskell.org/package/pandoc-types-1.19/docs/Text-Pandoc-Definition.html#t:Block
         -- Is the pandoc `Walk` class of any use here?
-        el "tt" $ text $ T.pack $ show $ pandocDoc post
+        pandocHTML $ pandocDoc post
+
+pandocHTML :: DomBuilder t m => Pandoc -> m ()
+pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
+  where
+    renderBlocks = mapM_ renderBlock
+    renderBlock = \case
+      Plain inlines -> renderInlines inlines
+      Para xs -> el "p" $ renderInlines xs
+      LineBlock xss -> forM_ xss $ \xs -> do
+        renderInlines xs
+        text "\n"
+      CodeBlock attr x -> elPandocAttr "code" attr $ el "pre" $ text $ T.pack x
+      v@(RawBlock _ _) -> notImplemented v
+      BlockQuote xs -> el "blockquote" $ renderBlocks xs
+      OrderedList lattr xss -> el "ol" $ do
+        notImplemented lattr
+        forM_ xss $ \xs -> el "li" $ renderBlocks xs
+      BulletList xss -> el "ul" $ forM_ xss $ \xs -> el "li" $ renderBlocks xs
+      DefinitionList defs -> el "dl" $ forM_ defs $ \(term, descList) -> do
+        el "dt" $ renderInlines term
+        forM_ descList $ \desc ->
+          el "dd" $ renderBlocks desc
+      Header level attr xs -> elPandocAttr (headerElement level) attr $ do
+        renderInlines xs
+      HorizontalRule -> el "hr" blank
+      v@(Table _ _ _ _ _) -> notImplemented v
+      Div attr xs -> elPandocAttr "div" attr $
+        renderBlocks xs
+      Null -> blank
+    renderAttr (identifier, classes, attrs) =
+       ( "id" =: T.pack identifier
+      <> "class" =: T.pack (unwords classes)
+       ) <> (Map.fromList $ fmap (\(x,y) -> (T.pack x, T.pack y)) attrs)
+    elPandocAttr name = elAttr name . renderAttr
+    headerElement level = case level of
+      1 -> "h1"
+      2 -> "h2"
+      3 -> "h3"
+      4 -> "h4"
+      5 -> "h5"
+      6 -> "h6"
+      _ -> error "bad header level"
+    renderInlines = mapM_ renderInline
+    renderInline = \case
+      Str x -> text $ T.pack x
+      Emph xs -> el "em" $ renderInlines xs
+      Strong xs -> el "strong" $ renderInlines xs
+      Strikeout xs -> el "strike" $ renderInlines xs
+      Superscript xs -> el "sup" $ renderInlines xs
+      Subscript xs -> el "sub" $ renderInlines xs
+      SmallCaps xs -> el "small" $ renderInlines xs
+      v@(Quoted _qt _xs) -> notImplemented v
+      v@(Cite _ _) -> notImplemented v
+      Code attr x -> elPandocAttr "code" attr $
+        text $ T.pack x
+      Space -> text " " -- TODO: Reevaluate this.
+      SoftBreak -> text " "
+      LineBreak -> notImplemented LineBreak
+      v@(Math _ _) -> notImplemented v
+      v@(RawInline _ _) -> notImplemented v
+      Link attr xs (lUrl, lTitle) -> do
+        let attr' = renderAttr attr <> ("href" =: T.pack lUrl <> "title" =: T.pack lTitle)
+        elAttr "a" attr' $ renderInlines xs
+      Image attr xs (iUrl, iTitle) -> do
+        let attr' = renderAttr attr <> ("src" =: T.pack iUrl <> "title" =: T.pack iTitle)
+        elAttr "img" attr' $ renderInlines xs
+      Note xs -> el "aside" $ renderBlocks xs
+      Span attr xs -> elPandocAttr "span" attr $
+        renderInlines xs
+    notImplemented :: (DomBuilder t m, Show a) => a -> m ()
+    notImplemented x = do
+      el "strong" $ text "NOTIMPL"
+      el "tt" $ text $ T.pack $ show x
 
 renderHTML :: StaticWidget x a -> IO BS8.ByteString
 renderHTML = fmap snd . renderStatic
