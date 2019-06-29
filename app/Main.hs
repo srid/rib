@@ -10,7 +10,7 @@
 -- TODo: What if I make this literate haskell thus blog post?
 module Main where
 
-import Prelude hiding (init, last)
+import Prelude hiding (div, init, last, (**))
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -26,6 +26,7 @@ import Data.List (isSuffixOf, partition)
 import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
 import System.Environment (withArgs)
 
@@ -44,8 +45,11 @@ import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (convert, jsonCache', markdownToHTML)
 
 -- | HTML & CSS imports
-import Clay (Css, background, body, white, (?))
-import Reflex.Dom.Core hiding (Link, Space, def)
+import Clay (Css, article, block, body, center, code, color, darkviolet, display, div, fontFamily, footer, h1,
+             h2, h3, h4, h5, h6, img, marginLeft, marginRight, monospace, pct, pre, render, sansSerif,
+             textAlign, width, ( # ), (**), (?))
+import qualified Clay as Clay
+import Reflex.Dom.Core hiding (Link, Space, def, display)
 import Text.Pandoc
 
 
@@ -189,24 +193,52 @@ data Page
 -- TODO: Tell Shake to regenerate when this function changes. How??
 pageHTML :: DomBuilder t m => Page -> m ()
 pageHTML page = do
+  let pageTitle = case page of
+        Page_Index _ -> "Srid's notes"
+        Page_Post post -> T.pack $ title post
   el "head" $ do
-    el "title" $ text "TODO"
+    elMeta "description" "Sridhar's notes"
+    elMeta "author" "Sridhar Ratnakumar"
+    elMeta "viewport" "width=device-width, initial-scale=1"
+    el "title" $ text pageTitle
+    elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ render siteStyle
+    elAttr "link" ("rel" =: "stylesheet" <> "href" =: semUiCdn) blank
   el "body" $ do
-    el "h1" $ text "This is page title"
-    case page of
-      Page_Index posts -> do
-        let (progPosts, otherPosts) = partition ((== Just Programming) . category) posts
-        el "h2" $ text "Haskell & Nix notes"
-        postList progPosts
-        el "h2" $ text "Other notes"
-        postList otherPosts
-      Page_Post post -> do
-        el "h2" $ text $ T.pack $ title post
-        pandocHTML $ pandocDoc post
+    elAttr "div" ("class" =: "ui text container" <> "id" =: "thesite") $ do
+      el "br" blank
+      divClass "ui raised segment" $ do
+        elAttr "a" ("class" =: "ui violet ribbon label" <> "href" =: "/") $ text "Srid's notes"
+
+        elClass "h1" "ui huge header" $ text pageTitle
+        case page of
+          Page_Index posts -> do
+            let (progPosts, otherPosts) = partition ((== Just Programming) . category) posts
+            elClass "h2" "ui header" $ text "Haskell & Nix notes"
+            postList progPosts
+            elClass "h2" "ui header" $ text "Other notes"
+            postList otherPosts
+          Page_Post post -> do
+            elClass "article" "post" $
+              -- TODO: code syntax highlighting
+              pandocHTML $ pandocDoc post
+
+        elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
+    el "br" blank
+    el "br" blank
+    elLinkGoogleFont "Open+Sans"
+    elLinkGoogleFont "Comfortaa"
+    elLinkGoogleFont "Roboto+Mono"
   where
+    semUiCdn = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
+    elLinkGoogleFont name =
+      elAttr "link" ("href" =: fontUrl <> "rel" =: "stylesheet" <> "type" =: "text/css") blank
+      where
+        fontUrl = "https://fonts.googleapis.com/css?family=" <> name
+    elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
     postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p -> do
-      divClass "item" $
+      divClass "item" $ do
         elAttr "a" ("class" =: "header" <> "href" =: T.pack (url p)) $ text $ T.pack $ title p
+        el "small" $ text $ T.pack $ description p
 
 
 pandocHTML :: DomBuilder t m => Pandoc -> m ()
@@ -287,7 +319,21 @@ renderHTML = fmap snd . renderStatic
 
 siteStyle :: Css
 siteStyle = body ? do
-  background white
+  div # "#thesite" ? do
+    fontFamily ["Open Sans"] [sansSerif]
+    forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \header -> header ?
+      fontFamily ["Comfortaa"] [sansSerif]
+    forM_ [pre, code, "tt"] $ \s -> s ?
+      fontFamily ["Roboto Mono"] [monospace]
+    h1 ? textAlign center
+    (article ** h2) ? color darkviolet
+    (article ** img) ? do
+      display block
+      marginLeft Clay.auto
+      marginRight Clay.auto
+      width $ pct 50
+    footer ? textAlign center
+
 
 -- | Reasonable options for reading a markdown file
 markdownOptions :: ReaderOptions
