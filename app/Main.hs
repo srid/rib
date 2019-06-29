@@ -188,6 +188,29 @@ data Page
   | Page_Post Post
   deriving (Generic, Show, FromJSON, ToJSON)
 
+-- | A JSON serializable representation of a post's metadata
+-- TODO: Use Text instead of String
+data Post = Post
+  { title :: String
+  , description :: String
+  , category :: Maybe PostCategory
+  , content :: String
+  , pandocDoc :: Pandoc
+  , url :: String
+  } deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
+
+data PostCategory
+  = Programming
+  | Other
+  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
+
+
+-- A simple wrapper data-type which implements 'ShakeValue';
+-- Used as a Shake Cache key to build a cache of post objects.
+newtype PostFilePath = PostFilePath FilePath
+  deriving (Show, Eq, Hashable, Binary, NFData, Generic)
+
+
 -- | The entire HTML layout is here.
 --
 -- see `pandocHTML` for markdown HTML layout.
@@ -225,9 +248,7 @@ pageHTML page = do
         elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
     el "br" blank
     el "br" blank
-    elLinkGoogleFont "Open+Sans"
-    elLinkGoogleFont "Comfortaa"
-    elLinkGoogleFont "Roboto+Mono"
+    mapM_ elLinkGoogleFont ["Open+Sans","Comfortaa", "Roboto+Mono"]
   where
     semUiCdn = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     elLinkGoogleFont name =
@@ -275,28 +296,6 @@ markdownOptions = def { readerExtensions = exts }
       ]
     , githubMarkdownExtensions
     ]
-
-data PostCategory
-  = Programming
-  | Other
-  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
-
--- | A JSON serializable representation of a post's metadata
--- TODO: Use Text instead of String
-data Post = Post
-  { title :: String
-  , description :: String
-  , category :: Maybe PostCategory
-  , content :: String
-  , pandocDoc :: Pandoc
-  , url :: String
-  } deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
-
-
--- A simple wrapper data-type which implements 'ShakeValue';
--- Used as a Shake Cache key to build a cache of post objects.
-newtype PostFilePath = PostFilePath FilePath
-  deriving (Show, Eq, Hashable, Binary, NFData, Generic)
 
 -- | convert 'build' filepaths into source file filepaths
 destToSrc :: FilePath -> FilePath
