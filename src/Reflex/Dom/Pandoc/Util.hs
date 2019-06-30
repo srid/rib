@@ -1,9 +1,9 @@
--- |
+{-# LANGUAGE OverloadedStrings #-}
 
 module Reflex.Dom.Pandoc.Util where
 
-import Data.Text (Text)
 import Data.Map (Map)
+import Data.Text (Text)
 
 import qualified Data.Map as Map
 import qualified Data.Text as T

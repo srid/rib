@@ -1,14 +1,15 @@
--- |
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Rib.Server where
 
 import Prelude hiding (init, last)
 
-import Data.Maybe (fromMaybe)
 import Control.Monad (guard)
 import Data.List (isSuffixOf)
-import Safe (initMay, lastMay)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Safe (initMay, lastMay)
 
 import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp

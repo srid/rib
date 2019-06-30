@@ -1,17 +1,17 @@
--- |
-
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Reflex.Dom.Pandoc.Document where
 
-import qualified Data.Text as T
 import Control.Monad (forM_)
+import qualified Data.Text as T
 
-import Reflex.Dom.Core hiding (Space, Link)
+import Reflex.Dom.Core hiding (Link, Space)
 
-import Text.Pandoc (Pandoc(..), Block(..), Inline(..))
+import Text.Pandoc (Block (..), Inline (..), Pandoc (..))
 
-import Reflex.Dom.Pandoc.Util (elPandocAttr, headerElement, renderAttr)
 import Reflex.Dom.Pandoc.SyntaxHighlighting (elCodeHighlighted)
+import Reflex.Dom.Pandoc.Util (elPandocAttr, headerElement, renderAttr)
 
 -- | Convert Markdown to HTML
 -- TODO: Implement the notImplemented

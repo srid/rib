@@ -1,14 +1,16 @@
--- |
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Rib.Types where
 
 import Data.Aeson (FromJSON, ToJSON)
-import GHC.Generics (Generic)
-import Data.Text (Text)
 import qualified Data.Map as Map
+import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Development.Shake.Classes (Binary, Hashable, NFData)
-import Text.Pandoc (Pandoc(Pandoc), Inline, Meta(unMeta), MetaValue(MetaInlines))
+import Text.Pandoc (Inline, Meta (unMeta), MetaValue (MetaInlines), Pandoc (Pandoc))
 
 -- | Represents a HTML page that will be generated
 data Page

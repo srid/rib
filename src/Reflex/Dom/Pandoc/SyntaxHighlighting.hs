@@ -1,17 +1,18 @@
--- |
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Reflex.Dom.Pandoc.SyntaxHighlighting where
 
 import Control.Monad (forM_)
 import qualified Data.Text as T
 
-import Reflex.Dom.Core
 import Clay
+import Reflex.Dom.Core
 
 import qualified Skylighting as S
 import Text.Pandoc.Highlighting (highlight)
 
-import Reflex.Dom.Pandoc.Util (elPandocAttr, addClass)
+import Reflex.Dom.Pandoc.Util (addClass, elPandocAttr)
 
 elCodeHighlighted
   :: DomBuilder t m

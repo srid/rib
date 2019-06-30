@@ -1,13 +1,14 @@
--- |
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Rib.Shake where
 
-import qualified Data.ByteString.Char8 as BS8
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
-import System.Environment (withArgs)
+import qualified Data.ByteString.Char8 as BS8
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import System.Environment (withArgs)
 
 import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need,
                           readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, writeFile',
@@ -16,8 +17,8 @@ import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 
 import Slick (jsonCache')
 
-import Rib.Types
 import qualified Rib.Settings as S
+import Rib.Types
 
 
 -- | convert 'build' filepaths into source file filepaths

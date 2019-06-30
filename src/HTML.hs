@@ -1,25 +1,26 @@
--- |
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module HTML where
 
 import Control.Monad (forM_)
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Char8 as BS8
+import Data.List (partition)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import Data.List (partition)
 
-import Reflex.Dom.Core
-import Text.Pandoc (Pandoc(Pandoc), Block(Plain), Inline(Str))
-import Text.Pandoc.UTF8 (fromStringLazy)
 import qualified Clay
+import Reflex.Dom.Core
+import Text.Pandoc (Block (Plain), Inline (Str), Pandoc (Pandoc))
+import Text.Pandoc.UTF8 (fromStringLazy)
 
 import Reflex.Dom.Pandoc.Document (elPandocDoc)
 import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 
-import Rib.Types (Page(..), PostCategory(..), Post(..), getPostAttribute)
+import Rib.Types (Page (..), Post (..), PostCategory (..), getPostAttribute)
 
-import CSS (siteStyle, headerFont, contentFont, codeFont)
+import CSS (codeFont, contentFont, headerFont, siteStyle)
 
 pageHTML :: Page -> IO String
 pageHTML = fmap BS8.unpack . renderHTML . pageWidget

@@ -5,9 +5,9 @@ module Rib.Settings where
 import Data.Default (Default (def))
 import Data.Text (Text)
 
+import Development.Shake.FilePath (FilePath)
 import Text.Pandoc (Extension (..), Pandoc, ReaderOptions, extensionsFromList, githubMarkdownExtensions,
                     readMarkdown, readerExtensions, runPure)
-import Development.Shake.FilePath (FilePath)
 
 import Rib.Types (Page)
 

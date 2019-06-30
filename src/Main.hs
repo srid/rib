@@ -1,18 +1,20 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (void, when, forever)
+import Control.Monad (forever, void, when)
 import Data.Default (def)
 
 import System.Console.CmdArgs (Data, Typeable, auto, cmdArgs, help, modes, (&=))
 import System.FSNotify (watchTree, withManager)
 
 import qualified Rib.Server as Server
-import qualified Rib.Shake as Shake
 import qualified Rib.Settings as S
+import qualified Rib.Shake as Shake
 
 import qualified HTML
 
@@ -36,9 +38,13 @@ cli = modes
         &= auto  -- | Generate is the default command.
   ]
 
+-- | Configure this site here.
+--
+-- See `S.Settings` for the settings available.
 siteSettings :: S.Settings
 siteSettings = def
   { S.pageHTML = HTML.pageHTML
+  -- ^ Use Reflex to render our pages.
   }
 
 main :: IO ()
