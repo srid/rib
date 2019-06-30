@@ -1,15 +1,16 @@
 # notes.srid.ca
 
-My public notes. Kind of a blog and wiki.
+My public notes. Kind of a blog and wiki. This will soon be a generic static
+site generator based on Shake and Reflex.
 
-## Local server when editing content
+## Local server when editing only content
 
 ```bash
 nix-build -A ghc.notessridca
 ./result/bin/notessridca serve --watch
 ```
 
-## Hacking on Main.hs
+## ... when hacking on Haskell sources
 
 ```bash
 nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp Data.Default.def (Main.Serve 8080 True)'"
