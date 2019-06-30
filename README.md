@@ -1,7 +1,9 @@
-# notes.srid.ca
+# rib
 
-My public notes. Kind of a blog and wiki. This will soon be a generic static
-site generator based on Shake and Reflex.
+![logo](https://upload.wikimedia.org/wikipedia/commons/a/a7/Grilled_Elk_rib_chops-02.jpg)
+
+Rib is a static site generator written in Haskell using sensible technologies
+like `Shake` and `Reflex`.
 
 ## Local server when editing only content
 
