@@ -1,6 +1,6 @@
 ---
 title: "Nix tutorial for Haskellers"
-description: How to develop Haskell projects using Nix
+description: How to develop *Haskell* projects using *Nix*
 category: Programming
 ---
 

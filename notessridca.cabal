@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 2.2
 
 name:           notessridca
 version:        0.1.0.0
@@ -8,7 +8,7 @@ bug-reports:    https://github.com/srid/notes.srid.ca/issues
 author:         Sridhar Ratnakumar
 maintainer:     srid@srid.ca
 copyright:      2019 Sridhar Ratnakumar
-license:        BSD3
+license:        BSD-3-Clause
 build-type:     Simple
 extra-source-files:
     README.md
@@ -19,8 +19,6 @@ source-repository head
 
 executable notessridca
   main-is: Main.hs
-  other-modules:
-      Paths_notesridca
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
@@ -30,6 +28,7 @@ executable notessridca
     , base >=4.7 && <5
     , binary
     , bytestring
+    , clay
     , cmdargs
     , containers
     , fsnotify
@@ -38,9 +37,11 @@ executable notessridca
     , lens-aeson
     , mustache
     , pandoc
+    , pandoc-types
     , reflex-dom-core
     , safe
     , shake
+    , skylighting
     , slick
     , text
     , time
