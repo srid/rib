@@ -19,9 +19,21 @@ source-repository head
 
 executable notessridca
   main-is: Main.hs
+  other-modules:
+      Rib.Types
   hs-source-dirs:
-      app
+      src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
+  extensions:
+             OverloadedStrings
+           , LambdaCase
+           , TupleSections
+           , ScopedTypeVariables
+           , DeriveGeneric
+           , DeriveAnyClass
+           , FlexibleContexts
+           , GADTs
+
   build-depends:
       aeson
     , async
@@ -31,6 +43,7 @@ executable notessridca
     , clay
     , cmdargs
     , containers
+    , data-default
     , fsnotify
     , http-types
     , lens
