@@ -1,5 +1,8 @@
 # rib
 
+<!--
+Credit for this image: https://www.svgrepo.com/svg/24439/ribs
+-->
 <img src="https://raw.githubusercontent.com/srid/rib/branding/site/images/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
