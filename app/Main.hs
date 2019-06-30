@@ -197,6 +197,7 @@ data Post = Post
 
 data PostCategory
   = Programming
+  | Other
   deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
 
 
