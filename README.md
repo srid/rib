@@ -12,7 +12,7 @@ nix-build -A ghc.notessridca
 ## Hacking on Main.hs
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp (Main.Serve 8080 True)'"
+nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp Data.Default.def (Main.Serve 8080 True)'"
 ```
 
 ## TODO
