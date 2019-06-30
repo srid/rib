@@ -8,8 +8,8 @@ like `Shake` and `Reflex`.
 ## Local server when editing only content
 
 ```bash
-nix-build -A ghc.notessridca
-./result/bin/notessridca serve --watch
+nix-build -A ghc.rib
+./result/bin/rib serve --watch
 ```
 
 ## ... when hacking on Haskell sources
