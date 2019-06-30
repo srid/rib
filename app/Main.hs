@@ -163,7 +163,6 @@ runApp = \case
         post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
         html <- liftIO $ renderHTML $ pageHTML $ Page_Post post
         writeFile' out $ BS8.unpack html
-
   where
     staticFilePatterns = ["images//*"]
     -- ^ Which files are considered to be static files.
@@ -228,8 +227,9 @@ pageHTML page = do
     elAttr "div" ("class" =: "ui text container" <> "id" =: "thesite") $ do
       el "br" blank
       divClass "ui raised segment" $ do
+        -- Header
         elAttr "a" ("class" =: "ui violet ribbon label" <> "href" =: "/") $ text "Srid's notes"
-
+        -- Main content
         elClass "h1" "ui huge header" pageTitle
         case page of
           Page_Index posts -> do
@@ -242,11 +242,11 @@ pageHTML page = do
             elClass "article" "post" $
               -- TODO: code syntax highlighting
               pandocHTML $ _post_doc post
-
+        -- Footer
         elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
     el "br" blank
     el "br" blank
-    mapM_ elLinkGoogleFont ["Open+Sans","Comfortaa", "Roboto+Mono"]
+    mapM_ elLinkGoogleFont [headerFont, contentFont, codeFont]
   where
     postTitleHTML :: DomBuilder t m => Post -> m ()
     postTitleHTML post =
@@ -271,13 +271,24 @@ pageHTML page = do
     elLinkGoogleFont name =
       elAttr "link" ("href" =: fontUrl <> "rel" =: "stylesheet" <> "type" =: "text/css") blank
       where
-        fontUrl = "https://fonts.googleapis.com/css?family=" <> name
+        fontUrl = "https://fonts.googleapis.com/css?family=" <> (T.replace " " "-" name)
     elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
     postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p -> do
       divClass "item" $ do
         elAttr "a" ("class" =: "header" <> "href" =: _post_url p) $ postTitleHTML p
         el "small" $ postDescriptionHTML p
 
+
+-- All these font names should exist in Google Fonts
+
+headerFont :: Text
+headerFont = "Comfortaa"
+
+contentFont :: Text
+contentFont = "Open Sans"
+
+codeFont :: Text
+codeFont = "Roboto Mono"
 
 -- | Convert a Reflex DOM widget into HTML
 renderHTML :: StaticWidget x a -> IO BS8.ByteString
@@ -286,11 +297,11 @@ renderHTML = fmap snd . renderStatic
 siteStyle :: Css
 siteStyle = body ? do
   div # "#thesite" ? do
-    fontFamily ["Open Sans"] [sansSerif]
+    fontFamily [contentFont] [sansSerif]
     forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \header -> header ?
-      fontFamily ["Comfortaa"] [sansSerif]
+      fontFamily [headerFont] [sansSerif]
     forM_ [pre, code, "tt"] $ \s -> s ?
-      fontFamily ["Roboto Mono"] [monospace]
+      fontFamily [codeFont] [monospace]
     h1 ? textAlign center
     (article ** h2) ? color darkviolet
     (article ** img) ? do
