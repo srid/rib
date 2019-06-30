@@ -1,6 +1,6 @@
 # rib
 
-![logo](https://raw.githubusercontent.com/srid/rib/branding/site/images/ribs.svg?sanitize=true)
+<img src="https://raw.githubusercontent.com/srid/rib/branding/site/images/ribs.svg?sanitize=true" width="200" height="200" />
 
 Rib is a static site generator written in Haskell using sensible technologies
 like `Shake` and `Reflex`.
