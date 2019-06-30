@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 2.2
 
 name:           notessridca
 version:        0.1.0.0
@@ -8,7 +8,7 @@ bug-reports:    https://github.com/srid/notes.srid.ca/issues
 author:         Sridhar Ratnakumar
 maintainer:     srid@srid.ca
 copyright:      2019 Sridhar Ratnakumar
-license:        BSD3
+license:        BSD-3-Clause
 build-type:     Simple
 extra-source-files:
     README.md
