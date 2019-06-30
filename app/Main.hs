@@ -124,7 +124,7 @@ runApp = \case
     -- confusing Shake.
     let opts = shakeOptions
           { shakeVerbosity = Chatty
-          , shakeRebuild = bool [] ((RebuildNow,) <$> postFilePatterns) forceGen
+          , shakeRebuild = bool [] ((RebuildNow,) <$> rebuildPatterns) forceGen
           }
     shakeArgs opts $ do
       -- TODO: Write my own jsonCache and stop depending on `Slick`
@@ -164,8 +164,10 @@ runApp = \case
   where
     staticFilePatterns = ["images//*"]
     -- ^ Which files are considered to be static files.
-    postFilePatterns = ["**/*.md"]
+    postFilePatterns = ["*.md"]
     -- ^ Which files are considered to be post files
+    rebuildPatterns = ["**/*.html"]
+    -- ^ What to rebuild when --force is passed
 
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
