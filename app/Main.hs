@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
+-- | TODO: Split this into separate modules
 module Main where
 
 import Prelude hiding (div, init, last, (**))
@@ -169,8 +170,10 @@ runApp = \case
     postFilePatterns = ["*.md"]
     -- ^ Which files are considered to be post files
     rebuildPatterns = ["**/*.html", "**/*.md"]
-    -- ^ What to rebuild when --force is passed
-    -- We rebuild only the post files, assuming html/css/md file parsing has changed here.
+    -- ^ What to rebuild when --force is passed.
+    --
+    -- We rebuild only the post files, assuming html/css/md file parsing has
+    -- changed in our Haskell source.
 
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
@@ -339,9 +342,10 @@ srcToURL = ("/" ++) . dropDirectory1 . dropExtension
 
 
 -- Innards
---
+-- TODO: This should probably be a library of its own? (reflex-dom-pandoc)
 
 -- | Convert Markdown to HTML
+-- TODO: Implement the notImplemented
 pandocHTML :: DomBuilder t m => Pandoc -> m ()
 pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
   where
@@ -358,8 +362,8 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
           Right w -> w
       v@(RawBlock _ _) -> notImplemented v
       BlockQuote xs -> el "blockquote" $ renderBlocks xs
-      OrderedList lattr xss -> el "ol" $ do
-        notImplemented lattr
+      OrderedList _lattr xss -> el "ol" $
+        -- TODO: Implement list attributes.
         forM_ xss $ \xs -> el "li" $ renderBlocks xs
       BulletList xss -> el "ul" $ forM_ xss $ \xs -> el "li" $ renderBlocks xs
       DefinitionList defs -> el "dl" $ forM_ defs $ \(term, descList) -> do
@@ -373,20 +377,7 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       Div attr xs -> elPandocAttr "div" attr $
         renderBlocks xs
       Null -> blank
-    addClass c (identifier, classes, attrs) = (identifier, c : classes, attrs)
-    elPandocAttr name = elAttr name . renderAttr
-    renderAttr (identifier, classes, attrs) =
-         "id" =: T.pack identifier
-      <> "class" =: T.pack (unwords classes)
-      <> Map.fromList ((\(x,y) -> (T.pack x, T.pack y)) <$> attrs)
-    headerElement level = case level of
-      1 -> "h1"
-      2 -> "h2"
-      3 -> "h3"
-      4 -> "h4"
-      5 -> "h5"
-      6 -> "h6"
-      _ -> error "bad header level"
+
     renderInlines = mapM_ renderInline
     renderInline = \case
       Str x -> text $ T.pack x
@@ -402,7 +393,7 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
         text $ T.pack x
       Space -> text " "
       SoftBreak -> text " "
-      LineBreak -> notImplemented LineBreak
+      LineBreak -> text "\n"
       v@(Math _ _) -> notImplemented v
       v@(RawInline _ _) -> notImplemented v
       Link attr xs (lUrl, lTitle) -> do
@@ -414,10 +405,29 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       Note xs -> el "aside" $ renderBlocks xs
       Span attr xs -> elPandocAttr "span" attr $
         renderInlines xs
+
+    renderAttr (identifier, classes, attrs) =
+         "id" =: T.pack identifier
+      <> "class" =: T.pack (unwords classes)
+      <> Map.fromList ((\(x,y) -> (T.pack x, T.pack y)) <$> attrs)
+
+    elPandocAttr name = elAttr name . renderAttr
+
+    addClass c (identifier, classes, attrs) = (identifier, c : classes, attrs)
+
+    headerElement level = case level of
+      1 -> "h1"
+      2 -> "h2"
+      3 -> "h3"
+      4 -> "h4"
+      5 -> "h5"
+      6 -> "h6"
+      _ -> error "bad header level"
+
     notImplemented :: (DomBuilder t m, Show a) => a -> m ()
     notImplemented x = do
-      el "strong" $ text "NOTIMPL"
-      el "tt" $ text $ T.pack $ show x
+      el "strong" $ text "NotImplemented: "
+      el "pre" $ el "code" $ text $ T.pack $ show x
 
 -- | Highlight code syntax with Reflex widgets
 formatCode :: DomBuilder t m => S.FormatOptions -> [S.SourceLine] -> m ()
@@ -462,6 +472,7 @@ formatCode _opts slines = forM_ slines $ \tokens -> do
       S.NormalTok         -> ""
 
 -- | Highlighting style for code blocks
+-- TODO: Support theme files: https://pandoc.org/MANUAL.html#syntax-highlighting
 highlightingStyle :: Css
 highlightingStyle = do
   let bgColor = "#F5FCFF"

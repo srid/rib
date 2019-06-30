@@ -17,8 +17,7 @@ nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp (Main.Serve 8080 True)'"
 
 ## TODO
 
-- Reflex based
-  - For css as well.
+- Use my own jsonCache' and drop dependency on Slick
 - Literate haskell
   - Include rendered Main.lhs as a post in notes.srid.ca
 
