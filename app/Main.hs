@@ -177,7 +177,6 @@ runApp = \case
     getPost (PostFilePath postPath) = do
       let srcPath = destToSrc postPath -<.> "md"
       content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
-      liftIO $ putStrLn $ T.unpack content
       let doc = either (error . show) id $ runPure $ readMarkdown markdownOptions content
           postURL = T.pack $ srcToURL postPath
       pure $ Post doc postURL
@@ -200,6 +199,18 @@ data PostCategory
   | Other
   deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
 
+-- Get the YAML metadata for the given key in a post
+--
+-- This has to always return `[Inline]` unless we upgrade pandoc. See
+-- https://github.com/jgm/pandoc/issues/2139#issuecomment-310522113
+getPostAttribute :: String -> Post -> Maybe [Inline]
+getPostAttribute k (Post (Pandoc meta _) _) =
+  case Map.lookup k (unMeta meta) of
+    -- When a Just value this will always be `MetaInlines`; see note in function
+    -- comment above.
+    Just (MetaInlines inlines) -> Just inlines
+    _ -> Nothing
+
 
 -- A simple wrapper data-type which implements 'ShakeValue';
 -- Used as a Shake Cache key to build a cache of post objects.
@@ -214,7 +225,7 @@ pageHTML :: DomBuilder t m => Page -> m ()
 pageHTML page = do
   let pageTitle = case page of
         Page_Index _ -> text "Srid's notes"
-        Page_Post post -> postTitleHTML post
+        Page_Post post -> postTitle post
   elAttr "html" ("lang" =: "en") $ el "head" $ do
     elMeta "charset" "UTF-8"
     elMeta "description" "Sridhar's notes"
@@ -234,14 +245,14 @@ pageHTML page = do
         elClass "h1" "ui huge header" pageTitle
         case page of
           Page_Index posts -> do
-            let (progPosts, otherPosts) = partition ((== Just Programming) . getPostCategory) posts
+            let (progPosts, otherPosts) =
+                  partition ((== Just Programming) . postCategory) posts
             elClass "h2" "ui header" $ text "Haskell & Nix notes"
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
             postList otherPosts
           Page_Post post ->
             elClass "article" "post" $
-              -- TODO: code syntax highlighting
               pandocHTML $ _post_doc post
         -- Footer
         elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
@@ -249,35 +260,28 @@ pageHTML page = do
     el "br" blank
     mapM_ elLinkGoogleFont [headerFont, contentFont, codeFont]
   where
-    postTitleHTML :: DomBuilder t m => Post -> m ()
-    postTitleHTML post =
-      let (Pandoc meta _) = _post_doc post
-      in case Map.lookup "title" (unMeta meta) of
-        Just (MetaInlines inlines) -> pandocHTML $ Pandoc meta [Plain inlines]
-        _ -> blank
-    postDescriptionHTML :: DomBuilder t m => Post -> m ()
-    postDescriptionHTML post =
-      let (Pandoc meta _) = _post_doc post
-      in case Map.lookup "description" (unMeta meta) of
-        Just (MetaInlines inlines) -> pandocHTML $ Pandoc meta [Plain inlines]
-        _ -> blank
-    getPostCategory :: Post -> Maybe PostCategory
-    getPostCategory post =
-      let (Pandoc meta _) = _post_doc post
-      in case Map.lookup "category" (unMeta meta) of
-        -- HACK: wraping in quotes to make valid json.
-        Just (MetaInlines [Str v]) -> Aeson.decode $ fromStringLazy $ "\"" <> v <> "\""
-        _ -> Nothing
+    postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p ->
+      divClass "item" $ do
+        elAttr "a" ("class" =: "header" <> "href" =: _post_url p) $
+          postTitle p
+        el "small" $ maybe blank pandocInlines $ getPostAttribute "description" p
+
+    postTitle = maybe (text "Untitled") pandocInlines . getPostAttribute "title"
+    postCategory post = getPostAttribute "category" post >>= \case
+      [Str category] -> do
+        let categoryJson = "\"" <> category <> "\""
+        Aeson.decode $ fromStringLazy categoryJson
+      _ -> error "Invalid category format"
+
+    -- TODO: Put this in Markdown module, and reuse renderBlocks
+    pandocInlines xs = pandocHTML $ Pandoc mempty [Plain xs]
+
     semUiCdn = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     elLinkGoogleFont name =
       elAttr "link" ("href" =: fontUrl <> "rel" =: "stylesheet" <> "type" =: "text/css") blank
       where
         fontUrl = "https://fonts.googleapis.com/css?family=" <> (T.replace " " "-" name)
     elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
-    postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p -> do
-      divClass "item" $ do
-        elAttr "a" ("class" =: "header" <> "href" =: _post_url p) $ postTitleHTML p
-        el "small" $ postDescriptionHTML p
 
 
 -- All these font names should exist in Google Fonts
