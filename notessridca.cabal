@@ -41,6 +41,7 @@ executable notessridca
     , reflex-dom-core
     , safe
     , shake
+    , skylighting
     , slick
     , text
     , time

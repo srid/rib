@@ -44,12 +44,14 @@ import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (jsonCache')
 
 -- | HTML & CSS imports
-import Clay (Css, article, block, body, center, code, color, darkviolet, display, div, fontFamily, footer, h1,
-             h2, h3, h4, h5, h6, img, marginLeft, marginRight, monospace, pct, pre, render, sansSerif,
-             textAlign, width, ( # ), (**), (?))
+import Clay (Css, article, backgroundColor, block, body, bold, center, code, color, darkviolet, display, div,
+             fontFamily, fontWeight, footer, h1, h2, h3, h4, h5, h6, img, marginLeft, marginRight, monospace,
+             pct, pre, render, sansSerif, textAlign, width, ( # ), (**), (?))
 import qualified Clay
 import Reflex.Dom.Core hiding (Link, Space, def, display)
+import qualified Skylighting as S
 import Text.Pandoc hiding (trace)
+import Text.Pandoc.Highlighting (highlight)
 import Text.Pandoc.UTF8 (fromStringLazy)
 
 
@@ -216,6 +218,7 @@ pageHTML page = do
     elMeta "viewport" "width=device-width, initial-scale=1"
     el "title" pageTitle
     elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ render siteStyle
+    elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ render highlightingStyle
     elAttr "link" ("rel" =: "stylesheet" <> "href" =: semUiCdn) blank
   el "body" $ do
     elAttr "div" ("class" =: "ui text container" <> "id" =: "thesite") $ do
@@ -293,7 +296,6 @@ siteStyle = body ? do
       width $ pct 50
     footer ? textAlign center
 
-
 -- | Reasonable options for reading a markdown file
 markdownOptions :: ReaderOptions
 markdownOptions = def { readerExtensions = exts }
@@ -330,7 +332,10 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       LineBlock xss -> forM_ xss $ \xs -> do
         renderInlines xs
         text "\n"
-      CodeBlock attr x -> elPandocAttr "code" attr $ el "pre" $ text $ T.pack x
+      CodeBlock attr x -> elPandocAttr "pre" (addClass "sourceCode" attr) $ el "code" $ do
+        case highlight S.defaultSyntaxMap formatCode attr x of
+          Left _err -> text $ T.pack x
+          Right w -> w
       v@(RawBlock _ _) -> notImplemented v
       BlockQuote xs -> el "blockquote" $ renderBlocks xs
       OrderedList lattr xss -> el "ol" $ do
@@ -348,6 +353,7 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       Div attr xs -> elPandocAttr "div" attr $
         renderBlocks xs
       Null -> blank
+    addClass c (identifier, classes, attrs) = (identifier, c : classes, attrs)
     elPandocAttr name = elAttr name . renderAttr
     renderAttr (identifier, classes, attrs) =
          "id" =: T.pack identifier
@@ -374,7 +380,7 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
       v@(Cite _ _) -> notImplemented v
       Code attr x -> elPandocAttr "code" attr $
         text $ T.pack x
-      Space -> text " " -- TODO: Reevaluate this.
+      Space -> text " "
       SoftBreak -> text " "
       LineBreak -> notImplemented LineBreak
       v@(Math _ _) -> notImplemented v
@@ -392,3 +398,77 @@ pandocHTML (Pandoc _meta blocks) = renderBlocks blocks
     notImplemented x = do
       el "strong" $ text "NOTIMPL"
       el "tt" $ text $ T.pack $ show x
+
+-- | Highlight code syntax with Reflex widgets
+formatCode :: DomBuilder t m => S.FormatOptions -> [S.SourceLine] -> m ()
+formatCode _opts slines = forM_ slines $ \tokens -> do
+  forM_ tokens $ \(tokenType, s) ->
+    elClass "span" (tokenClass tokenType) $ text s
+  text "\n"
+  where
+    tokenClass = \case
+      S.KeywordTok        -> "kw"
+      S.DataTypeTok       -> "dt"
+      S.DecValTok         -> "dv"
+      S.BaseNTok          -> "bn"
+      S.FloatTok          -> "fl"
+      S.CharTok           -> "ch"
+      S.StringTok         -> "st"
+      S.CommentTok        -> "co"
+      S.OtherTok          -> "ot"
+      S.AlertTok          -> "al"
+      S.FunctionTok       -> "fu"
+      S.RegionMarkerTok   -> "re"
+      S.ErrorTok          -> "er"
+      S.ConstantTok       -> "cn"
+      S.SpecialCharTok    -> "sc"
+      S.VerbatimStringTok -> "vs"
+      S.SpecialStringTok  -> "ss"
+      S.ImportTok         -> "im"
+      S.DocumentationTok  -> "do"
+      S.AnnotationTok     -> "an"
+      S.CommentVarTok     -> "cv"
+      S.VariableTok       -> "va"
+      S.ControlFlowTok    -> "cf"
+      S.OperatorTok       -> "op"
+      S.BuiltInTok        -> "bu"
+      S.ExtensionTok      -> "ex"
+      S.PreprocessorTok   -> "pp"
+      S.AttributeTok      -> "at"
+      S.InformationTok    -> "in"
+      S.WarningTok        -> "wa"
+      S.NormalTok         -> ""
+
+-- | Highlighting style for code blocks
+highlightingStyle :: Css
+highlightingStyle = do
+  let bgColor = "#F5FCFF"
+      fgColor = "#268BD2"
+  pre ?
+    backgroundColor bgColor
+  code ? do
+    backgroundColor bgColor
+    color fgColor
+  ".sourcecode" ? do
+    -- Keyword
+    ".kw" ? color "#600095"
+    -- Datatype
+    ".dt" ? color fgColor
+    -- Decimal value, BaseNTok, Float
+    forM_ [".dv", ".bn", ".fl"] $ \s -> s ? color "#AE81FF"
+    -- Char
+    ".ch" ? color "#37ad2d"
+    -- String
+    ".st" ? color "#37ad2d"
+    -- Comment
+    ".co" ? color "#7e8e91"
+    -- Other
+    ".ot" ? color "#eb005b"
+    -- Alert
+    ".al" ? (color "#a6e22e" >> fontWeight bold)
+    -- Function
+    ".fu" ? color "#333"
+    -- Region marker
+    ".re" ? pure ()
+    -- Error
+    ".er" ? (color "#e6db74" >> fontWeight bold)
