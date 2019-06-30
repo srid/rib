@@ -16,7 +16,7 @@ indicated otherwise, which twigged me to gain more understanding of the
 universal nature of human groups and belonging.
 
 Like [Dariusz
-Galasiński](http://dariuszgalasinski.com/2016/10/06/i-am-and-i-will-always-be-a-foreigner/)
+Galasinski](http://dariuszgalasinski.com/2016/10/06/i-am-and-i-will-always-be-a-foreigner/)
 however I now prefer the perpetual state of remaining a foreigner, which
 presents a freedom to not have to force oneself to fit in with some group.
 

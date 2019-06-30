@@ -25,6 +25,7 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import GHC.Generics (Generic)
 import System.Environment (withArgs)
@@ -168,14 +169,16 @@ runApp = \case
     -- ^ Which files are considered to be static files.
     postFilePatterns = ["*.md"]
     -- ^ Which files are considered to be post files
-    rebuildPatterns = ["**/*.html"]
+    rebuildPatterns = ["**/*.html", "**/*.md"]
     -- ^ What to rebuild when --force is passed
+    -- We rebuild only the post files, assuming html/css/md file parsing has changed here.
 
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
     getPost (PostFilePath postPath) = do
       let srcPath = destToSrc postPath -<.> "md"
-      content <- T.pack <$> readFile' srcPath
+      content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
+      liftIO $ putStrLn $ T.unpack content
       let doc = either (error . show) id $ runPure $ readMarkdown markdownOptions content
           postURL = T.pack $ srcToURL postPath
       pure $ Post doc postURL
@@ -212,7 +215,8 @@ pageHTML page = do
   let pageTitle = case page of
         Page_Index _ -> text "Srid's notes"
         Page_Post post -> postTitleHTML post
-  el "head" $ do
+  elAttr "html" ("lang" =: "en") $ el "head" $ do
+    elMeta "charset" "UTF-8"
     elMeta "description" "Sridhar's notes"
     elMeta "author" "Sridhar Ratnakumar"
     elMeta "viewport" "width=device-width, initial-scale=1"
@@ -406,6 +410,8 @@ formatCode _opts slines = forM_ slines $ \tokens -> do
     elClass "span" (tokenClass tokenType) $ text s
   text "\n"
   where
+    -- | Get the CSS class name for a Skylighting token type.
+    -- This mirors the unexported `short` function from `Skylighting.Format.HTML`
     tokenClass = \case
       S.KeywordTok        -> "kw"
       S.DataTypeTok       -> "dt"
