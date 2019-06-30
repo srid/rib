@@ -1,6 +1,6 @@
 # rib
 
-![logo](https://upload.wikimedia.org/wikipedia/commons/a/a7/Grilled_Elk_rib_chops-02.jpg)
+![logo](https://raw.githubusercontent.com/srid/rib/master/site/images/ribs.svg)
 
 Rib is a static site generator written in Haskell using sensible technologies
 like `Shake` and `Reflex`.
