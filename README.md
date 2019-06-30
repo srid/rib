@@ -1,13 +1,18 @@
-# notes.srid.ca
+# rib
 
-My public notes. Kind of a blog and wiki. This will soon be a generic static
-site generator based on Shake and Reflex.
+<!--
+Credit for this image: https://www.svgrepo.com/svg/24439/ribs
+-->
+<img src="https://raw.githubusercontent.com/srid/rib/branding/site/images/ribs.svg?sanitize=true" width="150" />
+
+Rib is a static site generator written in Haskell using sensible technologies
+like `Shake` and `Reflex`.
 
 ## Local server when editing only content
 
 ```bash
-nix-build -A ghc.notessridca
-./result/bin/notessridca serve --watch
+nix-build -A ghc.rib
+./result/bin/rib serve --watch
 ```
 
 ## ... when hacking on Haskell sources

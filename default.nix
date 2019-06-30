@@ -8,10 +8,10 @@
 
 reflex-platform.project ({ pkgs, ... }: {
   packages = {
-    notessridca = ./.;
+    rib = ./.;
   };
 
   shells = {
-    ghc = ["notessridca"];
+    ghc = ["rib"];
   };
 })

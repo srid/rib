@@ -1,10 +1,10 @@
 cabal-version: 2.2
 
-name:           notessridca
+name:           rib
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/srid/notes.srid.ca>
-homepage:       https://github.com/srid/notes.srid.ca#readme
-bug-reports:    https://github.com/srid/notes.srid.ca/issues
+description:    Please see the README on GitHub at <https://github.com/srid/rib>
+homepage:       https://github.com/srid/rib#readme
+bug-reports:    https://github.com/srid/rib/issues
 author:         Sridhar Ratnakumar
 maintainer:     srid@srid.ca
 copyright:      2019 Sridhar Ratnakumar
@@ -15,9 +15,9 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/srid/notes.srid.ca
+  location: https://github.com/srid/rib
 
-executable notessridca
+executable rib
   main-is: Main.hs
   other-modules:
       Rib.Types
