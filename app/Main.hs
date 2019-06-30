@@ -6,8 +6,8 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
--- TODo: What if I make this literate haskell thus blog post?
 module Main where
 
 import Prelude hiding (div, init, last, (**))
@@ -124,7 +124,7 @@ runApp = \case
     -- confusing Shake.
     let opts = shakeOptions
           { shakeVerbosity = Chatty
-          , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
+          , shakeRebuild = bool [] ((RebuildNow,) <$> postFilePatterns) forceGen
           }
     shakeArgs opts $ do
       -- TODO: Write my own jsonCache and stop depending on `Slick`
@@ -135,11 +135,6 @@ runApp = \case
       -- Require all the things we need to build the whole site
       "site" ~>
         need ["static", "posts", destDir </> "index.html"]
-
-      let staticFilePatterns = ["images//*"]
-          -- ^ Which files are considered to be static files.
-          postFilePatterns = ["*.md"]
-          -- ^ Which files are considered to be post files
 
       -- Require all static assets
       "static" ~> do
@@ -167,6 +162,11 @@ runApp = \case
         writeFile' out $ BS8.unpack html
 
   where
+    staticFilePatterns = ["images//*"]
+    -- ^ Which files are considered to be static files.
+    postFilePatterns = ["**/*.md"]
+    -- ^ Which files are considered to be post files
+
     -- | Read and parse a Markdown post
     getPost :: PostFilePath -> Action Post
     getPost (PostFilePath postPath) = do
