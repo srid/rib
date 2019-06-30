@@ -4,6 +4,7 @@ module HTML where
 
 import Control.Monad (forM_)
 import qualified Data.Aeson as Aeson
+import qualified Data.ByteString.Char8 as BS8
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import Data.List (partition)
@@ -19,6 +20,13 @@ import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 import Rib.Types (Page(..), PostCategory(..), Post(..), getPostAttribute)
 
 import CSS (siteStyle, headerFont, contentFont, codeFont)
+
+pageHTML :: Page -> IO String
+pageHTML = fmap BS8.unpack . renderHTML . pageWidget
+  where
+    -- | Convert a Reflex DOM widget into HTML
+    renderHTML :: StaticWidget x a -> IO BS8.ByteString
+    renderHTML = fmap snd . renderStatic
 
 -- | The entire HTML layout is here.
 pageWidget :: DomBuilder t m => Page -> m ()
@@ -82,3 +90,4 @@ pageWidget page = do
       where
         fontUrl = "https://fonts.googleapis.com/css?family=" <> (T.replace " " "-" name)
     elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
+

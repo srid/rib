@@ -13,7 +13,7 @@ nix-build -A ghc.notessridca
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -T 'Main.runApp Data.Default.def (Main.Serve 8080 True)'"
+nix-shell -A shells.ghc --run "ghcid -T Main.dev"
 ```
 
 ## TODO

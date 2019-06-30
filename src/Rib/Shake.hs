@@ -17,8 +17,7 @@ import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Slick (jsonCache')
 
 import Rib.Types
-
-import qualified Settings
+import qualified Rib.Settings as S
 
 
 -- | convert 'build' filepaths into source file filepaths
@@ -32,7 +31,7 @@ srcToURL = ("/" ++) . dropDirectory1 . dropExtension
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> Settings.Settings
+  -> S.Settings
   -- ^ Site settings
   -> IO ()
 ribShake forceGen cfg = withArgs [] $ do
@@ -40,7 +39,7 @@ ribShake forceGen cfg = withArgs [] $ do
   -- confusing Shake.
   let opts = shakeOptions
         { shakeVerbosity = Chatty
-        , shakeRebuild = bool [] ((RebuildNow,) <$> Settings.rebuildPatterns cfg) forceGen
+        , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
     -- TODO: Write my own jsonCache and stop depending on `Slick`
@@ -50,34 +49,34 @@ ribShake forceGen cfg = withArgs [] $ do
 
     -- Require all the things we need to build the whole site
     "site" ~>
-      need ["static", "posts", Settings.destDir cfg </> "index.html"]
+      need ["static", "posts", S.destDir cfg </> "index.html"]
 
     -- Require all static assets
     "static" ~> do
-      files <- getDirectoryFiles (Settings.contentDir cfg) $ Settings.staticFilePatterns cfg
-      need $ (Settings.destDir cfg </>) <$> files
+      files <- getDirectoryFiles (S.contentDir cfg) $ S.staticFilePatterns cfg
+      need $ (S.destDir cfg </>) <$> files
 
     -- Rule for handling static assets, just copy them from source to dest
-    (Settings.destDir cfg </>) <$> Settings.staticFilePatterns cfg |%> \out ->
+    (S.destDir cfg </>) <$> S.staticFilePatterns cfg |%> \out ->
       copyFileChanged (destToSrc out) out
 
     -- Find and require every post to be built
     "posts" ~> do
-      files <- getDirectoryFiles (Settings.contentDir cfg) $ Settings.postFilePatterns cfg
-      need $ (Settings.destDir cfg </>) . (-<.> "html") <$> files
+      files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
+      need $ (S.destDir cfg </>) . (-<.> "html") <$> files
 
     -- build the main table of contents
-    (Settings.destDir cfg </> "index.html") %> \out -> do
-      files <- getDirectoryFiles (Settings.contentDir cfg) $ Settings.postFilePatterns cfg
-      posts <- traverse (getPostCached . PostFilePath . (Settings.contentDir cfg </>)) files
-      html <- liftIO $ Settings.renderPage cfg $ Page_Index posts
-      writeFile' out $ BS8.unpack html
+    (S.destDir cfg </> "index.html") %> \out -> do
+      files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
+      posts <- traverse (getPostCached . PostFilePath . (S.contentDir cfg </>)) files
+      html <- liftIO $ S.pageHTML cfg $ Page_Index posts
+      writeFile' out html
 
     -- rule for actually building posts
-    (Settings.destDir cfg </> "*.html") %> \out -> do
+    (S.destDir cfg </> "*.html") %> \out -> do
       post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-      html <- liftIO $ Settings.renderPage cfg $ Page_Post post
-      writeFile' out $ BS8.unpack html
+      html <- liftIO $ S.pageHTML cfg $ Page_Post post
+      writeFile' out html
 
   where
     -- | Read and parse a Markdown post
@@ -85,6 +84,6 @@ ribShake forceGen cfg = withArgs [] $ do
     getPost (PostFilePath postPath) = do
       let srcPath = destToSrc postPath -<.> "md"
       content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
-      let doc = Settings.parsePage cfg content
+      let doc = S.parsePage cfg content
           postURL = T.pack $ srcToURL postPath
       pure $ Post doc postURL

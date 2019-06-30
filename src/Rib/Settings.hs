@@ -1,25 +1,20 @@
 {-# LANGUAGE Rank2Types #-}
 
-module Settings where
+module Rib.Settings where
 
-import Control.Monad.IO.Class (liftIO)
-import qualified Data.ByteString.Char8 as BS8
 import Data.Default (Default (def))
 import Data.Text (Text)
 
-import Reflex.Dom.Core (StaticWidget, renderStatic)
 import Text.Pandoc (Extension (..), Pandoc, ReaderOptions, extensionsFromList, githubMarkdownExtensions,
                     readMarkdown, readerExtensions, runPure)
 import Development.Shake.FilePath (FilePath)
 
 import Rib.Types (Page)
 
-import HTML (pageWidget)
-
 
 data Settings = Settings
-  { renderPage :: Page -> IO BS8.ByteString
-  -- ^ Render a page to HTML
+  { pageHTML :: Page -> IO String
+  -- ^ Reflex widget for the page
   , parsePage :: Text -> Pandoc
   -- ^ Parse a text document like Markdown into Pandoc structure
   , contentDir :: FilePath
@@ -39,10 +34,8 @@ data Settings = Settings
 
 instance Default Settings where
   def = Settings
-    { renderPage =
-      liftIO . renderHTML . pageWidget
-    , parsePage =
-      either (error . show) id . runPure . readMarkdown markdownOptions
+    { pageHTML = pure . show
+    , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
     , contentDir = "site"
     , destDir = "generated"
     , staticFilePatterns = ["images//*"]
@@ -50,10 +43,6 @@ instance Default Settings where
     , rebuildPatterns = ["**/*.html", "**/*.md"]
     }
     where
-      -- | Convert a Reflex DOM widget into HTML
-      renderHTML :: StaticWidget x a -> IO BS8.ByteString
-      renderHTML = fmap snd . renderStatic
-
       -- | Reasonable options for reading a markdown file
       markdownOptions :: ReaderOptions
       markdownOptions = def { readerExtensions = exts }

@@ -12,8 +12,9 @@ import System.FSNotify (watchTree, withManager)
 
 import qualified Rib.Server as Server
 import qualified Rib.Shake as Shake
+import qualified Rib.Settings as S
 
-import qualified Settings
+import qualified HTML
 
 data App
   = Watch
@@ -35,22 +36,31 @@ cli = modes
         &= auto  -- | Generate is the default command.
   ]
 
-main :: IO ()
-main = runApp def =<< cmdArgs cli
+siteSettings :: S.Settings
+siteSettings = def
+  { S.pageHTML = HTML.pageHTML
+  }
 
-runApp :: Settings.Settings -> App -> IO ()
+main :: IO ()
+main = runApp siteSettings =<< cmdArgs cli
+
+runApp :: S.Settings -> App -> IO ()
 runApp cfg = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runApp cfg $ Generate True
     -- And then every time a file changes under the content directory.
-    void $ watchTree mgr (Settings.contentDir cfg) (const True) $ const $ runApp cfg $ Generate False
+    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $ runApp cfg $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
     (when w $ runApp cfg Watch)
-    $ Server.serve p $ Settings.destDir cfg
+    $ Server.serve p $ S.destDir cfg
 
   Generate forceGen ->
     Shake.ribShake forceGen cfg
+
+-- | Entrypoint suited for ghcid
+dev :: IO ()
+dev = runApp siteSettings $ Serve 8080 True
