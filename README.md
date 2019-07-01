@@ -6,7 +6,9 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 <img src="https://raw.githubusercontent.com/srid/rib/master/site/images/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
-like `Shake` and `Reflex`.
+like `Shake` and `Reflex`. See `./example` to see how the library can be used;
+it contains the author's actual website. It is still a work in progress but will
+soon be ready for general use.
 
 ## Local server when editing only content
 
@@ -16,6 +18,9 @@ nix-build -A ghc.rib
 ```
 
 ## ... when hacking on Haskell sources
+
+FIXME: This is not working with the library/ executable split. Doesn't even
+reload on executable source files change.
 
 ```bash
 nix-shell -A shells.ghc --run "ghcid -T Main.dev"
