@@ -3,7 +3,7 @@
 
 module HTML where
 
-import Control.Monad (forM_)
+import Control.Monad
 import Data.List (partition)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -16,7 +16,7 @@ import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 
 import Rib.Types (Page (..), Post (..), PostCategory (..), getPostAttribute, getPostAttributeJson)
 
-import CSS (codeFont, contentFont, headerFont, siteStyle)
+import qualified CSS
 
 -- | The entire HTML layout is here.
 pageWidget :: DomBuilder t m => Page -> m ()
@@ -30,7 +30,7 @@ pageWidget page = do
     elMeta "author" "Sridhar Ratnakumar"
     elMeta "viewport" "width=device-width, initial-scale=1"
     el "title" pageTitle
-    elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ Clay.render siteStyle
+    elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ Clay.render CSS.style
     elAttr "style" ("type" =: "text/css") $ text $ TL.toStrict $ Clay.render SyntaxHighlighting.style
     elAttr "link" ("rel" =: "stylesheet" <> "href" =: semUiCdn) blank
   el "body" $ do
@@ -56,7 +56,7 @@ pageWidget page = do
         elAttr "a" ("class" =: "ui green right ribbon label" <> "href" =: "https://www.srid.ca") $ text "Sridhar Ratnakumar"
     el "br" blank
     el "br" blank
-    mapM_ elLinkGoogleFont [headerFont, contentFont, codeFont]
+    mapM_ elLinkGoogleFont [CSS.headerFont, CSS.contentFont, CSS.codeFont]
   where
     postList ps = divClass "ui relaxed divided list" $ forM_ ps $ \p ->
       divClass "item" $ do
