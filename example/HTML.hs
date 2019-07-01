@@ -4,7 +4,6 @@
 module HTML where
 
 import Control.Monad (forM_)
-import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Char8 as BS8
 import Data.List (partition)
 import qualified Data.Text as T
@@ -12,13 +11,11 @@ import qualified Data.Text.Lazy as TL
 
 import qualified Clay
 import Reflex.Dom.Core
-import Text.Pandoc (Block (Plain), Inline (Str), Pandoc (Pandoc))
-import Text.Pandoc.UTF8 (fromStringLazy)
 
-import Reflex.Dom.Pandoc.Document (elPandocDoc)
+import Reflex.Dom.Pandoc.Document (elPandocDoc, elPandocInlines)
 import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 
-import Rib.Types (Page (..), Post (..), PostCategory (..), getPostAttribute)
+import Rib.Types (Page (..), Post (..), PostCategory (..), getPostAttribute, getPostAttributeJson)
 
 import CSS (codeFont, contentFont, headerFont, siteStyle)
 
@@ -55,7 +52,7 @@ pageWidget page = do
         case page of
           Page_Index posts -> do
             let (progPosts, otherPosts) =
-                  partition ((== Just Programming) . postCategory) posts
+                  partition ((== Just Programming) . getPostAttributeJson "category") posts
             elClass "h2" "ui header" $ text "Haskell & Nix notes"
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
@@ -73,17 +70,9 @@ pageWidget page = do
       divClass "item" $ do
         elAttr "a" ("class" =: "header" <> "href" =: _post_url p) $
           postTitle p
-        el "small" $ maybe blank pandocInlines $ getPostAttribute "description" p
+        el "small" $ maybe blank elPandocInlines $ getPostAttribute "description" p
 
-    postTitle = maybe (text "Untitled") pandocInlines . getPostAttribute "title"
-    postCategory post = getPostAttribute "category" post >>= \case
-      [Str category] -> do
-        let categoryJson = "\"" <> category <> "\""
-        Aeson.decode $ fromStringLazy categoryJson
-      _ -> error "Invalid category format"
-
-    -- TODO: Put this in Markdown module, and reuse renderBlocks
-    pandocInlines xs = elPandocDoc $ Pandoc mempty [Plain xs]
+    postTitle = maybe (text "Untitled") elPandocInlines . getPostAttribute "title"
 
     semUiCdn = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
     elLinkGoogleFont name =

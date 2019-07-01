@@ -1,7 +1,10 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Reflex.Dom.Pandoc.Document where
+module Reflex.Dom.Pandoc.Document
+  ( elPandocDoc
+  , elPandocInlines
+  )where
 
 import Control.Monad (forM_)
 import qualified Data.Text as T
@@ -76,3 +79,9 @@ elPandocDoc (Pandoc _meta blocks) = renderBlocks blocks
     notImplemented x = do
       el "strong" $ text "NotImplemented: "
       el "pre" $ el "code" $ text $ T.pack $ show x
+
+-- | Render list of Pandoc inlines
+--
+-- Useful when dealing with metadata values
+elPandocInlines :: DomBuilder t m => [Inline] -> m ()
+elPandocInlines xs = elPandocDoc $ Pandoc mempty [Plain xs]
