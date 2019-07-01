@@ -19,11 +19,8 @@ nix-build -A ghc.rib
 
 ## ... when hacking on Haskell sources
 
-FIXME: This is not working with the library/ executable split. Doesn't even
-reload on executable source files change.
-
 ```bash
-nix-shell -A shells.ghc --run "ghcid -T Main.dev"
+nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T Main.dev"
 ```
 
 ## TODO
