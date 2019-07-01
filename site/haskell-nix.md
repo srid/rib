@@ -133,7 +133,7 @@ compiler.developPackage {
 }
 ```
 
-In order you compute the `sha256` hash you can use `nix-prefetch-git`:
+In order to compute the `sha256` hash you can use `nix-prefetch-git`:
 
 ```bash
 nix-prefetch-git \
