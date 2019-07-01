@@ -20,14 +20,12 @@ nix-build -A ghc.rib
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T Main.dev"
+nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T 'System.Directory.withCurrentDirectory \"example\" \$ Main.dev'"
 ```
 
 ## TODO
 
 - Use my own jsonCache' and drop dependency on Slick
-- Literate haskell
-  - Include rendered Main.lhs as a post in notes.srid.ca
 
 ### Article Ideas
 

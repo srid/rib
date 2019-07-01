@@ -74,6 +74,7 @@ executable rib-example
     , bytestring
     , clay
     , data-default
+    , directory
     , reflex-dom-core
     , rib
     , text

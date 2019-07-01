@@ -36,8 +36,8 @@ instance Default Settings where
   def = Settings
     { pageHTML = pure . show
     , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
-    , contentDir = "site"
-    , destDir = "generated"
+    , contentDir = "content"
+    , destDir = "content.generated"
     , staticFilePatterns = ["images//*"]
     , postFilePatterns = ["*.md"]
     , rebuildPatterns = ["**/*.html", "**/*.md"]
