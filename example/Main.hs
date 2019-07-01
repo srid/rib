@@ -17,7 +17,7 @@ import qualified HTML
 -- See `S.Settings` for the settings available.
 siteSettings :: S.Settings x
 siteSettings = def
-  { S.pageHTML = HTML.pageWidget
+  { S.pageWidget = HTML.pageWidget
   -- ^ How to render a page type
   }
 

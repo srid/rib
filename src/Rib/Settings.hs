@@ -17,7 +17,7 @@ import Rib.Types (Page)
 
 
 data Settings x = Settings
-  { pageHTML :: Page -> StaticWidget x ()
+  { pageWidget :: Page -> StaticWidget x ()
   -- ^ Reflex widget for the page
   , parsePage :: Text -> Pandoc
   -- ^ Parse a text document like Markdown into Pandoc structure
@@ -38,7 +38,7 @@ data Settings x = Settings
 
 instance Default (Settings x) where
   def = Settings
-    { pageHTML = el "tt" . text . T.pack . show
+    { pageWidget = el "tt" . text . T.pack . show
     , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
     , contentDir = "content"
     , destDir = "content.generated"

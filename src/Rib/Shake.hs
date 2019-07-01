@@ -84,7 +84,7 @@ ribShake forceGen cfg = withArgs [] $ do
           postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
       pure $ Post doc postURL
 
-    renderPost = fmap (BS8.unpack . snd) . renderStatic . S.pageHTML cfg
+    renderPost = fmap (BS8.unpack . snd) . renderStatic . S.pageWidget cfg
 
     -- | Convert 'build' filepaths into source file filepaths
     destToSrc :: FilePath -> FilePath
