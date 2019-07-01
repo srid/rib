@@ -3,7 +3,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img src="https://raw.githubusercontent.com/srid/rib/master/site/images/ribs.svg?sanitize=true" width="150" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/example/content/images/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
 like `Shake` and `Reflex`. See `./example` to see how the library can be used;
