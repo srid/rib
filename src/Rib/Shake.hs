@@ -30,7 +30,7 @@ ribShake
   -- ^ Site settings
   -> IO ()
 ribShake forceGen cfg = withArgs [] $ do
-  -- ^ The withArgs above is to ensure that our own app arguments is not
+  -- The withArgs above is to ensure that our own app arguments is not
   -- confusing Shake.
   let opts = shakeOptions
         { shakeVerbosity = Chatty

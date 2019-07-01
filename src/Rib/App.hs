@@ -36,7 +36,7 @@ cli = modes
   , Generate
       { force = False &= help "Force generation of all files"
       } &= help "Generate the site"
-        &= auto  -- | Generate is the default command.
+        &= auto  -- Generate is the default command.
   ]
 
 -- | CLI entry point for running the Rib app
