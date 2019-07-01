@@ -4,7 +4,6 @@
 module HTML where
 
 import Control.Monad (forM_)
-import qualified Data.ByteString.Char8 as BS8
 import Data.List (partition)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
@@ -18,13 +17,6 @@ import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 import Rib.Types (Page (..), Post (..), PostCategory (..), getPostAttribute, getPostAttributeJson)
 
 import CSS (codeFont, contentFont, headerFont, siteStyle)
-
-pageHTML :: Page -> IO String
-pageHTML = fmap BS8.unpack . renderHTML . pageWidget
-  where
-    -- | Convert a Reflex DOM widget into HTML
-    renderHTML :: StaticWidget x a -> IO BS8.ByteString
-    renderHTML = fmap snd . renderStatic
 
 -- | The entire HTML layout is here.
 pageWidget :: DomBuilder t m => Page -> m ()

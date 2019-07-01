@@ -16,6 +16,7 @@ import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChan
                           readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, writeFile',
                           (%>), (|%>), (~>))
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
+import Reflex.Dom.Core (renderStatic)
 
 import Slick (jsonCache')
 
@@ -26,7 +27,7 @@ import Rib.Types
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> S.Settings
+  -> S.Settings x
   -- ^ Site settings
   -> IO ()
 ribShake forceGen cfg = withArgs [] $ do
@@ -64,13 +65,13 @@ ribShake forceGen cfg = withArgs [] $ do
     (S.destDir cfg </> "index.html") %> \out -> do
       files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
       posts <- traverse (getPostCached . PostFilePath . (S.contentDir cfg </>)) files
-      html <- liftIO $ S.pageHTML cfg $ Page_Index posts
+      html <- liftIO $ renderPost $ Page_Index posts
       writeFile' out html
 
     -- rule for actually building posts
     (S.destDir cfg </> "*.html") %> \out -> do
       post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-      html <- liftIO $ S.pageHTML cfg $ Page_Post post
+      html <- liftIO $ renderPost $ Page_Post post
       writeFile' out html
 
   where
@@ -82,6 +83,8 @@ ribShake forceGen cfg = withArgs [] $ do
       let doc = S.parsePage cfg content
           postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
       pure $ Post doc postURL
+
+    renderPost = fmap (BS8.unpack . snd) . renderStatic . S.pageHTML cfg
 
     -- | Convert 'build' filepaths into source file filepaths
     destToSrc :: FilePath -> FilePath

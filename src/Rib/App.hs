@@ -40,12 +40,12 @@ cli = modes
   ]
 
 -- | CLI entry point for running the Rib app
-run :: S.Settings -> IO ()
+run :: S.Settings x -> IO ()
 run cfg = runWith cfg =<< cmdArgs cli
 
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
-runWith :: S.Settings -> App -> IO ()
+runWith :: S.Settings x -> App -> IO ()
 runWith cfg = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
