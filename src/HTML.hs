@@ -91,4 +91,3 @@ pageWidget page = do
       where
         fontUrl = "https://fonts.googleapis.com/css?family=" <> (T.replace " " "-" name)
     elMeta k v = elAttr "meta" ("name" =: k <> "content" =: v) blank
-

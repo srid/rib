@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
-module Rib.Shake where
+module Rib.Shake
+  ( ribShake
+  ) where
 
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
@@ -20,14 +22,6 @@ import Slick (jsonCache')
 import qualified Rib.Settings as S
 import Rib.Types
 
-
--- | convert 'build' filepaths into source file filepaths
-destToSrc :: FilePath -> FilePath
-destToSrc p = "site" </> dropDirectory1 p
-
--- | convert a source file path into a URL
-srcToURL :: FilePath -> String
-srcToURL = ("/" ++) . dropDirectory1 . dropExtension
 
 ribShake
   :: Bool
@@ -86,5 +80,9 @@ ribShake forceGen cfg = withArgs [] $ do
       let srcPath = destToSrc postPath -<.> "md"
       content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
       let doc = S.parsePage cfg content
-          postURL = T.pack $ srcToURL postPath
+          postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
       pure $ Post doc postURL
+
+    -- | Convert 'build' filepaths into source file filepaths
+    destToSrc :: FilePath -> FilePath
+    destToSrc = (S.contentDir cfg </>) . dropDirectory1

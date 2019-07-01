@@ -18,9 +18,9 @@ data Settings = Settings
   , parsePage :: Text -> Pandoc
   -- ^ Parse a text document like Markdown into Pandoc structure
   , contentDir :: FilePath
-  -- ^ Directory of source content
+  -- ^ Directory name of the source content
   , destDir :: FilePath
-  -- ^ Directory to generate
+  -- ^ Name of the directory where output files will be generated
   , staticFilePatterns :: [FilePath]
   -- ^ Which files are considered to be static files.
   , postFilePatterns :: [FilePath]
