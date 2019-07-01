@@ -1,19 +1,23 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Rib.Settings where
 
 import Data.Default (Default (def))
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Development.Shake.FilePath (FilePath)
+import Reflex.Dom.Core
 import Text.Pandoc (Extension (..), Pandoc, ReaderOptions, extensionsFromList, githubMarkdownExtensions,
                     readMarkdown, readerExtensions, runPure)
 
 import Rib.Types (Page)
 
 
-data Settings = Settings
-  { pageHTML :: Page -> IO String
+data Settings x = Settings
+  { pageWidget :: Page -> StaticWidget x ()
   -- ^ Reflex widget for the page
   , parsePage :: Text -> Pandoc
   -- ^ Parse a text document like Markdown into Pandoc structure
@@ -32,12 +36,12 @@ data Settings = Settings
   -- changed in our Haskell source.
   }
 
-instance Default Settings where
+instance Default (Settings x) where
   def = Settings
-    { pageHTML = pure . show
+    { pageWidget = el "tt" . text . T.pack . show
     , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
-    , contentDir = "site"
-    , destDir = "generated"
+    , contentDir = "content"
+    , destDir = "content.generated"
     , staticFilePatterns = ["images//*"]
     , postFilePatterns = ["*.md"]
     , rebuildPatterns = ["**/*.html", "**/*.md"]

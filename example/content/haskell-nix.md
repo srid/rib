@@ -1,7 +1,7 @@
 ---
 title: "Nix tutorial for Haskellers"
 description: How to develop *Haskell* projects using *Nix*
-category: Programming
+category: '"Programming"'
 ---
 
 The goal of this article is to get you comfortable managing simple Haskell
@@ -133,7 +133,7 @@ compiler.developPackage {
 }
 ```
 
-In order you compute the `sha256` hash you can use `nix-prefetch-git`:
+In order to compute the `sha256` hash you can use `nix-prefetch-git`:
 
 ```bash
 nix-prefetch-git \

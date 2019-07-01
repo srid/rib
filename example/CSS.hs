@@ -4,12 +4,13 @@ module CSS where
 
 import Prelude hiding (div, (**))
 
-import Control.Monad (forM_)
+import Control.Monad
 import Data.Text (Text)
 
 import Clay
 
--- All these font names should exist in Google Fonts
+googleFonts :: [Text]
+googleFonts = [headerFont, contentFont, codeFont]
 
 headerFont :: Text
 headerFont = "Comfortaa"
@@ -20,9 +21,12 @@ contentFont = "Open Sans"
 codeFont :: Text
 codeFont = "Roboto Mono"
 
-siteStyle :: Css
-siteStyle = body ? do
+-- | Main style for the site
+style :: Css
+style = body ? do
   div # "#thesite" ? do
+    marginTop $ em 1
+    marginBottom $ em 2
     fontFamily [contentFont] [sansSerif]
     forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
       fontFamily [headerFont] [sansSerif]
