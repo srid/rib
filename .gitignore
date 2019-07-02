@@ -1,5 +1,5 @@
 dist-newstyle
 dist
 result
-.shake
-content.generated
+example/.shake
+example/content.generated

@@ -6,15 +6,38 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 <img src="https://raw.githubusercontent.com/srid/rib/master/example/content/images/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
-like `Shake` and `Reflex`. See `./example` to see how the library can be used;
-it contains the author's actual website. It is still a work in progress but will
-soon be ready for general use.
+like `Shake`, `Reflex` and `Clay`. It is still a work in progress but will soon
+be ready for general use.
+
+## Example
+
+See `./example` (author's actual website in fact) to see how the `Rib` library
+can be used to write your own static site generator in a few lines of code which
+includes the HTML and CSS of the site:
+
+```
+$ cloc --by-file example/*.hs
+[...]
+-------------------------------------------------------------------------------
+File                             blank        comment           code
+-------------------------------------------------------------------------------
+example/HTML.hs                     14              7             63
+example/CSS.hs                       9              1             32
+example/Main.hs                      8              7             16
+-------------------------------------------------------------------------------
+SUM:                                31             15            111
+-------------------------------------------------------------------------------
+```
+
+With Rib you do not have to deal with the less powerful template engines or
+write raw HTML/CSS by hand. Do everything in Haskell, and concisely at that!
 
 ## Local server when editing only content
 
 ```bash
 nix-build -A ghc.rib
-./result/bin/rib serve --watch
+cd example
+../result/bin/rib-example serve --watch
 ```
 
 ## ... when hacking on Haskell sources
