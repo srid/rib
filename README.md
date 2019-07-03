@@ -44,8 +44,6 @@ nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T 'System.
 
 ## TODO
 
-- [ ] Use my own jsonCache' and drop dependency on Slick
-- [ ] Combine multiple files into one `Site.hs`
 - [ ] Hakyll-like programming interface:
   - Shake buildActions extension in Settings, with default implementation
     `buildActions :: Settings x -> Action ()`

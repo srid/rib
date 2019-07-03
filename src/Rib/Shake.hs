@@ -5,6 +5,7 @@ module Rib.Shake
   ( ribShake
   ) where
 
+import Control.Monad ((<=<))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
@@ -38,7 +39,6 @@ ribShake forceGen cfg = withArgs [] $ do
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
-    -- TODO: Write my own jsonCache and stop depending on `Slick`
     getPostCached <- jsonCache' getPost
 
     want ["site"]
@@ -65,14 +65,12 @@ ribShake forceGen cfg = withArgs [] $ do
     (S.destDir cfg </> "index.html") %> \out -> do
       files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
       posts <- traverse (getPostCached . PostFilePath . (S.contentDir cfg </>)) files
-      html <- liftIO $ renderPost $ Page_Index posts
-      writeFile' out html
+      writeReflexWidget out $ S.pageWidget cfg $ Page_Index posts
 
     -- rule for actually building posts
     (S.destDir cfg </> "*.html") %> \out -> do
       post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-      html <- liftIO $ renderPost $ Page_Post post
-      writeFile' out html
+      writeReflexWidget out $ S.pageWidget cfg $ Page_Post post
 
   where
     -- | Read and parse a Markdown post
@@ -84,8 +82,10 @@ ribShake forceGen cfg = withArgs [] $ do
           postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
       pure $ Post doc postURL
 
-    renderPost = fmap (BS8.unpack . snd) . renderStatic . S.pageWidget cfg
+    writeReflexWidget out =
+      writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
 
     -- | Convert 'build' filepaths into source file filepaths
+    -- FIXME: this assumes destDir setting
     destToSrc :: FilePath -> FilePath
     destToSrc = (S.contentDir cfg </>) . dropDirectory1
