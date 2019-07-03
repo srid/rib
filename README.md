@@ -21,11 +21,7 @@ $ cloc --by-file example/*.hs
 -------------------------------------------------------------------------------
 File                             blank        comment           code
 -------------------------------------------------------------------------------
-example/HTML.hs                     14              7             63
-example/CSS.hs                       9              1             32
-example/Main.hs                      8              7             16
--------------------------------------------------------------------------------
-SUM:                                31             15            111
+example/Main.hs                     23             16            102
 -------------------------------------------------------------------------------
 ```
 
@@ -48,7 +44,15 @@ nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T 'System.
 
 ## TODO
 
-- Use my own jsonCache' and drop dependency on Slick
+- [ ] Use my own jsonCache' and drop dependency on Slick
+- [ ] Combine multiple files into one `Site.hs`
+- [ ] Hakyll-like programming interface:
+  - Shake buildActions extension in Settings, with default implementation
+    `buildActions :: Settings x -> Action ()`
+    Make staticFilePatterns and postFilePatterns part of the default impl.
+- [ ] One file dev?
+  - User creates Site.hs, then content/Hello.md and that's it.
+  - A shebang in Site.hs will allow them to build it straight!
 
 ### Article Ideas
 

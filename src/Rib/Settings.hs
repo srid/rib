@@ -9,13 +9,16 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Development.Shake.FilePath (FilePath)
-import Reflex.Dom.Core
+import Reflex.Dom.Core (StaticWidget, el, text)
 import Text.Pandoc (Extension (..), Pandoc, ReaderOptions, extensionsFromList, githubMarkdownExtensions,
                     readMarkdown, readerExtensions, runPure)
 
 import Rib.Types (Page)
 
 
+-- | Settings for building a static site.
+--
+-- The `x` is used internally by Reflex to build a static widget.
 data Settings x = Settings
   { pageWidget :: Page -> StaticWidget x ()
   -- ^ Reflex widget for the page
