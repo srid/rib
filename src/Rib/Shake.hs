@@ -41,7 +41,9 @@ ribShake forceGen cfg = withArgs [] $ do
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
-    getPostCached <- Slick.jsonCache' $ getPost (S.parsePage cfg)
+    getPostCached <- Slick.jsonCache' $ getPost
+      (S.parsePage cfg)
+      (T.pack . ("/" ++) . dropDirectory1 . dropExtension)
 
     want ["site"]
 
@@ -75,17 +77,6 @@ ribShake forceGen cfg = withArgs [] $ do
       writeReflexWidget out $ S.pageWidget cfg $ Page_Post post
 
   where
-    -- Read and parse a Markdown post
-    -- TODO: Stop depending on `destToSrc`
-    --   Maybe put postUrl in Pandoc metadata block, that can be overriden?
-    getPost :: (Text -> Pandoc) -> PostFilePath -> Action Post
-    getPost parseContent (PostFilePath postPath) = do
-      let srcPath = destToSrc postPath -<.> "md"
-      content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
-      let doc = parseContent content
-          postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
-      pure $ Post doc postURL
-
     writeReflexWidget out =
       writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
 
@@ -93,3 +84,14 @@ ribShake forceGen cfg = withArgs [] $ do
     -- FIXME: this assumes destDir setting
     destToSrc :: FilePath -> FilePath
     destToSrc = (S.contentDir cfg </>) . dropDirectory1
+
+-- Read and parse a Markdown post
+getPost
+  :: (Text -> Pandoc)
+  -> (FilePath -> Text)
+  -> PostFilePath
+  -> Action Post
+getPost parseContent mkPostUrl (PostFilePath postPath) = do
+  content <- T.decodeUtf8 . BS8.pack <$> readFile' postPath
+  let doc = parseContent content
+  pure $ Post doc (mkPostUrl postPath)
