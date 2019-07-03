@@ -9,6 +9,7 @@ import Control.Monad ((<=<))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import System.Environment (withArgs)
@@ -18,8 +19,9 @@ import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChan
                           (%>), (|%>), (~>))
 import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
 import Reflex.Dom.Core (renderStatic)
+import Text.Pandoc (Pandoc)
 
-import Slick (jsonCache')
+import qualified Slick
 
 import qualified Rib.Settings as S
 import Rib.Types
@@ -39,7 +41,7 @@ ribShake forceGen cfg = withArgs [] $ do
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
-    getPostCached <- jsonCache' getPost
+    getPostCached <- Slick.jsonCache' $ getPost (S.parsePage cfg)
 
     want ["site"]
 
@@ -73,12 +75,14 @@ ribShake forceGen cfg = withArgs [] $ do
       writeReflexWidget out $ S.pageWidget cfg $ Page_Post post
 
   where
-    -- | Read and parse a Markdown post
-    getPost :: PostFilePath -> Action Post
-    getPost (PostFilePath postPath) = do
+    -- Read and parse a Markdown post
+    -- TODO: Stop depending on `destToSrc`
+    --   Maybe put postUrl in Pandoc metadata block, that can be overriden?
+    getPost :: (Text -> Pandoc) -> PostFilePath -> Action Post
+    getPost parseContent (PostFilePath postPath) = do
       let srcPath = destToSrc postPath -<.> "md"
       content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
-      let doc = S.parsePage cfg content
+      let doc = parseContent content
           postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
       pure $ Post doc postURL
 
