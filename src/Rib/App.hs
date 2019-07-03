@@ -51,13 +51,14 @@ runWith cfg = \case
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runWith cfg $ Generate True
     -- And then every time a file changes under the content directory.
-    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $ runWith cfg $ Generate False
+    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $
+      runWith cfg $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
     (when w $ runWith cfg Watch)
-    $ Server.serve p $ S.destDir cfg
+    (Server.serve p $ S.destDir cfg)
 
   Generate forceGen ->
     Shake.ribShake forceGen cfg

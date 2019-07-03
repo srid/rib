@@ -39,7 +39,7 @@ main = App.run siteSettings
 
 -- | Entrypoint suited for ghcid
 --
--- TODO: Can we obviate this?
+-- TODO: Can we obviate this? Use withArgs from ghcid.
 dev :: IO ()
 dev = App.runWith siteSettings $ App.Serve 8080 True
 

@@ -74,7 +74,6 @@ simpleBuildRules staticFilePatterns postFilePatterns = do
     destToSrc = (contentDir </>) . dropDirectory1
 
   lift $ do
-
     want ["site"]
 
     -- Require all the things we need to build the whole site
