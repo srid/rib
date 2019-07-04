@@ -39,7 +39,8 @@ cd example
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T 'System.Directory.withCurrentDirectory \"example\" \$ Main.dev'"
+nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T
+'System.Directory.withCurrentDirectory \"example\" \$ Rib.App.dev Main.settings'"
 ```
 
 ## TODO

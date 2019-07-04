@@ -28,20 +28,14 @@ import Rib.Types (Page (..), Post(..), getPostAttribute, getPostAttributeJson, P
 -- | Configure this site here.
 --
 -- See `S.Settings` for the settings available.
-siteSettings :: S.Settings x
-siteSettings = Rib.defaultSiteSettings
+settings :: S.Settings x
+settings = Rib.defaultSiteSettings
   { S.pageWidget = pageWidget
   -- ^ How to render a page type
   }
 
 main :: IO ()
-main = App.run siteSettings
-
--- | Entrypoint suited for ghcid
---
--- TODO: Can we obviate this? Use withArgs from ghcid.
-dev :: IO ()
-dev = App.runWith siteSettings $ App.Serve 8080 True
+main = App.run settings
 
 googleFonts :: [Text]
 googleFonts = [headerFont, contentFont, codeFont]
