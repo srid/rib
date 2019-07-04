@@ -37,7 +37,7 @@ data Settings x = Settings
   -- We rebuild only the post files, assuming html/css/md file parsing has
   -- changed in our Haskell source.
 
-  , buildRules :: ReaderT (Settings x, PostFilePath -> Action Post) Rules ()
+  , buildRules :: ReaderT (Settings x, PostFilePath -> Action Pandoc) Rules ()
   -- ^ Build rules specifying how to build the site
   --
   -- A simple implementation is included, which you may copy over to customize

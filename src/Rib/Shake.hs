@@ -1,5 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
 module Rib.Shake
@@ -13,19 +13,19 @@ import Control.Monad.Reader
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import System.Environment (withArgs)
 
-import Development.Shake (Action, Rules, Rebuild (..), Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need,
-                          readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, writeFile',
-                          (%>), (|%>), (~>))
-import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-import Reflex.Dom.Core (renderStatic, StaticWidget)
+import Development.Shake (Action, Rebuild (..), Rules, Verbosity (Chatty), copyFileChanged, getDirectoryFiles,
+                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want,
+                          writeFile', (%>), (|%>), (~>))
+import Development.Shake.FilePath (dropDirectory1, (-<.>), (</>))
+import Reflex.Dom.Core (StaticWidget, renderStatic)
 import Text.Pandoc (Pandoc)
 
 import qualified Slick
 
+import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
 import Rib.Types
 
@@ -44,13 +44,10 @@ ribShake forceGen cfg = withArgs [] $ do
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
-    getPostCached <- Slick.jsonCache' $ getPost
-      (S.parsePage cfg)
-      -- TODO: This should be built from destination path, not source path.
-      -- Such that it will work with serve.
-      (T.pack . ("/" ++) . dropDirectory1 . dropExtension)
+    let parsePage = S.parsePage cfg
+    parsePandocCached <- Slick.jsonCache' $ parsePandoc parsePage
 
-    runReaderT (S.buildRules cfg) (cfg, getPostCached)
+    runReaderT (S.buildRules cfg) (cfg, parsePandocCached)
 
 -- Build rules for the simplest site possible.
 --
@@ -60,16 +57,15 @@ simpleBuildRules
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
-  -> ReaderT (S.Settings x, PostFilePath -> Action Post) Rules ()
+  -> ReaderT (S.Settings x, PostFilePath -> Action Pandoc) Rules ()
 simpleBuildRules staticFilePatterns postFilePatterns = do
   destDir <- asks $ S.destDir . fst
   contentDir <- asks $ S.contentDir . fst
   pageWidget <- asks $ S.pageWidget . fst
-  getPostCached <- asks snd
+  parsePandocCached <- asks snd
 
   let
     -- | Convert 'build' filepaths into source file filepaths
-    -- FIXME: this assumes destDir setting
     destToSrc :: FilePath -> FilePath
     destToSrc = (contentDir </>) . dropDirectory1
 
@@ -94,16 +90,20 @@ simpleBuildRules staticFilePatterns postFilePatterns = do
       files <- getDirectoryFiles contentDir postFilePatterns
       need $ (destDir </>) . (-<.> "html") <$> files
 
-    -- build the main table of contents
+    -- Build the main table of contents
     (destDir </> "index.html") %> \out -> do
       files <- getDirectoryFiles contentDir postFilePatterns
       -- TODO: Support `draft` property
-      posts <- traverse (getPostCached . PostFilePath . (contentDir </>)) files
+      posts <- forM files $ \f -> do
+        doc <- parsePandocCached $ PostFilePath (contentDir </> f)
+        pure $ Post doc $ getHTMLFileUrl f
       writeReflexWidget out $ pageWidget $ Page_Index posts
 
-    -- rule for actually building posts
+    -- Rule for building individual posts
     (destDir </> "*.html") %> \out -> do
-      post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
+      let f = dropDirectory1 $ destToSrc out -<.> "md"
+      doc <- parsePandocCached $ PostFilePath (contentDir </> f)
+      let post = Post doc $ getHTMLFileUrl f
       writeReflexWidget out $ pageWidget $ Page_Post post
 
 
@@ -111,13 +111,10 @@ writeReflexWidget :: MonadIO m => FilePath -> StaticWidget x () -> m ()
 writeReflexWidget out =
   writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
 
--- Read and parse a Markdown post
-getPost
+-- Require the given post file and parse it as Pandoc document.
+parsePandoc
   :: (Text -> Pandoc)
-  -> (FilePath -> Text)
   -> PostFilePath
-  -> Action Post
-getPost parseContent mkPostUrl (PostFilePath postPath) = do
-  content <- T.decodeUtf8 . BS8.pack <$> readFile' postPath
-  let doc = parseContent content
-  pure $ Post doc (mkPostUrl postPath)
+  -> Action Pandoc
+parsePandoc parse (PostFilePath f) =
+  parse . T.decodeUtf8 . BS8.pack <$> readFile' f
