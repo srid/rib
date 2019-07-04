@@ -30,7 +30,7 @@ extra muscle around and ravenously eating more to maintain it.
 
 ![When strength, not hypertrophy, is the goal you maintain a lean physique
 \(Steven Low holding his book Overcoming
-Gravity\)](./images/steven-low.jpg)
+Gravity\)](./static/steven-low.jpg)
 
 As a result of doing calisthenics I noticed normal activities like walking and
 standing becoming "more efficient," in that my posture has dramatically improved

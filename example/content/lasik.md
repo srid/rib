@@ -18,7 +18,7 @@ the day\) for a week before the day of evaluation wherein they would ascertain
 whether I'm a candidate for LASIK and if so for what kind of surgery.
 
 ![Not as crowded as the center in Chennai. Free coffee and cookies to
-boot.](./images/lasik-quebec.jpg)
+boot.](./static/lasik-quebec.jpg)
 
 The entire evaluation took about 3 hours. My vision has already been stable
 during the last few years. I was told that custom wavefront LASIK would be the
@@ -41,7 +41,7 @@ I was given three eye drops -- anti-bacterial, anti-inflammatory and hydrating
 -- to be used for the initial 5 days, after which I was to continue using the
 hydrating drops on an as-needed basis.
 
-![Eye drops](./images/lasik-drops.jpg)
+![Eye drops](./static/lasik-drops.jpg)
 
 On the day surgery I was asked to,
 

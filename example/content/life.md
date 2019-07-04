@@ -8,7 +8,7 @@ preferred living in a liberal culture (eg: no more [arranged
 marriage](https://en.wikipedia.org/wiki/Arranged_marriage_in_the_Indian_subcontinent))
 and being surrounded by more interesting tech culture.
 
-![Courtenay, BC](./images/courtenay.jpg)
+![Courtenay, BC](./static/courtenay.jpg)
 
 Newness and gullibility were normal themes as a new immigrant; belief in the
 veneer of equality was prevalent. Actual life experiences over the years

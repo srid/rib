@@ -22,8 +22,7 @@ defaultSiteSettings = Settings
   , destDir = "content.generated"
   , rebuildPatterns = ["**/*.html", "**/*.md"]
 
-  -- TODO: Rename images to static.
-  , buildRules = simpleBuildRules ["images//**"] ["*.md"]
+  , buildRules = simpleBuildRules ["static//**"] ["*.md"]
   }
   where
     -- | Reasonable options for reading a markdown file
