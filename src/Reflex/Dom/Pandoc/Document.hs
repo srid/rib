@@ -1,10 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Reflex.Dom.Pandoc.Document
   ( elPandocDoc
   , elPandocInlines
+  , elPandocHeading1
   ) where
 
 import Control.Monad (forM_)
@@ -23,6 +24,12 @@ import Reflex.Dom.Pandoc.Util (elPandocAttr, headerElement, renderAttr)
 -- TODO: Implement the notImplemented
 elPandocDoc :: DomBuilder t m => Pandoc -> m ()
 elPandocDoc (Pandoc _meta blocks) = mapM_ renderBlock blocks
+
+-- | Render the first level of heading
+elPandocHeading1 :: DomBuilder t m => Pandoc -> m ()
+elPandocHeading1 (Pandoc _meta blocks) = forM_ blocks $ \case
+  Header 1 _ xs -> mapM_ renderInline xs
+  _ -> blank
 
 -- | Render list of Pandoc inlines
 --
