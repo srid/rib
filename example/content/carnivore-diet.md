@@ -5,7 +5,7 @@ description: What I eat in a day
 
 I eat exclusively meat.
 
-![](./images/beef.jpg)
+![](./static/beef.jpg)
 
 ## Why?
 

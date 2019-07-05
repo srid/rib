@@ -1,25 +1,31 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 
 module Rib.Shake
   ( ribShake
+  , simpleBuildRules
   ) where
 
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad ((<=<))
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
-import qualified Data.Text as T
+import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import System.Environment (withArgs)
 
-import Development.Shake (Action, Rebuild (..), Verbosity (Chatty), copyFileChanged, getDirectoryFiles, need,
-                          readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, writeFile',
-                          (%>), (|%>), (~>))
-import Development.Shake.FilePath (dropDirectory1, dropExtension, (-<.>), (</>))
-import Reflex.Dom.Core (renderStatic)
+import Development.Shake (Action, Rebuild (..), Rules, Verbosity (Chatty), copyFileChanged, getDirectoryFiles,
+                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want,
+                          writeFile', (%>), (|%>), (~>))
+import Development.Shake.FilePath (dropDirectory1, (-<.>), (</>))
+import Reflex.Dom.Core (StaticWidget, renderStatic)
+import Text.Pandoc (Pandoc)
 
-import Slick (jsonCache')
+import qualified Slick
 
+import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
 import Rib.Types
 
@@ -38,54 +44,77 @@ ribShake forceGen cfg = withArgs [] $ do
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
   shakeArgs opts $ do
-    -- TODO: Write my own jsonCache and stop depending on `Slick`
-    getPostCached <- jsonCache' getPost
+    let parsePage = S.parsePage cfg
+    parsePandocCached <- Slick.jsonCache' $ parsePandoc parsePage
 
+    runReaderT (S.buildRules cfg) (cfg, parsePandocCached)
+
+-- Build rules for the simplest site possible.
+--
+-- Just posts and static files.
+simpleBuildRules
+  :: [FilePath]
+  -- ^ Which files are considered to be static files.
+  -> [FilePath]
+  -- ^ Which files are considered to be post files
+  -> ReaderT (S.Settings x, PostFilePath -> Action Pandoc) Rules ()
+simpleBuildRules staticFilePatterns postFilePatterns = do
+  destDir <- asks $ S.destDir . fst
+  contentDir <- asks $ S.contentDir . fst
+  pageWidget <- asks $ S.pageWidget . fst
+  parsePandocCached <- asks snd
+
+  let
+    -- | Convert 'build' filepaths into source file filepaths
+    destToSrc :: FilePath -> FilePath
+    destToSrc = (contentDir </>) . dropDirectory1
+
+  lift $ do
     want ["site"]
 
     -- Require all the things we need to build the whole site
     "site" ~>
-      need ["static", "posts", S.destDir cfg </> "index.html"]
+      need ["static", "posts", destDir </> "index.html"]
 
     -- Require all static assets
     "static" ~> do
-      files <- getDirectoryFiles (S.contentDir cfg) $ S.staticFilePatterns cfg
-      need $ (S.destDir cfg </>) <$> files
+      files <- getDirectoryFiles contentDir staticFilePatterns
+      need $ (destDir </>) <$> files
 
     -- Rule for handling static assets, just copy them from source to dest
-    (S.destDir cfg </>) <$> S.staticFilePatterns cfg |%> \out ->
+    (destDir </>) <$> staticFilePatterns |%> \out ->
       copyFileChanged (destToSrc out) out
 
     -- Find and require every post to be built
     "posts" ~> do
-      files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
-      need $ (S.destDir cfg </>) . (-<.> "html") <$> files
+      files <- getDirectoryFiles contentDir postFilePatterns
+      need $ (destDir </>) . (-<.> "html") <$> files
 
-    -- build the main table of contents
-    (S.destDir cfg </> "index.html") %> \out -> do
-      files <- getDirectoryFiles (S.contentDir cfg) $ S.postFilePatterns cfg
-      posts <- traverse (getPostCached . PostFilePath . (S.contentDir cfg </>)) files
-      html <- liftIO $ renderPost $ Page_Index posts
-      writeFile' out html
+    -- Build the main table of contents
+    (destDir </> "index.html") %> \out -> do
+      files <- getDirectoryFiles contentDir postFilePatterns
+      -- TODO: Support `draft` property
+      posts <- forM files $ \f -> do
+        doc <- parsePandocCached $ PostFilePath (contentDir </> f)
+        pure $ Post doc $ getHTMLFileUrl f
+      writeReflexWidget out $ pageWidget $ Page_Index posts
 
-    -- rule for actually building posts
-    (S.destDir cfg </> "*.html") %> \out -> do
-      post <- getPostCached $ PostFilePath $ destToSrc out -<.> "md"
-      html <- liftIO $ renderPost $ Page_Post post
-      writeFile' out html
+    -- Rule for building individual posts
+    (destDir </> "*.html") %> \out -> do
+      let f = dropDirectory1 $ destToSrc out -<.> "md"
+      doc <- parsePandocCached $ PostFilePath (contentDir </> f)
+      let post = Post doc $ getHTMLFileUrl f
+      writeReflexWidget out $ pageWidget $ Page_Post post
 
-  where
-    -- | Read and parse a Markdown post
-    getPost :: PostFilePath -> Action Post
-    getPost (PostFilePath postPath) = do
-      let srcPath = destToSrc postPath -<.> "md"
-      content <- T.decodeUtf8 . BS8.pack <$> readFile' srcPath
-      let doc = S.parsePage cfg content
-          postURL = T.pack $ ("/" ++) . dropDirectory1 . dropExtension $ postPath
-      pure $ Post doc postURL
 
-    renderPost = fmap (BS8.unpack . snd) . renderStatic . S.pageWidget cfg
+writeReflexWidget :: MonadIO m => FilePath -> StaticWidget x () -> m ()
+writeReflexWidget out =
+  writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
 
-    -- | Convert 'build' filepaths into source file filepaths
-    destToSrc :: FilePath -> FilePath
-    destToSrc = (S.contentDir cfg </>) . dropDirectory1
+-- Require the given post file and parse it as Pandoc document.
+parsePandoc
+  :: (Text -> Pandoc)
+  -> PostFilePath
+  -> Action Pandoc
+parsePandoc parse (PostFilePath f) =
+  parse . T.decodeUtf8 . BS8.pack <$> readFile' f

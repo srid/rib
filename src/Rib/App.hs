@@ -6,6 +6,7 @@ module Rib.App
   ( App(..)
   , run
   , runWith
+  , dev
   ) where
 
 import Control.Concurrent (threadDelay)
@@ -43,6 +44,15 @@ cli = modes
 run :: S.Settings x -> IO ()
 run cfg = runWith cfg =<< cmdArgs cli
 
+-- | Run development server that watches and generates files in addition to
+-- serving them.
+--
+-- This should be used with ghcid's `-T` argument.
+dev :: S.Settings x -> IO ()
+dev cfg = runWith cfg $ Serve devPort True
+  where
+    devPort = 8080
+
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
 runWith :: S.Settings x -> App -> IO ()
@@ -51,13 +61,14 @@ runWith cfg = \case
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runWith cfg $ Generate True
     -- And then every time a file changes under the content directory.
-    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $ runWith cfg $ Generate False
+    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $
+      runWith cfg $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
     (when w $ runWith cfg Watch)
-    $ Server.serve p $ S.destDir cfg
+    (Server.serve p $ S.destDir cfg)
 
   Generate forceGen ->
     Shake.ribShake forceGen cfg

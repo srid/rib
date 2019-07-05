@@ -19,7 +19,8 @@ source-repository head
 
 library
   exposed-modules:
-      Rib.App
+      Rib
+    , Rib.App
     , Rib.Settings
     , Rib.Types
     , Reflex.Dom.Pandoc.Document
@@ -45,6 +46,7 @@ library
     , http-types
     , lens
     , lens-aeson
+    , mtl
     , mustache
     , pandoc
     , pandoc-types

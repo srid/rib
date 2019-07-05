@@ -6,7 +6,7 @@ description: How to cook meat using sous vide
 I got into [sous vide](https://en.wikipedia.org/wiki/Sous-vide) cooking in Fall
 2017 and have been using it ever since.
 
-![](./images/ribeye.jpg)
+![](./static/ribeye.jpg)
 
 ## Equipment
 

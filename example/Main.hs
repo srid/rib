@@ -7,7 +7,6 @@ module Main where
 import Prelude hiding (div, (**))
 
 import Control.Monad
-import Data.Default (def)
 import Data.List (partition)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -19,6 +18,7 @@ import Reflex.Dom.Core hiding (display)
 import Reflex.Dom.Pandoc.Document (elPandocDoc, elPandocInlines)
 import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 
+import qualified Rib
 import qualified Rib.App as App
 import qualified Rib.Settings as S
 import Rib.Types (Page (..), Post(..), getPostAttribute, getPostAttributeJson, PostCategory(..))
@@ -28,20 +28,14 @@ import Rib.Types (Page (..), Post(..), getPostAttribute, getPostAttributeJson, P
 -- | Configure this site here.
 --
 -- See `S.Settings` for the settings available.
-siteSettings :: S.Settings x
-siteSettings = def
+settings :: S.Settings x
+settings = Rib.defaultSiteSettings
   { S.pageWidget = pageWidget
   -- ^ How to render a page type
   }
 
 main :: IO ()
-main = App.run siteSettings
-
--- | Entrypoint suited for ghcid
---
--- TODO: Can we obviate this?
-dev :: IO ()
-dev = App.runWith siteSettings $ App.Serve 8080 True
+main = App.run settings
 
 googleFonts :: [Text]
 googleFonts = [headerFont, contentFont, codeFont]

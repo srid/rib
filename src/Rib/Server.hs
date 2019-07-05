@@ -8,9 +8,11 @@ import Prelude hiding (init, last)
 import Control.Monad (guard)
 import Data.List (isSuffixOf)
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Safe (initMay, lastMay)
 
+import Development.Shake.FilePath
 import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
@@ -37,6 +39,12 @@ staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtm
       last <- fromPiece <$> lastMay xs
       guard $ not $ ".html" `isSuffixOf` T.unpack last
       pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
+
+-- | Return the URL for the given .html file under serve directory
+--
+-- File path must be relative to the serve directory.
+getHTMLFileUrl :: FilePath -> Text
+getHTMLFileUrl = T.pack . ("/" ++) . dropExtension
 
 -- | Run a HTTP server to serve a directory of static files
 --

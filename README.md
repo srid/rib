@@ -3,7 +3,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img src="https://raw.githubusercontent.com/srid/rib/master/example/content/images/ribs.svg?sanitize=true" width="150" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/example/content/static/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
 like `Shake`, `Reflex` and `Clay`. It is still a work in progress but will soon
@@ -39,20 +39,9 @@ cd example
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T 'System.Directory.withCurrentDirectory \"example\" \$ Main.dev'"
+nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T
+'System.Directory.withCurrentDirectory \"example\" \$ Rib.App.dev Main.settings'"
 ```
-
-## TODO
-
-- [ ] Use my own jsonCache' and drop dependency on Slick
-- [ ] Combine multiple files into one `Site.hs`
-- [ ] Hakyll-like programming interface:
-  - Shake buildActions extension in Settings, with default implementation
-    `buildActions :: Settings x -> Action ()`
-    Make staticFilePatterns and postFilePatterns part of the default impl.
-- [ ] One file dev?
-  - User creates Site.hs, then content/Hello.md and that's it.
-  - A shebang in Site.hs will allow them to build it straight!
 
 ### Article Ideas
 
