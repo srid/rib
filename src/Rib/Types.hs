@@ -6,9 +6,8 @@
 module Rib.Types
   ( Page(..)
   , Post(..)
-  , PostCategory(..)
   , PostFilePath(..)
-  , getPostAttribute
+  , getPostAttributeInlines
   , getPostAttributeList
   , getPostAttributeJson
   ) where
@@ -37,11 +36,6 @@ data Post = Post
   }
   deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
 
-data PostCategory
-  = Programming
-  | Other
-  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
-
 -- A simple wrapper data-type which implements 'ShakeValue';
 -- Used as a Shake Cache key to build a cache of post objects.
 newtype PostFilePath = PostFilePath FilePath
@@ -49,15 +43,13 @@ newtype PostFilePath = PostFilePath FilePath
 
 -- TODO: These functions should probably live in Pandoc Util module
 
--- Get the YAML metadata for the given key in a post
+-- Get the YAML metadata for the given key in a post.
 --
--- This has to always return `[Inline]` unless we upgrade pandoc. See
+-- We expect this to return `[Inline]` unless we upgrade pandoc. See
 -- https://github.com/jgm/pandoc/issues/2139#issuecomment-310522113
-getPostAttribute :: String -> Post -> Maybe [Inline]
-getPostAttribute k (Post (Pandoc meta _) _) =
+getPostAttributeInlines :: String -> Post -> Maybe [Inline]
+getPostAttributeInlines k (Post (Pandoc meta _) _) =
   case Map.lookup k (unMeta meta) of
-    -- When a Just value this will always be `MetaInlines`; see note in function
-    -- comment above.
     Just (MetaInlines inlines) -> Just inlines
     _ -> Nothing
 
@@ -78,6 +70,6 @@ getPostAttributeJson k p = do
 
 getPostAttributeRaw :: String -> Post -> Maybe String
 getPostAttributeRaw k p = do
-  getPostAttribute k p >>= \case
+  getPostAttributeInlines k p >>= \case
     [Str v] -> Just v
     _ -> Nothing
