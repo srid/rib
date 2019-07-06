@@ -28,7 +28,7 @@ elPandocDoc (Pandoc _meta blocks) = mapM_ renderBlock blocks
 -- | Render the first level of heading
 elPandocHeading1 :: DomBuilder t m => Pandoc -> m ()
 elPandocHeading1 (Pandoc _meta blocks) = forM_ blocks $ \case
-  Header 1 _ xs -> mapM_ renderInline xs
+  Header 1 _ xs -> elPandocInlines xs
   _ -> blank
 
 -- | Render list of Pandoc inlines

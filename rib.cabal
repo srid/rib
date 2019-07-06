@@ -70,7 +70,6 @@ executable rib-example
   build-depends:
       base
     , clay
-    , data-default
     , directory
     , reflex-dom-core
     , rib
