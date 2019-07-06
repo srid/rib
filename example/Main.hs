@@ -25,7 +25,8 @@ import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 import qualified Rib
 import qualified Rib.App as App
 import qualified Rib.Settings as S
-import Rib.Types (Page (..), Post (..), getPostAttributeInlines, getPostAttributeJson)
+import Rib.Types
+import Rib.Pandoc
 
 data PostCategory
   = Programming
@@ -100,7 +101,7 @@ pageWidget page = elAttr "html" ("lang" =: "en") $ do
         case page of
           Page_Index posts -> do
             let (progPosts, otherPosts) =
-                  partition ((== Just Programming) . getPostAttributeJson "category") posts
+                  partition ((== Just Programming) . getPandocMetaJson "category" . _post_doc) posts
             elClass "h2" "ui header" $ text "Haskell & Nix notes"
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
@@ -121,14 +122,14 @@ pageWidget page = elAttr "html" ("lang" =: "en") $ do
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe (text "Untitled") elPandocInlines . getPostAttributeInlines "title"
+    postTitle = maybe (text "Untitled") elPandocInlines . getPandocMetaInlines "title" . _post_doc
 
     -- Render a list of posts
     postList xs = divClass "ui relaxed divided list" $ forM_ xs $ \x ->
       divClass "item" $ do
         elAttr "a" ("class" =: "header" <> "href" =: _post_url x) $
           postTitle x
-        el "small" $ maybe blank elPandocInlines $ getPostAttributeInlines "description" x
+        el "small" $ maybe blank elPandocInlines $ getPandocMetaInlines "description" $ _post_doc x
 
     semanticUiCss = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
 

@@ -21,6 +21,7 @@ library
   exposed-modules:
       Rib
     , Rib.App
+    , Rib.Pandoc
     , Rib.Settings
     , Rib.Types
     , Reflex.Dom.Pandoc.Document
