@@ -10,6 +10,7 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
   packages = {
     rib = ./.;
     pandoc = hackGet ./dep/pandoc;
+    pandoc-types = hackGet ./dep/pandoc-types;
     hslua-module-system = hackGet ./dep/hslua-module-system;
     hslua-module-text = hackGet ./dep/hslua-module-text;
     ipynb = hackGet ./dep/ipynb;
@@ -19,6 +20,7 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
     skylighting-core = (hackGet ./dep/skylighting) + /skylighting-core;
     cmark-gfm = hackGet ./dep/cmark-gfm-hs;
     texmath = hackGet ./dep/texmath;
+    haddock-library = (hackGet ./dep/haddock) + /haddock-library;
   };
 
   overrides = self: super: with pkgs.haskell.lib;
@@ -41,7 +43,7 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
       isExecutable = true;
       isLibrary = true;
     });
-    pandoc = doJailbreak super.pandoc;  # Remove the version lock on `haddock-library`
+    # pandoc = doJailbreak super.pandoc;  # Remove the version lock on `haddock-library`
   };
 
   shells = {
