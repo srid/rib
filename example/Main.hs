@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -7,10 +9,12 @@ module Main where
 import Prelude hiding (div, (**))
 
 import Control.Monad
+import Data.Aeson (FromJSON, ToJSON)
 import Data.List (partition)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
+import GHC.Generics
 
 import Clay
 import Reflex.Dom.Core hiding (display)
@@ -21,9 +25,13 @@ import qualified Reflex.Dom.Pandoc.SyntaxHighlighting as SyntaxHighlighting
 import qualified Rib
 import qualified Rib.App as App
 import qualified Rib.Settings as S
-import Rib.Types (Page (..), Post(..), getPostAttribute, getPostAttributeJson, PostCategory(..))
+import Rib.Types
+import Rib.Pandoc
 
--- TODO: PostCategory and such should not be in library
+data PostCategory
+  = Programming
+  | Other
+  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
 
 -- | Configure this site here.
 --
@@ -93,7 +101,7 @@ pageWidget page = elAttr "html" ("lang" =: "en") $ do
         case page of
           Page_Index posts -> do
             let (progPosts, otherPosts) =
-                  partition ((== Just Programming) . getPostAttributeJson "category") posts
+                  partition ((== Just Programming) . getPandocMetaJson "category" . _post_doc) posts
             elClass "h2" "ui header" $ text "Haskell & Nix notes"
             postList progPosts
             elClass "h2" "ui header" $ text "Other notes"
@@ -114,14 +122,14 @@ pageWidget page = elAttr "html" ("lang" =: "en") $ do
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe (text "Untitled") elPandocInlines . getPostAttribute "title"
+    postTitle = maybe (text "Untitled") elPandocInlines . getPandocMetaInlines "title" . _post_doc
 
     -- Render a list of posts
     postList xs = divClass "ui relaxed divided list" $ forM_ xs $ \x ->
       divClass "item" $ do
         elAttr "a" ("class" =: "header" <> "href" =: _post_url x) $
           postTitle x
-        el "small" $ maybe blank elPandocInlines $ getPostAttribute "description" x
+        el "small" $ maybe blank elPandocInlines $ getPandocMetaInlines "description" $ _post_doc x
 
     semanticUiCss = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
 

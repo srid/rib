@@ -6,10 +6,16 @@
   }) {}
 }:
 
-reflex-platform.project ({ pkgs, ... }: {
-  packages = {
+reflex-platform.project ({ pkgs, hackGet, ... }:
+let
+  pandoc = import ./nix/pandoc.nix { pkgs = pkgs; hackGet = hackGet; };
+in
+{
+  packages = pandoc.packages // {
     rib = ./.;
   };
+
+  overrides = pandoc.overrides;
 
   shells = {
     ghc = ["rib"];

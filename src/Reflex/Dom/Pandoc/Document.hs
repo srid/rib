@@ -8,7 +8,9 @@ module Reflex.Dom.Pandoc.Document
   , elPandocHeading1
   ) where
 
-import Control.Monad (forM_)
+import Control.Monad
+import Data.Bool
+import Data.Maybe
 import qualified Data.Text as T
 
 import Reflex.Dom.Core hiding (Link, Space)
@@ -28,7 +30,7 @@ elPandocDoc (Pandoc _meta blocks) = mapM_ renderBlock blocks
 -- | Render the first level of heading
 elPandocHeading1 :: DomBuilder t m => Pandoc -> m ()
 elPandocHeading1 (Pandoc _meta blocks) = forM_ blocks $ \case
-  Header 1 _ xs -> mapM_ renderInline xs
+  Header 1 _ xs -> elPandocInlines xs
   _ -> blank
 
 -- | Render list of Pandoc inlines
@@ -39,7 +41,13 @@ elPandocInlines = mapM_ renderInline
 
 renderBlock :: DomBuilder t m => Block -> m ()
 renderBlock = \case
-  Plain inlines -> mapM_ renderInline inlines
+  -- Pandoc parses github tasklist as this structure.
+  Plain (Str "☐":Space:is) -> checkboxEl False >> mapM_ renderInline is
+  Plain (Str "☒":Space:is) -> checkboxEl True >> mapM_ renderInline is
+  Para (Str "☐":Space:is) -> checkboxEl False >> mapM_ renderInline is
+  Para (Str "☒":Space:is) -> checkboxEl True >> mapM_ renderInline is
+
+  Plain xs -> mapM_ renderInline xs
   Para xs -> el "p" $ mapM_ renderInline xs
   LineBlock xss -> forM_ xss $ \xs -> do
     mapM_ renderInline xs
@@ -62,6 +70,12 @@ renderBlock = \case
   Div attr xs -> elPandocAttr "div" attr $
     mapM_ renderBlock xs
   Null -> blank
+  where
+    checkboxEl checked = void $ elAttr "input" (mconcat $ catMaybes $
+      [ Just $ "type" =: "checkbox"
+      , Just $ "disabled" =: "True"
+      , bool Nothing (Just $ "checked" =: "True") checked
+      ]) blank
 
 renderInline :: DomBuilder t m => Inline -> m ()
 renderInline = \case
