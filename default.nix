@@ -21,9 +21,26 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
     texmath = hackGet ./dep/texmath;
   };
 
-  overrides = self: super: with pkgs.haskell.lib; {
+  overrides = self: super: with pkgs.haskell.lib;
+  let 
+    skylighting-core = overrideCabal super.skylighting-core (drv: {
+      isExecutable = true;
+      isLibrary = true;
+      configureFlags = [ "-fexecutable" ];  # We need the CLI tool later.
+    });
+  in
+  {
     hslua-module-system = dontCheck super.hslua-module-system;
     hslua-module-text = dontCheck super.hslua-module-text;
+    skylighting-core = skylighting-core;
+    skylighting = overrideCabal super.skylighting (drv: {
+      preConfigure = ''
+        ${skylighting-core}/bin/skylighting-extract ${skylighting-core}/xml/*.xml
+        rm -f changelog.md; touch changelog.md  # Workaround failing symlink access
+      '';
+      isExecutable = true;
+      isLibrary = true;
+    });
   };
 
   shells = {
