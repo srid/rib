@@ -9,16 +9,12 @@ module Rib.Types
   , PostFilePath(..)
   ) where
 
-import Control.Monad
-import Data.Aeson (FromJSON, ToJSON, decode)
-import qualified Data.Map as Map
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text (Text)
-import Data.Maybe
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 
-import Text.Pandoc (Pandoc)
 import Development.Shake.Classes (Binary, Hashable, NFData)
+import Text.Pandoc (Pandoc)
 
 -- | Represents a HTML page that will be generated
 data Page

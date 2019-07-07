@@ -1,10 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Rib.Pandoc where
 
 import Control.Monad
-import Data.Aeson (decode, FromJSON)
+import Data.Aeson (FromJSON, decode)
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,7 +31,7 @@ getPandocMetaList k (Pandoc meta _) =
     _ -> Nothing
 
 getPandocMetaRaw :: String -> Pandoc -> Maybe String
-getPandocMetaRaw k p = do
+getPandocMetaRaw k p =
   getPandocMetaInlines k p >>= \case
     [Str v] -> Just v
     _ -> Nothing
