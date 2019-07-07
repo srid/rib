@@ -45,7 +45,7 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
       isExecutable = true;
       isLibrary = true;
     });
-    # pandoc = doJailbreak super.pandoc;  # Remove the version lock on `haddock-library`
+    pandoc = doJailbreak super.pandoc;  # Remove the version lock on `haddock-library`
   };
 
   shells = {
