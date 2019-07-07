@@ -48,8 +48,7 @@ library
     , lens
     , lens-aeson
     , mtl
-    , mustache
-    , pandoc
+    , pandoc >= 2.6
     , pandoc-types
     , reflex-dom-core
     , safe
