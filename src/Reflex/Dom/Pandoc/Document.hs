@@ -22,6 +22,7 @@ import Reflex.Dom.Pandoc.Util (elPandocAttr, headerElement, renderAttr)
 --
 -- NOTE: Not all Markdown features are supported yet.
 -- TODO: Implement the notImplemented
+-- TODO: Implement Github style checkboxes; https://github.com/jgm/pandoc/issues/3051
 elPandocDoc :: DomBuilder t m => Pandoc -> m ()
 elPandocDoc (Pandoc _meta blocks) = mapM_ renderBlock blocks
 

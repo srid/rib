@@ -1,7 +1,7 @@
 {
   "owner": "haskell",
   "repo": "haddock",
-  "branch": "ghc-8.8",
-  "rev": "91c65619149f4866abcce33a56036e2e2454629f",
-  "sha256": "1h0ahcj5kn1z9wh2pwk3myx6kj51m9111ncv6qmscw0rczbb2l5z"
+  "branch": "ghc-8.4",
+  "rev": "9712d8899d452292913a260058a6dd3346e8d39b",
+  "sha256": "1zw5grv8zrrl9nyzfn74f5v7bc7vgh0l977lpb8yi41js049nw7x"
 }

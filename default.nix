@@ -21,6 +21,8 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
     cmark-gfm = hackGet ./dep/cmark-gfm-hs;
     texmath = hackGet ./dep/texmath;
     haddock-library = (hackGet ./dep/haddock) + /haddock-library;
+    haddock-api = (hackGet ./dep/haddock) + /haddock-api;
+    # haskell-ide-engine = ./dep/haskell-ide-engine;
   };
 
   overrides = self: super: with pkgs.haskell.lib;
