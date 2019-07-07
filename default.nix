@@ -22,11 +22,10 @@ reflex-platform.project ({ pkgs, hackGet, ... }: {
     texmath = hackGet ./dep/texmath;
     haddock-library = (hackGet ./dep/haddock) + /haddock-library;
     haddock-api = (hackGet ./dep/haddock) + /haddock-api;
-    # haskell-ide-engine = ./dep/haskell-ide-engine;
   };
 
   overrides = self: super: with pkgs.haskell.lib;
-  let 
+  let
     skylighting-core = overrideCabal super.skylighting-core (drv: {
       isExecutable = true;
       isLibrary = true;
