@@ -1,23 +1,23 @@
-{ reflex-platform ? import ((import <nixpkgs> {}).fetchFromGitHub {
-    owner = "reflex-frp";
-    repo = "reflex-platform";
-    rev = "716879f16d53c93766e7ed9af17416fccb2edfe1";
-    sha256 = "1mngxa24cfpvxxq4hgh77nw36vny4abl5wi2xmlwpkk25wzm0h0x";
-  }) {}
-}:
-
-reflex-platform.project ({ pkgs, hackGet, ... }:
-# let
-#   pandoc = import ./nix/pandoc.nix { pkgs = pkgs; hackGet = hackGet; };
-# in
-{
-  packages = {
-    rib = ./.;
+let
+  pkgs = import <nixpkgs> { };
+  compiler = "default";
+  haskellPackages =
+    if compiler == "default"
+      then pkgs.haskellPackages
+      else pkgs.haskell.packages.${compiler};
+in
+haskellPackages.developPackage {
+  root = ./.;
+  source-overrides = {
+    clay = pkgs.fetchFromGitHub {
+      owner = "sebastiaanvisser";
+      repo = "clay";
+      rev = "54dc9eaf0abd180ef9e35d97313062d99a02ee75";
+      sha256 = "0y38hyd2gvr7lrbxkrjwg4h0077a54m7gxlvm9s4kk0995z1ncax";
+    };
   };
 
-  # overrides = pandoc.overrides;
-
-  shells = {
-    ghc = ["rib"];
+  overrides = self: super: with pkgs.haskell.lib; {
+    clay = dontCheck super.clay;
   };
-})
+}

@@ -122,7 +122,7 @@ let
 in
 compiler.developPackage {
   root = ./.;
-  source-overrides = { pkgs }: {
+  source-overrides = {
     aeson-gadt-th = pkgs.fetchFromGitHub {
       owner = "obsidiansystems";
       repo = "aeson-gadt-th";

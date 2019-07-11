@@ -47,10 +47,10 @@ googleFonts :: [Text]
 googleFonts = [headerFont, contentFont, codeFont]
 
 headerFont :: Text
-headerFont = "Comfortaa"
+headerFont = "Saira Extra Condensed"
 
 contentFont :: Text
-contentFont = "Open Sans"
+contentFont = "Muli"
 
 codeFont :: Text
 codeFont = "Roboto Mono"

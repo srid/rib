@@ -46,11 +46,11 @@ library
     , lens-aeson
     , lucid
     , mtl
-    , pandoc >= 2.7
+    , pandoc
     , pandoc-types
     , safe
     , shake
-    , skylighting >= 0.8
+    , skylighting
     , slick
     , text
     , time

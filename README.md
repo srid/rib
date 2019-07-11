@@ -30,18 +30,25 @@ write raw HTML/CSS by hand. Do everything in Haskell, and concisely at that!
 
 ## Local server when editing only content
 
-TODO
-
 ```bash
-nix-build -A ghc.rib
+nix-build
 cd example
 ../result/bin/rib-example serve --watch
 ```
 
+Or simply (no cabal file needed),
+
+```bash
+
+nix-shell ../default.nix --run "ghcid -c 'ghci -Wall -i../rib/src Main.hs' -T 'Rib.App.dev Main.settings' --reload=Main.hs"
+```
+
+
+
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T
+nix-shell --run "ghcid -c 'cabal new-repl rib-example' -T
 'System.Directory.withCurrentDirectory \"example\" \$ Rib.App.dev Main.settings'"
 ```
 
