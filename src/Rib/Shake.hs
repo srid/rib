@@ -7,8 +7,7 @@ module Rib.Shake
   , simpleBuildRules
   ) where
 
-import Control.Monad ((<=<))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
@@ -17,10 +16,10 @@ import qualified Data.Text.Encoding as T
 import System.Environment (withArgs)
 
 import Development.Shake (Action, Rebuild (..), Rules, Verbosity (Chatty), copyFileChanged, getDirectoryFiles,
-                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want,
-                          writeFile', (%>), (|%>), (~>))
+                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, (%>),
+                          (|%>), (~>))
 import Development.Shake.FilePath (dropDirectory1, (-<.>), (</>))
-import Reflex.Dom.Core (StaticWidget, renderStatic)
+import Lucid
 import Text.Pandoc (Pandoc)
 
 import qualified Slick
@@ -33,7 +32,7 @@ import Rib.Types
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> S.Settings x
+  -> S.Settings
   -- ^ Site settings
   -> IO ()
 ribShake forceGen cfg = withArgs [] $ do
@@ -57,7 +56,7 @@ simpleBuildRules
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
-  -> ReaderT (S.Settings x, PostFilePath -> Action Pandoc) Rules ()
+  -> ReaderT (S.Settings, PostFilePath -> Action Pandoc) Rules ()
 simpleBuildRules staticFilePatterns postFilePatterns = do
   destDir <- asks $ S.destDir . fst
   contentDir <- asks $ S.contentDir . fst
@@ -97,19 +96,14 @@ simpleBuildRules staticFilePatterns postFilePatterns = do
       posts <- forM files $ \f -> do
         doc <- parsePandocCached $ PostFilePath (contentDir </> f)
         pure $ Post doc $ getHTMLFileUrl f
-      writeReflexWidget out $ pageWidget $ Page_Index posts
+      liftIO $ renderToFile out $ pageWidget $ Page_Index posts
 
     -- Rule for building individual posts
     (destDir </> "*.html") %> \out -> do
       let f = dropDirectory1 $ destToSrc out -<.> "md"
       doc <- parsePandocCached $ PostFilePath (contentDir </> f)
       let post = Post doc $ getHTMLFileUrl f
-      writeReflexWidget out $ pageWidget $ Page_Post post
-
-
-writeReflexWidget :: MonadIO m => FilePath -> StaticWidget x () -> m ()
-writeReflexWidget out =
-  writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
+      liftIO $ renderToFile out $ pageWidget $ Page_Post post
 
 -- Require the given post file and parse it as Pandoc document.
 parsePandoc

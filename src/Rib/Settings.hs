@@ -4,11 +4,11 @@
 
 module Rib.Settings where
 
-import Data.Text (Text)
 import Control.Monad.Reader
+import Data.Text (Text)
 
 import Development.Shake
-import Reflex.Dom.Core
+import Lucid (Html)
 import Text.Pandoc
 
 import Rib.Types
@@ -16,11 +16,10 @@ import Rib.Types
 
 -- | Settings for building a static site.
 --
--- The `x` is used internally by Reflex to build a static widget.
 -- TODO: When settings change it should invalidate Shake cache. How do we do it?
-data Settings x = Settings
-  { pageWidget :: Page -> StaticWidget x ()
-  -- ^ Reflex widget for the page
+data Settings = Settings
+  { pageWidget :: Page -> Html ()
+  -- ^ Lucid widget for the page
 
   , parsePage :: Text -> Pandoc
   -- ^ Parse a text document like Markdown into Pandoc structure
@@ -37,7 +36,7 @@ data Settings x = Settings
   -- We rebuild only the post files, assuming html/css/md file parsing has
   -- changed in our Haskell source.
 
-  , buildRules :: ReaderT (Settings x, PostFilePath -> Action Pandoc) Rules ()
+  , buildRules :: ReaderT (Settings, PostFilePath -> Action Pandoc) Rules ()
   -- ^ Build rules specifying how to build the site
   --
   -- A simple implementation is included, which you may copy over to customize

@@ -6,7 +6,7 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 <img src="https://raw.githubusercontent.com/srid/rib/master/example/content/static/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
-like `Shake`, `Reflex` and `Clay`. It is still a work in progress but will soon
+like `Shake`, `Lucid` and `Clay`. It is still a work in progress but will soon
 be ready for general use.
 
 ## Example
@@ -31,15 +31,24 @@ write raw HTML/CSS by hand. Do everything in Haskell, and concisely at that!
 ## Local server when editing only content
 
 ```bash
-nix-build -A ghc.rib
+nix-build
 cd example
 ../result/bin/rib-example serve --watch
 ```
 
+Or simply (no cabal file needed),
+
+```bash
+
+nix-shell ../default.nix --run "ghcid -c 'ghci -Wall -i../rib/src Main.hs' -T 'Rib.App.dev Main.settings' --reload=Main.hs"
+```
+
+
+
 ## ... when hacking on Haskell sources
 
 ```bash
-nix-shell -A shells.ghc --run "ghcid -c 'cabal new-repl rib-example' -T
+nix-shell --run "ghcid -c 'cabal new-repl rib-example' -T
 'System.Directory.withCurrentDirectory \"example\" \$ Rib.App.dev Main.settings'"
 ```
 

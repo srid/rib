@@ -7,15 +7,15 @@ module Rib where
 import Data.Default (Default (def))
 import qualified Data.Text as T
 
+import Lucid
 import Text.Pandoc
-import Reflex.Dom.Core (el, text)
 
 import Rib.Settings
 import Rib.Shake
 
-defaultSiteSettings :: Settings x
+defaultSiteSettings :: Settings
 defaultSiteSettings = Settings
-  { pageWidget = el "tt" . text . T.pack . show
+  { pageWidget = pre_ . toHtml . T.pack . show
   , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
 
   , contentDir = "content"

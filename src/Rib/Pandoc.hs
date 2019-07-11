@@ -9,6 +9,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.Pandoc
+import Text.Pandoc.Highlighting
 import Text.Pandoc.UTF8 (fromStringLazy)
 
 -- Get the YAML metadata for the given key in a post.
@@ -39,3 +40,22 @@ getPandocMetaRaw k p =
 -- Like getPandocMeta but expects the value to be JSON encoding of a type.
 getPandocMetaJson :: FromJSON a => String -> Pandoc -> Maybe a
 getPandocMetaJson k = decode . fromStringLazy <=< getPandocMetaRaw k
+
+pandoc2Html' :: Pandoc -> Either PandocError Text
+pandoc2Html' = runPure . writeHtml5String settings
+  where
+    settings :: WriterOptions
+    settings = def
+
+-- TODO: remove Monad and use error (like hakyll does)
+pandoc2Html :: Monad m => Pandoc -> m Text
+pandoc2Html = either (fail . show) pure . pandoc2Html'
+
+pandocInlines2Html' :: [Inline] -> Either PandocError Text
+pandocInlines2Html' = pandoc2Html . Pandoc mempty . pure . Plain
+
+pandocInlines2Html :: Monad m => [Inline] -> m Text
+pandocInlines2Html = either (fail . show) pure . pandocInlines2Html'
+
+highlightingStyle :: Text
+highlightingStyle = T.pack $ styleToCss tango

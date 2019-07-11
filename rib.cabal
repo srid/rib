@@ -24,12 +24,9 @@ library
     , Rib.Pandoc
     , Rib.Settings
     , Rib.Types
-    , Reflex.Dom.Pandoc.Document
-    , Reflex.Dom.Pandoc.SyntaxHighlighting
   other-modules:
       Rib.Shake
     , Rib.Server
-    , Reflex.Dom.Pandoc.Util
   hs-source-dirs:
       src
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
@@ -47,10 +44,10 @@ library
     , http-types
     , lens
     , lens-aeson
+    , lucid
     , mtl
-    , pandoc >= 2.6
+    , pandoc
     , pandoc-types
-    , reflex-dom-core
     , safe
     , shake
     , skylighting
@@ -72,6 +69,6 @@ executable rib-example
     , base
     , clay
     , directory
-    , reflex-dom-core
+    , lucid
     , rib
     , text
