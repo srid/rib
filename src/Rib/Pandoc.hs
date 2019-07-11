@@ -9,6 +9,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Text.Pandoc
+import Text.Pandoc.Highlighting
 import Text.Pandoc.UTF8 (fromStringLazy)
 
 -- Get the YAML metadata for the given key in a post.
@@ -55,3 +56,6 @@ pandocInlines2Html' = pandoc2Html . Pandoc mempty . pure . Plain
 
 pandocInlines2Html :: Monad m => [Inline] -> m Text
 pandocInlines2Html = either (fail . show) pure . pandocInlines2Html'
+
+highlightingStyle :: Text
+highlightingStyle = T.pack $ styleToCss tango

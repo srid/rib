@@ -13,7 +13,7 @@ import Lucid
 import Rib.Settings
 import Rib.Shake
 
-defaultSiteSettings :: Settings x
+defaultSiteSettings :: Settings
 defaultSiteSettings = Settings
   { pageWidget = pre_ . toHtml . T.pack . show
   , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions

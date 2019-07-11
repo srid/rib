@@ -32,7 +32,7 @@ import Rib.Types
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> S.Settings x
+  -> S.Settings
   -- ^ Site settings
   -> IO ()
 ribShake forceGen cfg = withArgs [] $ do
@@ -56,7 +56,7 @@ simpleBuildRules
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
-  -> ReaderT (S.Settings x, PostFilePath -> Action Pandoc) Rules ()
+  -> ReaderT (S.Settings, PostFilePath -> Action Pandoc) Rules ()
 simpleBuildRules staticFilePatterns postFilePatterns = do
   destDir <- asks $ S.destDir . fst
   contentDir <- asks $ S.contentDir . fst
