@@ -7,8 +7,8 @@ module Rib where
 import Data.Default (Default (def))
 import qualified Data.Text as T
 
-import Text.Pandoc
 import Lucid
+import Text.Pandoc
 
 import Rib.Settings
 import Rib.Shake

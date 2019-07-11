@@ -7,7 +7,7 @@ module Rib.Shake
   , simpleBuildRules
   ) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
@@ -96,19 +96,14 @@ simpleBuildRules staticFilePatterns postFilePatterns = do
       posts <- forM files $ \f -> do
         doc <- parsePandocCached $ PostFilePath (contentDir </> f)
         pure $ Post doc $ getHTMLFileUrl f
-      writeLucidHtml out $ pageWidget $ Page_Index posts
+      liftIO $ renderToFile out $ pageWidget $ Page_Index posts
 
     -- Rule for building individual posts
     (destDir </> "*.html") %> \out -> do
       let f = dropDirectory1 $ destToSrc out -<.> "md"
       doc <- parsePandocCached $ PostFilePath (contentDir </> f)
       let post = Post doc $ getHTMLFileUrl f
-      writeLucidHtml out $ pageWidget $ Page_Post post
-
-
--- | TODO: Put this in Shake monad?
-writeLucidHtml :: MonadIO m => FilePath -> Html () -> m ()
-writeLucidHtml out = liftIO . renderToFile out
+      liftIO $ renderToFile out $ pageWidget $ Page_Post post
 
 -- Require the given post file and parse it as Pandoc document.
 parsePandoc

@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -22,9 +22,9 @@ import Lucid
 
 import qualified Rib
 import qualified Rib.App as App
+import Rib.Pandoc
 import qualified Rib.Settings as S
 import Rib.Types
-import Rib.Pandoc
 
 data PostCategory
   = Programming
@@ -47,7 +47,7 @@ googleFonts :: [Text]
 googleFonts = [headerFont, contentFont, codeFont]
 
 headerFont :: Text
-headerFont = "Saira Extra Condensed"
+headerFont = "IBM Plex Sans Condensed"
 
 contentFont :: Text
 contentFont = "Muli"

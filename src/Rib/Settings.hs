@@ -4,8 +4,8 @@
 
 module Rib.Settings where
 
-import Data.Text (Text)
 import Control.Monad.Reader
+import Data.Text (Text)
 
 import Development.Shake
 import Lucid (Html)
