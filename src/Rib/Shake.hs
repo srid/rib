@@ -7,7 +7,6 @@ module Rib.Shake
   , simpleBuildRules
   ) where
 
-import Control.Monad ((<=<))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
 import Data.Bool (bool)
@@ -17,10 +16,10 @@ import qualified Data.Text.Encoding as T
 import System.Environment (withArgs)
 
 import Development.Shake (Action, Rebuild (..), Rules, Verbosity (Chatty), copyFileChanged, getDirectoryFiles,
-                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want,
-                          writeFile', (%>), (|%>), (~>))
+                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, (%>),
+                          (|%>), (~>))
 import Development.Shake.FilePath (dropDirectory1, (-<.>), (</>))
-import Reflex.Dom.Core (StaticWidget, renderStatic)
+import Lucid
 import Text.Pandoc (Pandoc)
 
 import qualified Slick
@@ -97,19 +96,19 @@ simpleBuildRules staticFilePatterns postFilePatterns = do
       posts <- forM files $ \f -> do
         doc <- parsePandocCached $ PostFilePath (contentDir </> f)
         pure $ Post doc $ getHTMLFileUrl f
-      writeReflexWidget out $ pageWidget $ Page_Index posts
+      writeLucidHtml out $ pageWidget $ Page_Index posts
 
     -- Rule for building individual posts
     (destDir </> "*.html") %> \out -> do
       let f = dropDirectory1 $ destToSrc out -<.> "md"
       doc <- parsePandocCached $ PostFilePath (contentDir </> f)
       let post = Post doc $ getHTMLFileUrl f
-      writeReflexWidget out $ pageWidget $ Page_Post post
+      writeLucidHtml out $ pageWidget $ Page_Post post
 
 
-writeReflexWidget :: MonadIO m => FilePath -> StaticWidget x () -> m ()
-writeReflexWidget out =
-  writeFile' out <=< fmap (BS8.unpack . snd) . liftIO . renderStatic
+-- | TODO: Put this in Shake monad?
+writeLucidHtml :: MonadIO m => FilePath -> Html () -> m ()
+writeLucidHtml out = liftIO . renderToFile out
 
 -- Require the given post file and parse it as Pandoc document.
 parsePandoc

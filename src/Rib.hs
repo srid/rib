@@ -8,14 +8,14 @@ import Data.Default (Default (def))
 import qualified Data.Text as T
 
 import Text.Pandoc
-import Reflex.Dom.Core (el, text)
+import Lucid
 
 import Rib.Settings
 import Rib.Shake
 
 defaultSiteSettings :: Settings x
 defaultSiteSettings = Settings
-  { pageWidget = el "tt" . text . T.pack . show
+  { pageWidget = pre_ . toHtml . T.pack . show
   , parsePage = either (error . show) id . runPure . readMarkdown markdownOptions
 
   , contentDir = "content"

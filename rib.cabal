@@ -47,6 +47,7 @@ library
     , http-types
     , lens
     , lens-aeson
+    , lucid
     , mtl
     , pandoc >= 2.6
     , pandoc-types
@@ -73,5 +74,6 @@ executable rib-example
     , clay
     , directory
     , reflex-dom-core
+    , lucid
     , rib
     , text

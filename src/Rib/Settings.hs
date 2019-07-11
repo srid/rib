@@ -8,7 +8,7 @@ import Data.Text (Text)
 import Control.Monad.Reader
 
 import Development.Shake
-import Reflex.Dom.Core
+import Lucid (Html)
 import Text.Pandoc
 
 import Rib.Types
@@ -19,7 +19,7 @@ import Rib.Types
 -- The `x` is used internally by Reflex to build a static widget.
 -- TODO: When settings change it should invalidate Shake cache. How do we do it?
 data Settings x = Settings
-  { pageWidget :: Page -> StaticWidget x ()
+  { pageWidget :: Page -> Html ()
   -- ^ Reflex widget for the page
 
   , parsePage :: Text -> Pandoc
