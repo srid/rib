@@ -106,12 +106,12 @@ pageWidget page = with html_ [lang_ "en"] $ do
             with h2_ [class_ "ui header"] "Other notes"
             postList otherPosts
           Page_Post post ->
-            with article_ [class_ "post"] $ do
-              toHtml . T.pack . show $ _post_doc post
+            with article_ [class_ "post"] $
+              toHtmlRaw =<< pandoc2Html (_post_doc post)
         with a_ [class_ "ui green right ribbon label", href_ "https://www.srid.ca"] "Sridhar Ratnakumar"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
-      link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "-" f, rel_ "stylesheet"]
+      link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
     semanticUiCss = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
@@ -121,7 +121,7 @@ pageWidget page = with html_ [lang_ "en"] $ do
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" (toHtml . T.pack . show) . getPandocMetaInlines "title" . _post_doc
+    postTitle = maybe "Untitled" (toHtmlRaw <=< pandocInlines2Html) . getPandocMetaInlines "title" . _post_doc
 
     -- Render a list of posts
     postList :: [Post] -> Html ()
@@ -129,7 +129,7 @@ pageWidget page = with html_ [lang_ "en"] $ do
       with div_ [class_ "item"] $ do
         with a_ [class_ "header", href_ (_post_url x)] $
           postTitle x
-        small_ $ maybe blank (toHtml . T.pack .show)  $ getPandocMetaInlines "description" $ _post_doc x
+        small_ $ maybe blank (toHtmlRaw <=< pandocInlines2Html) $ getPandocMetaInlines "description" $ _post_doc x
 
 
 -- HTML for page type

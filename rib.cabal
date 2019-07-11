@@ -49,12 +49,12 @@ library
     , lens-aeson
     , lucid
     , mtl
-    , pandoc >= 2.6
+    , pandoc >= 2.7
     , pandoc-types
     , reflex-dom-core
     , safe
     , shake
-    , skylighting
+    , skylighting >= 0.8
     , slick
     , text
     , time

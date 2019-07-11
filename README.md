@@ -6,7 +6,7 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 <img src="https://raw.githubusercontent.com/srid/rib/master/example/content/static/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell using sensible technologies
-like `Shake`, `Reflex` and `Clay`. It is still a work in progress but will soon
+like `Shake`, `Lucid` and `Clay`. It is still a work in progress but will soon
 be ready for general use.
 
 ## Example
@@ -29,6 +29,8 @@ With Rib you do not have to deal with the less powerful template engines or
 write raw HTML/CSS by hand. Do everything in Haskell, and concisely at that!
 
 ## Local server when editing only content
+
+TODO
 
 ```bash
 nix-build -A ghc.rib

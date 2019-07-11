@@ -7,15 +7,15 @@
 }:
 
 reflex-platform.project ({ pkgs, hackGet, ... }:
-let
-  pandoc = import ./nix/pandoc.nix { pkgs = pkgs; hackGet = hackGet; };
-in
+# let
+#   pandoc = import ./nix/pandoc.nix { pkgs = pkgs; hackGet = hackGet; };
+# in
 {
-  packages = pandoc.packages // {
+  packages = {
     rib = ./.;
   };
 
-  overrides = pandoc.overrides;
+  # overrides = pandoc.overrides;
 
   shells = {
     ghc = ["rib"];
