@@ -41,21 +41,21 @@ cli = modes
   ]
 
 -- | CLI entry point for running the Rib app
-run :: S.Settings -> IO ()
+run :: S.Settings page -> IO ()
 run cfg = runWith cfg =<< cmdArgs cli
 
 -- | Run development server that watches and generates files in addition to
 -- serving them.
 --
 -- This should be used with ghcid's `-T` argument.
-dev :: S.Settings -> IO ()
+dev :: S.Settings page -> IO ()
 dev cfg = runWith cfg $ Serve devPort True
   where
     devPort = 8080
 
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
-runWith :: S.Settings -> App -> IO ()
+runWith :: S.Settings page -> App -> IO ()
 runWith cfg = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.

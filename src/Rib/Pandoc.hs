@@ -59,3 +59,16 @@ pandocInlines2Html = either (fail . show) pure . pandocInlines2Html'
 
 highlightingStyle :: Text
 highlightingStyle = T.pack $ styleToCss tango
+
+-- | Reasonable options for reading a markdown file
+markdownReaderOptions :: ReaderOptions
+markdownReaderOptions = def { readerExtensions = exts }
+  where
+  exts = mconcat
+    [ extensionsFromList
+      [ Ext_yaml_metadata_block
+      , Ext_fenced_code_attributes
+      , Ext_auto_identifiers
+      ]
+    , githubMarkdownExtensions
+    ]

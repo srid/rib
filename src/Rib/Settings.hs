@@ -10,14 +10,11 @@ import Development.Shake
 import Lucid (Html)
 import Text.Pandoc
 
-import Rib.Types
-
-
 -- | Settings for building a static site.
 --
 -- TODO: When settings change it should invalidate Shake cache. How do we do it?
-data Settings = Settings
-  { pageWidget :: Page -> Html ()
+data Settings page = Settings
+  { pageWidget :: page -> Html ()
   -- ^ Lucid widget for the page
 
   , parsePage :: Text -> Pandoc
@@ -35,7 +32,7 @@ data Settings = Settings
   -- We rebuild only the post files, assuming html/css/md file parsing has
   -- changed in our Haskell source.
 
-  , buildRules :: Settings -> Action ()
+  , buildRules :: Settings page -> Action ()
   -- ^ Build rules specifying how to build the site
   --
   -- A simple implementation is included, which you may copy over to customize

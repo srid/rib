@@ -20,11 +20,11 @@ import GHC.Generics
 import Clay hiding (type_)
 import Lucid
 
-import qualified Rib
 import qualified Rib.App as App
 import Rib.Pandoc
 import qualified Rib.Settings as S
-import Rib.Types
+import Rib.Simple (Page (..), Post (..))
+import qualified Rib.Simple as Simple
 
 data PostCategory
   = Programming
@@ -34,8 +34,8 @@ data PostCategory
 -- | Configure this site here.
 --
 -- See `S.Settings` for the settings available.
-settings :: S.Settings
-settings = Rib.defaultSiteSettings
+settings :: S.Settings Page
+settings = Simple.settings
   { S.pageWidget = pageWidget
   -- ^ How to render a page type
   }
