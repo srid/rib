@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -9,7 +8,6 @@ import Control.Monad
 import Data.List (partition)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 
 import Clay hiding (type_)
 import Lucid
@@ -41,7 +39,7 @@ renderPage page = with html_ [lang_ "en"] $ do
     meta_ [name_ "author", content_ "Sridhar Ratnakumar"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
     title_ pageTitle
-    style_ [type_ "text/css"] $ TL.toStrict $ Clay.render pageStyle
+    style_ [type_ "text/css"] $ Clay.render pageStyle
     style_ [type_ "text/css"] highlightingCss
     link_ [rel_ "stylesheet", href_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"]
   body_ $ do
