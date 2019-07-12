@@ -26,6 +26,9 @@ import qualified Rib.Settings as S
 import Rib.Simple (Page (..), Post (..))
 import qualified Rib.Simple as Simple
 
+-- TODO: Consider using Read instead of FromJSON as that is human-friendly in
+-- Yaml metadata.
+-- And then remove aeson from cabal.
 data PostCategory
   = Programming
   | Other
