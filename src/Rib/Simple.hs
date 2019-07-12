@@ -18,7 +18,7 @@ import qualified Data.Text as T
 import GHC.Generics (Generic)
 
 import Development.Shake
-import Development.Shake.FilePath ((-<.>), (</>))
+import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
@@ -77,7 +77,7 @@ settings = S.Settings
       pre_ $ toHtml $ T.pack $ show page
   , parsePage = \f -> do
       doc <- parsePandoc . T.pack <$> readFile' f
-      pure $ Page_Post $ Post doc $ getHTMLFileUrl f
+      pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
   , contentDir = "content"
   , destDir = "content.generated"
   , rebuildPatterns = ["**/*.html", "**/*.md"]
