@@ -11,7 +11,7 @@ import Lucid (Html)
 --
 -- TODO: When settings change it should invalidate Shake cache. How do we do it?
 data Settings page = Settings
-  { pageWidget :: page -> Html ()
+  { renderPage :: page -> Html ()
   -- ^ Lucid widget for the page
 
   , parsePage :: FilePath -> Action page

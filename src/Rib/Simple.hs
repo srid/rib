@@ -26,8 +26,6 @@ import Rib.Pandoc (parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
 
-{-# ANN module "HLint: ignore Use camelCase" #-}
-
 -- | Represents a HTML page that will be generated
 data Page
   = Page_Index [Post]
@@ -63,21 +61,21 @@ simpleBuildRules staticFilePatterns postFilePatterns S.Settings {..} = do
     let out = destDir </> f -<.> "html"
         inp = contentDir </> f
     Page_Post post <- parsePage inp
-    liftIO $ renderToFile out $ pageWidget $ Page_Post post
+    liftIO $ renderToFile out $ renderPage $ Page_Post post
     pure post
 
   -- Generate the main table of contents
   -- TODO: Support `draft` property
   liftIO $ renderToFile (destDir </> "index.html") $
-    pageWidget $ Page_Index posts
+    renderPage $ Page_Index posts
 
 
 settings :: S.Settings Page
 settings = S.Settings
-  { pageWidget = \page -> do 
+  { renderPage = \page -> do
       h1_ "TODO: You should override the pageWidget function in your settings"
-      pre $ toHtml $ T.pack $ show page
-  , parsePage = \f -> do 
+      pre_ $ toHtml $ T.pack $ show page
+  , parsePage = \f -> do
       doc <- parsePandoc . T.pack <$> readFile' f
       pure $ Page_Post $ Post doc $ getHTMLFileUrl f
   , contentDir = "content"

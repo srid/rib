@@ -36,7 +36,7 @@ data PostCategory
 -- See `S.Settings` for the settings available.
 settings :: S.Settings Page
 settings = Simple.settings
-  { S.pageWidget = pageWidget
+  { S.renderPage = renderPage
   -- ^ How to render a page type
   }
 
@@ -75,8 +75,8 @@ pageStyle = body ? do
       width $ pct 50
     footer ? textAlign center
 
-pageWidget :: Page -> Html ()
-pageWidget page = with html_ [lang_ "en"] $ do
+renderPage :: Page -> Html ()
+renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [name_ "charset", content_ "utf-8"]
     meta_ [name_ "description", content_ "Sridhar's notes"]
