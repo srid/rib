@@ -16,12 +16,12 @@ can be used to write your own static site generator in a few lines of code which
 includes the HTML and CSS of the site:
 
 ```
-$ cloc --by-file example/*.hs
+$ cloc --by-file example/Main.hs
 [...]
 -------------------------------------------------------------------------------
 File                             blank        comment           code
 -------------------------------------------------------------------------------
-example/Main.hs                     19              9            100
+example/Main.hs                     17              6             96
 -------------------------------------------------------------------------------
 ```
 

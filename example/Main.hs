@@ -28,49 +28,14 @@ data PostCategory
   = Programming
   deriving (Eq, Ord, Show, Read)
 
--- | Configure this site here.
---
--- See `S.Settings` for the settings available.
-settings :: S.Settings Page
-settings = Simple.settings
-  { S.renderPage = renderPage
-  -- ^ How to render a page type
-  }
-
 main :: IO ()
 main = App.run settings
 
-googleFonts :: [Text]
-googleFonts = [headerFont, contentFont, codeFont]
-
-headerFont :: Text
-headerFont = "IBM Plex Sans Condensed"
-
-contentFont :: Text
-contentFont = "Muli"
-
-codeFont :: Text
-codeFont = "Roboto Mono"
-
--- | Main style for the site
-pageStyle :: Css
-pageStyle = body ? do
-  div # "#thesite" ? do
-    marginTop $ em 1
-    marginBottom $ em 2
-    fontFamily [contentFont] [sansSerif]
-    forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
-      fontFamily [headerFont] [sansSerif]
-    forM_ [pre, code, "tt"] $ \sel -> sel ?
-      fontFamily [codeFont] [monospace]
-    h1 ? textAlign center
-    (article ** h2) ? color darkviolet
-    (article ** img) ? do
-      display block
-      marginLeft auto
-      marginRight auto
-      width $ pct 50
-    footer ? textAlign center
+settings :: S.Settings Page
+settings =  Simple.settings
+  { S.renderPage = renderPage
+  -- ^ How to render a page type
+  }
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
@@ -82,8 +47,7 @@ renderPage page = with html_ [lang_ "en"] $ do
     title_ pageTitle
     style_ [type_ "text/css"] $ TL.toStrict $ Clay.render pageStyle
     style_ [type_ "text/css"] highlightingStyle
-    link_ [href_ semanticUiCss, rel_ "stylesheet"]
-
+    link_ [rel_ "stylesheet", href_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"]
   body_ $ do
     with div_ [class_ "ui text container", id_ "thesite"] $ do
       with div_ [class_ "ui raised segment"] $ do
@@ -107,8 +71,6 @@ renderPage page = with html_ [lang_ "en"] $ do
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
-    semanticUiCss = "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"
-
     pageTitle = case page of
       Page_Index _ -> "Srid's notes"
       Page_Post post -> postTitle post
@@ -123,3 +85,35 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "header", href_ (_post_url x)] $
           postTitle x
         small_ $ maybe mempty (toHtmlRaw . pandocInlines2Html) $ getPandocMetaInlines "description" $ _post_doc x
+
+    -- | CSS
+    pageStyle :: Css
+    pageStyle = body ? do
+      div # "#thesite" ? do
+        marginTop $ em 1
+        marginBottom $ em 2
+        fontFamily [contentFont] [sansSerif]
+        forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
+          fontFamily [headerFont] [sansSerif]
+        forM_ [pre, code, "tt"] $ \sel -> sel ?
+          fontFamily [codeFont] [monospace]
+        h1 ? textAlign center
+        (article ** h2) ? color darkviolet
+        (article ** img) ? do
+          display block
+          marginLeft auto
+          marginRight auto
+          width $ pct 50
+        footer ? textAlign center
+
+    googleFonts :: [Text]
+    googleFonts = [headerFont, contentFont, codeFont]
+
+    headerFont :: Text
+    headerFont = "IBM Plex Sans Condensed"
+
+    contentFont :: Text
+    contentFont = "Muli"
+
+    codeFont :: Text
+    codeFont = "Roboto Mono"
