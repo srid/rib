@@ -4,7 +4,6 @@
 
 module Rib.Settings where
 
-import Control.Monad.Reader
 import Data.Text (Text)
 
 import Development.Shake
@@ -36,7 +35,7 @@ data Settings = Settings
   -- We rebuild only the post files, assuming html/css/md file parsing has
   -- changed in our Haskell source.
 
-  , buildRules :: ReaderT (Settings, PostFilePath -> Action Pandoc) Rules ()
+  , buildRules :: Settings -> Action ()
   -- ^ Build rules specifying how to build the site
   --
   -- A simple implementation is included, which you may copy over to customize

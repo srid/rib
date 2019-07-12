@@ -51,7 +51,6 @@ library
     , safe
     , shake
     , skylighting
-    , slick
     , text
     , time
     , wai
