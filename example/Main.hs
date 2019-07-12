@@ -1,8 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -19,7 +15,7 @@ import Clay hiding (type_)
 import Lucid
 
 import qualified Rib.App as App
-import Rib.Pandoc
+import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
 import qualified Rib.Settings as S
 import Rib.Simple (Page (..), Post (..))
 import qualified Rib.Simple as Simple
@@ -46,10 +42,10 @@ renderPage page = with html_ [lang_ "en"] $ do
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
     title_ pageTitle
     style_ [type_ "text/css"] $ TL.toStrict $ Clay.render pageStyle
-    style_ [type_ "text/css"] highlightingStyle
+    style_ [type_ "text/css"] highlightingCss
     link_ [rel_ "stylesheet", href_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"]
   body_ $ do
-    with div_ [class_ "ui text container", id_ "thesite"] $ do
+    with div_ [class_ "ui text container", id_ "thesite"] $
       with div_ [class_ "ui raised segment"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Srid's notes"
         -- Main content
@@ -76,7 +72,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" (toHtmlRaw . pandocInlines2Html) . getPandocMetaInlines "title" . _post_doc
+    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title" . _post_doc
 
     -- Render a list of posts
     postList :: [Post] -> Html ()
@@ -84,7 +80,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       with div_ [class_ "item"] $ do
         with a_ [class_ "header", href_ (_post_url x)] $
           postTitle x
-        small_ $ maybe mempty (toHtmlRaw . pandocInlines2Html) $ getPandocMetaInlines "description" $ _post_doc x
+        small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" $ _post_doc x
 
     -- | CSS
     pageStyle :: Css
@@ -111,9 +107,7 @@ renderPage page = with html_ [lang_ "en"] $ do
 
     headerFont :: Text
     headerFont = "IBM Plex Sans Condensed"
-
     contentFont :: Text
     contentFont = "Muli"
-
     codeFont :: Text
     codeFont = "Roboto Mono"

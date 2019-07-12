@@ -40,6 +40,10 @@ getPandocMetaRaw k p =
 getPandocMetaValue :: Read a => String -> Pandoc -> Maybe a
 getPandocMetaValue k = readMaybe <=< getPandocMetaRaw k
 
+-- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
+getPandocMetaHTML :: String -> Pandoc -> Maybe Text
+getPandocMetaHTML k = fmap pandocInlines2Html . getPandocMetaInlines k
+
 pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings
   where
@@ -55,8 +59,8 @@ pandocInlines2Html' = pandoc2Html' . Pandoc mempty . pure . Plain
 pandocInlines2Html :: [Inline] -> Text
 pandocInlines2Html = either (error . show) id . pandocInlines2Html'
 
-highlightingStyle :: Text
-highlightingStyle = T.pack $ styleToCss tango
+highlightingCss :: Text
+highlightingCss = T.pack $ styleToCss tango
 
 parsePandoc :: Text -> Pandoc
 parsePandoc = either (error . show) id . runPure . readMarkdown markdownReaderOptions
