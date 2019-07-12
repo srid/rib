@@ -1,28 +1,28 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
 module Rib.Shake
   ( ribShake
   , simpleBuildRules
+  , parsePandocCached
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader
+import Data.Aeson (decode, encode)
 import Data.Bool (bool)
 import qualified Data.ByteString.Char8 as BS8
-import Data.Text (Text)
+import Data.Maybe
 import qualified Data.Text.Encoding as T
-import System.Environment (withArgs)
 
-import Development.Shake (Action, Rebuild (..), Rules, Verbosity (Chatty), copyFileChanged, getDirectoryFiles,
-                          need, readFile', shakeArgs, shakeOptions, shakeRebuild, shakeVerbosity, want, (%>),
-                          (|%>), (~>))
-import Development.Shake.FilePath (dropDirectory1, (-<.>), (</>))
+import Development.Shake
+import Development.Shake.FilePath ((-<.>), (</>))
+import Development.Shake.Forward (cacheAction, shakeForward)
 import Lucid
 import Text.Pandoc (Pandoc)
-
-import qualified Slick
 
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
@@ -35,18 +35,13 @@ ribShake
   -> S.Settings
   -- ^ Site settings
   -> IO ()
-ribShake forceGen cfg = withArgs [] $ do
-  -- The withArgs above is to ensure that our own app arguments is not
-  -- confusing Shake.
+ribShake forceGen cfg = do
   let opts = shakeOptions
         { shakeVerbosity = Chatty
         , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
         }
-  shakeArgs opts $ do
-    let parsePage = S.parsePage cfg
-    parsePandocCached <- Slick.jsonCache' $ parsePandoc parsePage
-
-    runReaderT (S.buildRules cfg) (cfg, parsePandocCached)
+  shakeForward opts $
+    S.buildRules cfg cfg
 
 -- Build rules for the simplest site possible.
 --
@@ -56,59 +51,34 @@ simpleBuildRules
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
-  -> ReaderT (S.Settings, PostFilePath -> Action Pandoc) Rules ()
-simpleBuildRules staticFilePatterns postFilePatterns = do
-  destDir <- asks $ S.destDir . fst
-  contentDir <- asks $ S.contentDir . fst
-  pageWidget <- asks $ S.pageWidget . fst
-  parsePandocCached <- asks snd
+  -> S.Settings
+  -> Action ()
+simpleBuildRules staticFilePatterns postFilePatterns cfg@S.Settings {..} = do
+  -- Copy static assets
+  files <- getDirectoryFiles contentDir staticFilePatterns
+  void $ forP files $ \inp ->
+    copyFileChanged (contentDir </> inp) (destDir </> inp)
 
-  let
-    -- | Convert 'build' filepaths into source file filepaths
-    destToSrc :: FilePath -> FilePath
-    destToSrc = (contentDir </>) . dropDirectory1
+  -- Generate posts
+  postFiles <- getDirectoryFiles contentDir postFilePatterns
+  posts <- forP postFiles $ \f -> do
+    let out = destDir </> f -<.> "html"
+        inp = contentDir </> f
+    doc <- parsePandocCached cfg inp
+    let post = Post doc $ getHTMLFileUrl f
+    liftIO $ renderToFile out $ pageWidget $ Page_Post post
+    pure post
 
-  lift $ do
-    want ["site"]
+  -- Generate the main table of contents
+  -- TODO: Support `draft` property
+  liftIO $ renderToFile (destDir </> "index.html") $
+    pageWidget $ Page_Index posts
 
-    -- Require all the things we need to build the whole site
-    "site" ~>
-      need ["static", "posts", destDir </> "index.html"]
-
-    -- Require all static assets
-    "static" ~> do
-      files <- getDirectoryFiles contentDir staticFilePatterns
-      need $ (destDir </>) <$> files
-
-    -- Rule for handling static assets, just copy them from source to dest
-    (destDir </>) <$> staticFilePatterns |%> \out ->
-      copyFileChanged (destToSrc out) out
-
-    -- Find and require every post to be built
-    "posts" ~> do
-      files <- getDirectoryFiles contentDir postFilePatterns
-      need $ (destDir </>) . (-<.> "html") <$> files
-
-    -- Build the main table of contents
-    (destDir </> "index.html") %> \out -> do
-      files <- getDirectoryFiles contentDir postFilePatterns
-      -- TODO: Support `draft` property
-      posts <- forM files $ \f -> do
-        doc <- parsePandocCached $ PostFilePath (contentDir </> f)
-        pure $ Post doc $ getHTMLFileUrl f
-      liftIO $ renderToFile out $ pageWidget $ Page_Index posts
-
-    -- Rule for building individual posts
-    (destDir </> "*.html") %> \out -> do
-      let f = dropDirectory1 $ destToSrc out -<.> "md"
-      doc <- parsePandocCached $ PostFilePath (contentDir </> f)
-      let post = Post doc $ getHTMLFileUrl f
-      liftIO $ renderToFile out $ pageWidget $ Page_Post post
-
--- Require the given post file and parse it as Pandoc document.
-parsePandoc
-  :: (Text -> Pandoc)
-  -> PostFilePath
-  -> Action Pandoc
-parsePandoc parse (PostFilePath f) =
-  parse . T.decodeUtf8 . BS8.pack <$> readFile' f
+parsePandocCached :: S.Settings -> FilePath -> Action Pandoc
+parsePandocCached cfg f =
+  jsonCacheAction f $ parsePandoc $ S.parsePage cfg
+  where
+    jsonCacheAction k =
+      fmap (fromMaybe (error "cache error") . decode) . cacheAction k . fmap encode
+    parsePandoc parse =
+      parse . T.decodeUtf8 . BS8.pack <$> readFile' f
