@@ -21,7 +21,7 @@ $ cloc --by-file example/*.hs
 -------------------------------------------------------------------------------
 File                             blank        comment           code
 -------------------------------------------------------------------------------
-example/Main.hs                     23             16            102
+example/Main.hs                     19              9            100
 -------------------------------------------------------------------------------
 ```
 
@@ -40,7 +40,7 @@ Or simply (no cabal file needed),
 
 ```bash
 
-nix-shell ../default.nix --run "ghcid -c 'ghci -Wall -i../rib/src Main.hs' -T 'Rib.App.dev Main.settings' --reload=Main.hs"
+nix-shell ../default.nix --run "ghcid -c 'ghci -Wall -i../src Main.hs' -T 'Rib.App.dev Main.settings' --reload=Main.hs"
 ```
 
 

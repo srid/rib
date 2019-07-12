@@ -20,12 +20,15 @@ import GHC.Generics
 import Clay hiding (type_)
 import Lucid
 
-import qualified Rib
 import qualified Rib.App as App
 import Rib.Pandoc
 import qualified Rib.Settings as S
-import Rib.Types
+import Rib.Simple (Page (..), Post (..))
+import qualified Rib.Simple as Simple
 
+-- TODO: Consider using Read instead of FromJSON as that is human-friendly in
+-- Yaml metadata.
+-- And then remove aeson from cabal.
 data PostCategory
   = Programming
   | Other
@@ -34,9 +37,9 @@ data PostCategory
 -- | Configure this site here.
 --
 -- See `S.Settings` for the settings available.
-settings :: S.Settings
-settings = Rib.defaultSiteSettings
-  { S.pageWidget = pageWidget
+settings :: S.Settings Page
+settings = Simple.settings
+  { S.renderPage = renderPage
   -- ^ How to render a page type
   }
 
@@ -75,8 +78,8 @@ pageStyle = body ? do
       width $ pct 50
     footer ? textAlign center
 
-pageWidget :: Page -> Html ()
-pageWidget page = with html_ [lang_ "en"] $ do
+renderPage :: Page -> Html ()
+renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [name_ "charset", content_ "utf-8"]
     meta_ [name_ "description", content_ "Sridhar's notes"]
@@ -103,7 +106,7 @@ pageWidget page = with html_ [lang_ "en"] $ do
             postList otherPosts
           Page_Post post ->
             with article_ [class_ "post"] $
-              toHtmlRaw =<< pandoc2Html (_post_doc post)
+              toHtmlRaw $ pandoc2Html $ _post_doc post
         with a_ [class_ "ui green right ribbon label", href_ "https://www.srid.ca"] "Sridhar Ratnakumar"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
@@ -117,7 +120,7 @@ pageWidget page = with html_ [lang_ "en"] $ do
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" (toHtmlRaw <=< pandocInlines2Html) . getPandocMetaInlines "title" . _post_doc
+    postTitle = maybe "Untitled" (toHtmlRaw . pandocInlines2Html) . getPandocMetaInlines "title" . _post_doc
 
     -- Render a list of posts
     postList :: [Post] -> Html ()
@@ -125,4 +128,4 @@ pageWidget page = with html_ [lang_ "en"] $ do
       with div_ [class_ "item"] $ do
         with a_ [class_ "header", href_ (_post_url x)] $
           postTitle x
-        small_ $ maybe mempty (toHtmlRaw <=< pandocInlines2Html) $ getPandocMetaInlines "description" $ _post_doc x
+        small_ $ maybe mempty (toHtmlRaw . pandocInlines2Html) $ getPandocMetaInlines "description" $ _post_doc x
