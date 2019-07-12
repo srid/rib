@@ -10,12 +10,10 @@ module Main where
 import Prelude hiding (div, (**))
 
 import Control.Monad
-import Data.Aeson (FromJSON, ToJSON)
 import Data.List (partition)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
-import GHC.Generics
 
 import Clay hiding (type_)
 import Lucid
@@ -26,13 +24,9 @@ import qualified Rib.Settings as S
 import Rib.Simple (Page (..), Post (..))
 import qualified Rib.Simple as Simple
 
--- TODO: Consider using Read instead of FromJSON as that is human-friendly in
--- Yaml metadata.
--- And then remove aeson from cabal.
 data PostCategory
   = Programming
-  | Other
-  deriving (Generic, Show, Eq, Ord, FromJSON, ToJSON)
+  deriving (Eq, Ord, Show, Read)
 
 -- | Configure this site here.
 --
@@ -99,7 +93,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         case page of
           Page_Index posts -> do
             let (progPosts, otherPosts) =
-                  partition ((== Just Programming) . getPandocMetaJson "category" . _post_doc) posts
+                  partition ((== Just Programming) . getPandocMetaValue "category" . _post_doc) posts
             with h2_ [class_ "ui header"] "Haskell & Nix notes"
             postList progPosts
             with h2_ [class_ "ui header"] "Other notes"

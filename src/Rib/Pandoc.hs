@@ -3,14 +3,13 @@
 module Rib.Pandoc where
 
 import Control.Monad
-import Data.Aeson (FromJSON, decode)
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Text.Read (readMaybe)
 
 import Text.Pandoc
 import Text.Pandoc.Highlighting
-import Text.Pandoc.UTF8 (fromStringLazy)
 
 -- Get the YAML metadata for the given key in a post.
 --
@@ -37,9 +36,9 @@ getPandocMetaRaw k p =
     [Str v] -> Just v
     _ -> Nothing
 
--- Like getPandocMeta but expects the value to be JSON encoding of a type.
-getPandocMetaJson :: FromJSON a => String -> Pandoc -> Maybe a
-getPandocMetaJson k = decode . fromStringLazy <=< getPandocMetaRaw k
+-- Like getPandocMetaRaw but expects the value to be of Haskell syntax
+getPandocMetaValue :: Read a => String -> Pandoc -> Maybe a
+getPandocMetaValue k = readMaybe <=< getPandocMetaRaw k
 
 pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings
