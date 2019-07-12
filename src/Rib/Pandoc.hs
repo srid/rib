@@ -47,31 +47,30 @@ pandoc2Html' = runPure . writeHtml5String settings
     settings :: WriterOptions
     settings = def
 
--- TODO: remove Monad and use error (like hakyll does)
-pandoc2Html :: Monad m => Pandoc -> m Text
-pandoc2Html = either (fail . show) pure . pandoc2Html'
+pandoc2Html :: Pandoc -> Text
+pandoc2Html = either (error . show) id . pandoc2Html'
 
 pandocInlines2Html' :: [Inline] -> Either PandocError Text
-pandocInlines2Html' = pandoc2Html . Pandoc mempty . pure . Plain
+pandocInlines2Html' = pandoc2Html' . Pandoc mempty . pure . Plain
 
-pandocInlines2Html :: Monad m => [Inline] -> m Text
-pandocInlines2Html = either (fail . show) pure . pandocInlines2Html'
+pandocInlines2Html :: [Inline] -> Text
+pandocInlines2Html = either (error . show) id . pandocInlines2Html'
 
 highlightingStyle :: Text
 highlightingStyle = T.pack $ styleToCss tango
 
 parsePandoc :: Text -> Pandoc
 parsePandoc = either (error . show) id . runPure . readMarkdown markdownReaderOptions
-
--- | Reasonable options for reading a markdown file
-markdownReaderOptions :: ReaderOptions
-markdownReaderOptions = def { readerExtensions = exts }
   where
-  exts = mconcat
-    [ extensionsFromList
-      [ Ext_yaml_metadata_block
-      , Ext_fenced_code_attributes
-      , Ext_auto_identifiers
-      ]
-    , githubMarkdownExtensions
-    ]
+    -- | Reasonable options for reading a markdown file
+    markdownReaderOptions :: ReaderOptions
+    markdownReaderOptions = def { readerExtensions = exts }
+      where
+      exts = mconcat
+        [ extensionsFromList
+          [ Ext_yaml_metadata_block
+          , Ext_fenced_code_attributes
+          , Ext_auto_identifiers
+          ]
+        , githubMarkdownExtensions
+        ]
