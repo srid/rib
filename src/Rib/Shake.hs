@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -9,15 +9,12 @@ module Rib.Shake
   , parsePandocCached
   ) where
 
-import Data.Aeson (decode, encode)
+import Data.Aeson
 import Data.Bool (bool)
-import qualified Data.ByteString.Char8 as BS8
 import Data.Maybe
-import qualified Data.Text.Encoding as T
 
 import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
-import Text.Pandoc (Pandoc)
 
 import qualified Rib.Settings as S
 
@@ -36,11 +33,9 @@ ribShake forceGen cfg = do
   shakeForward opts $
     S.buildRules cfg cfg
 
-parsePandocCached :: S.Settings page -> FilePath -> Action Pandoc
+parsePandocCached :: (FromJSON page, ToJSON page) => S.Settings page -> FilePath -> Action page
 parsePandocCached cfg f =
-  jsonCacheAction f $ parsePandoc $ S.parsePage cfg
+  jsonCacheAction f $ S.parsePage cfg f
   where
     jsonCacheAction k =
       fmap (fromMaybe (error "cache error") . decode) . cacheAction k . fmap encode
-    parsePandoc parse =
-      parse . T.decodeUtf8 . BS8.pack <$> readFile' f

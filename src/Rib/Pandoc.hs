@@ -60,6 +60,9 @@ pandocInlines2Html = either (fail . show) pure . pandocInlines2Html'
 highlightingStyle :: Text
 highlightingStyle = T.pack $ styleToCss tango
 
+parsePandoc :: Text -> Pandoc
+parsePandoc = either (error . show) id . runPure . readMarkdown markdownReaderOptions
+
 -- | Reasonable options for reading a markdown file
 markdownReaderOptions :: ReaderOptions
 markdownReaderOptions = def { readerExtensions = exts }

@@ -4,11 +4,8 @@
 
 module Rib.Settings where
 
-import Data.Text (Text)
-
 import Development.Shake
 import Lucid (Html)
-import Text.Pandoc
 
 -- | Settings for building a static site.
 --
@@ -17,8 +14,8 @@ data Settings page = Settings
   { pageWidget :: page -> Html ()
   -- ^ Lucid widget for the page
 
-  , parsePage :: Text -> Pandoc
-  -- ^ Parse a text document like Markdown into Pandoc structure
+  , parsePage :: FilePath -> Action page
+  -- ^ Parse a text document like Markdown into Page structure
 
   , contentDir :: FilePath
   -- ^ Directory name of the source content
@@ -34,9 +31,4 @@ data Settings page = Settings
 
   , buildRules :: Settings page -> Action ()
   -- ^ Build rules specifying how to build the site
-  --
-  -- A simple implementation is included, which you may copy over to customize
-  -- your own version.
-  --
-  -- TODO: Better API than ReaderT of a tuple?
   }
