@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
+-- | Helpers for working with Pandoc documents
 module Rib.Pandoc where
 
 import Data.Maybe
@@ -8,7 +9,7 @@ import qualified Data.Text as T
 import Text.Read (readMaybe)
 
 import Text.Pandoc
-import Text.Pandoc.Highlighting
+import Text.Pandoc.Highlighting (styleToCss, tango)
 
 -- Get the YAML metadata for the given key in a post.
 --
@@ -59,6 +60,11 @@ pandocInlines2Html' = pandoc2Html' . Pandoc mempty . pure . Plain
 
 pandocInlines2Html :: [Inline] -> Text
 pandocInlines2Html = either (error . show) id . pandocInlines2Html'
+
+pandocH1 :: Pandoc -> Maybe Text
+pandocH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \case
+  Header 1 _ xs -> Just $ pandocInlines2Html xs
+  _ -> Nothing
 
 highlightingCss :: Text
 highlightingCss = T.pack $ styleToCss tango

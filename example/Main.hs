@@ -84,23 +84,22 @@ renderPage page = with html_ [lang_ "en"] $ do
 
     -- | CSS
     pageStyle :: Css
-    pageStyle = body ? do
-      div # "#thesite" ? do
-        marginTop $ em 1
-        marginBottom $ em 2
-        fontFamily [contentFont] [sansSerif]
-        forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
-          fontFamily [headerFont] [sansSerif]
-        forM_ [pre, code, "tt"] $ \sel -> sel ?
-          fontFamily [codeFont] [monospace]
-        h1 ? textAlign center
-        (article ** h2) ? color darkviolet
-        (article ** img) ? do
-          display block
-          marginLeft auto
-          marginRight auto
-          width $ pct 50
-        footer ? textAlign center
+    pageStyle = div # "#thesite" ? do
+      marginTop $ em 1
+      marginBottom $ em 2
+      fontFamily [contentFont] [sansSerif]
+      forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
+        fontFamily [headerFont] [sansSerif]
+      forM_ [pre, code, "tt"] $ \sel -> sel ?
+        fontFamily [codeFont] [monospace]
+      h1 ? textAlign center
+      (article ** h2) ? color darkviolet
+      (article ** img) ? do
+        display block
+        marginLeft auto
+        marginRight auto
+        width $ pct 50
+      footer ? textAlign center
 
     googleFonts :: [Text]
     googleFonts = [headerFont, contentFont, codeFont]
