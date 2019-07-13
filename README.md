@@ -32,19 +32,19 @@ To get the example site up and running run:
 
 ```bash
 cd ./example
-nix-shell ../default.nix --run "ghcid -c 'ghci -Wall -i../src Main.hs' -T 'Rib.App.dev Main.settings' --reload=Main.hs"
+../ghcid
 ```
 
-The above command does the following:
+This will:
 
 - Drop into a nix-shell with needed Haskell dependencies
-- Compile the `rib` library and `example` through ghcid
+- Compile the `rib` library and `example/Main.hs` through ghcid
   - Whenever Haskell sources change ghcid reloads them
-- Run `example/Main.hs` which in turn runs `Rib.App.run`
+- Run `example/Main.hs:main` with `serve -w` CLI arguments
 - This does the following:
   1. Generate ./content into ./content.generated using Shake
-  2. Listens for changes to ./content, and re-generate them
-  3. Start a HTTP server serving the ./content.generated directory
+  2. Listens for changes to ./content, and re-generate them (the `-w` argument)
+  3. Start a HTTP server serving the ./content.generated directory (the `serve` part)
 
 Thus, by running that one command you get a production-quality web server
 serving your statically generated HTML files that automatically get regenerated

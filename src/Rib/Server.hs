@@ -56,5 +56,5 @@ serve
   -- ^ Directory to serve.
   -> IO ()
 serve port path = do
-  putStrLn $ "Serving at " <> show port
+  putStrLn $ "[Rib] Serving at http://localhost:" <> show port
   Warp.run port $ staticApp $ staticSiteServerSettings path

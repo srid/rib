@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+RIB=$(cd `dirname $0` && pwd)
+MAIN="Main.hs"
+
+nix-shell ${RIB}/default.nix --run \
+  "ghcid --reload=${MAIN} -c 'ghci -Wall -i${RIB}/src ${MAIN}' -T 'System.Environment.withArgs [\"serve\", \"-w\"] Main.main'"
