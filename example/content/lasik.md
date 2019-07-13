@@ -1,6 +1,6 @@
 ---
 title: "My LASIK surgery"
-description: My experience of undergoing LASIK at ~35 years old
+description: My experience of LASIK eye surgery
 ---
 
 On March 14th 2019 I had **Custom Wavefront LASIK** surgery done on both the

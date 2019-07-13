@@ -8,17 +8,17 @@ description: This stuff is hidden if not private
 
 - Github CI for OSS haskell projects
 - Lens and friends
-- mtl
 - string types
 - personal nix cache
+- mtl
 
 ## Project ideas
 
-- [ ] Invoice generator
+- [ ] Invoice generator (using Rib?)
 
 ### Rib
 
-- [ ] Drafts
+- [X] Drafts
 - [ ] Tasks
 - [ ] Simplify `Settings` (seems gobbled together)
 

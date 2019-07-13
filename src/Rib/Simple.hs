@@ -27,6 +27,7 @@ import Text.Pandoc (Pandoc)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
+import Rib.Shake (parsePandocCached)
 
 -- | Represents a HTML page that will be generated
 data Page
@@ -54,7 +55,7 @@ simpleBuildRules
   -- ^ Which files are considered to be post files
   -> S.Settings Page
   -> Action ()
-simpleBuildRules staticFilePatterns postFilePatterns S.Settings {..} = do
+simpleBuildRules staticFilePatterns postFilePatterns cfg@S.Settings {..} = do
   -- Copy static assets
   files <- getDirectoryFiles contentDir staticFilePatterns
   void $ forP files $ \inp ->
@@ -65,21 +66,20 @@ simpleBuildRules staticFilePatterns postFilePatterns S.Settings {..} = do
   posts <- forP postFiles $ \f -> do
     let out = destDir </> f -<.> "html"
         inp = contentDir </> f
-    Page_Post post <- parsePage inp
+    Page_Post post <- parsePandocCached cfg inp
     liftIO $ renderToFile out $ renderPage $ Page_Post post
     pure post
 
   -- Generate the main table of contents
   let publicPosts = filter (not . isDraft) posts
-      indexHtml = destDir </> "index.html"
-  liftIO $ renderToFile indexHtml $
+  liftIO $ renderToFile (destDir </> "index.html") $
     renderPage $ Page_Index publicPosts
 
 
 settings :: S.Settings Page
 settings = S.Settings
   { renderPage = \page -> do
-      h1_ "TODO: You should override the pageWidget function in your settings"
+      h1_ "TODO: You should override the renderPage function in your settings"
       pre_ $ toHtml $ T.pack $ show page
   , parsePage = \f -> do
       doc <- parsePandoc . T.pack <$> readFile' f
