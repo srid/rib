@@ -8,8 +8,6 @@ import Development.Shake
 import Lucid (Html)
 
 -- | Settings for building a static site.
---
--- TODO: When settings change it should invalidate Shake cache. How do we do it?
 data Settings page = Settings
   { renderPage :: page -> Html ()
   -- ^ Lucid widget for the page

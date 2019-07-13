@@ -2,7 +2,6 @@
 
 module Rib.Pandoc where
 
-import Control.Monad
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -38,7 +37,9 @@ getPandocMetaRaw k p =
 
 -- Like getPandocMetaRaw but expects the value to be of Haskell syntax
 getPandocMetaValue :: Read a => String -> Pandoc -> Maybe a
-getPandocMetaValue k = readMaybe <=< getPandocMetaRaw k
+getPandocMetaValue k doc = do
+  s <- getPandocMetaRaw k doc
+  pure $ fromMaybe (error $ "Invalid metadata value for key: " <> k) $ readMaybe s
 
 -- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
 getPandocMetaHTML :: String -> Pandoc -> Maybe Text

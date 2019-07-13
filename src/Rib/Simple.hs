@@ -7,12 +7,14 @@
 module Rib.Simple
   ( Page(..)
   , Post(..)
+  , isDraft
   , simpleBuildRules
   , settings
   ) where
 
 import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
@@ -22,7 +24,7 @@ import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
-import Rib.Pandoc (parsePandoc)
+import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
 
@@ -38,6 +40,9 @@ data Post = Post
   , _post_url :: Text
   }
   deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
+
+isDraft :: Post -> Bool
+isDraft = fromMaybe False . getPandocMetaValue "draft" . _post_doc
 
 -- Build rules for the simplest site possible.
 --
@@ -65,9 +70,10 @@ simpleBuildRules staticFilePatterns postFilePatterns S.Settings {..} = do
     pure post
 
   -- Generate the main table of contents
-  -- TODO: Support `draft` property
-  liftIO $ renderToFile (destDir </> "index.html") $
-    renderPage $ Page_Index posts
+  let publicPosts = filter (not . isDraft) posts
+      indexHtml = destDir </> "index.html"
+  liftIO $ renderToFile indexHtml $
+    renderPage $ Page_Index publicPosts
 
 
 settings :: S.Settings Page

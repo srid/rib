@@ -15,7 +15,7 @@ import Lucid
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
 import qualified Rib.Settings as S
-import Rib.Simple (Page (..), Post (..))
+import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
 data PostCategory
@@ -56,7 +56,9 @@ renderPage page = with html_ [lang_ "en"] $ do
             postList progPosts
             with h2_ [class_ "ui header"] "Other notes"
             postList otherPosts
-          Page_Post post ->
+          Page_Post post -> do
+            when (isDraft post) $
+              with div_ [class_ "ui warning message"] "This is a draft"
             with article_ [class_ "post"] $
               toHtmlRaw $ pandoc2Html $ _post_doc post
         with a_ [class_ "ui green right ribbon label", href_ "https://www.srid.ca"] "Sridhar Ratnakumar"
