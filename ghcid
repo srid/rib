@@ -8,4 +8,4 @@ RIBDIR=$(cd `dirname $0` && pwd)
 MAIN="Main"
 
 nix-shell ${RIBDIR}/default.nix --run \
-  "ghcid --reload=${MAIN}.hs -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'System.Environment.withArgs [\"serve\", \"-w\"] ${MAIN}.main'"
+  "ghcid --reload=${MAIN}.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'System.Environment.withArgs [\"serve\", \"-w\"] ${MAIN}.main'"

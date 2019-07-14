@@ -27,7 +27,7 @@ main = App.run $ Simple.buildAction renderPage
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
-    meta_ [name_ "charset", content_ "utf-8"]
+    meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     meta_ [name_ "description", content_ "Rib - Haskell static site generator"]
     meta_ [name_ "author", content_ "Sridhar Ratnakumar"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
@@ -82,8 +82,11 @@ renderPage page = with html_ [lang_ "en"] $ do
       fontFamily [contentFont] [sansSerif]
       forM_ [h1, h2, h3, h4, h5, h6, ".header"] $ \sel -> sel ?
         fontFamily [headerFont] [sansSerif]
-      forM_ [pre, code, "tt"] $ \sel -> sel ?
+      forM_ [pre, code, "tt"] $ \sel -> sel ? do
         fontFamily [codeFont] [monospace]
+      "div.sourceCode" ? do
+        sym padding $ em 1
+        backgroundColor "#EBF5FB"
       h1 ? textAlign center
       (article ** h2) ? color darkviolet
       (article ** img) ? do
@@ -97,8 +100,8 @@ renderPage page = with html_ [lang_ "en"] $ do
     googleFonts = [headerFont, contentFont, codeFont]
 
     headerFont :: Text
-    headerFont = "IBM Plex Sans Condensed"
+    headerFont = "Roboto"
     contentFont :: Text
-    contentFont = "Muli"
+    contentFont = "Literata"
     codeFont :: Text
-    codeFont = "Roboto Mono"
+    codeFont = "Inconsolata"

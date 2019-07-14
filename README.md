@@ -9,7 +9,7 @@ Rib is a static site generator written in Haskell that reuses existing tools (`S
 
 ## Example
 
-See `./example` (author's actual website in fact) to see how the `Rib` library
+See `./example` (Rib's project site in fact) to see how the `Rib` library
 can be used to write your own static site generator in a few lines of code which
 includes the HTML and CSS of the site:
 
@@ -49,6 +49,6 @@ This will:
 Thus, by running that one command one gets a production-quality web server
 serving the statically generated HTML files which automatically get regenerated
 when the source content changes. What's more, we may change the Haskell sources
-such as `Main.hs` and ghcid will recompile and relaunch the whole thing. 
+such as `Main.hs` and ghcid will recompile and relaunch the whole thing.
 
 With `rib` we get hot reload for free.
