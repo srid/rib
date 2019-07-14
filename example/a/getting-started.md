@@ -26,11 +26,20 @@ _This_ file is be written in *Markdown*.
 ```
 
 
-Finally add the Haskell source `Main.hs` that wires everything together. Notice
-how we use `Rib.Simple` that does the necessary Shake machinary for us. The
-`App.run` here provides file monitoring and http serving on top of shake
-generation. Everything else in this file is your site specific HTML and CSS
-written in Haskell DSL.
+Finally, add the Haskell source `Main.hs` that wires everything together. Notice
+the following:
+
+- we use `Rib.Simple` that does the necessary Shake machinary for us -- take a
+peek at that module if you'd like to customize the behaviour of static site
+generation by writing your own Shake action -- in addition to providing the
+`Page` type that distinguishes between a `Post` file and the index
+(`index.html`) file, which links to the list of posts.
+
+- `App.run` provides file monitoring and http serving on top of site
+generation.
+
+- Everything else in this file is your site specific HTML and CSS
+written in Haskell DSL (via `Lucid` and `Clay`).
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
