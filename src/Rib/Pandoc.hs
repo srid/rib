@@ -50,7 +50,7 @@ pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings
   where
     settings :: WriterOptions
-    settings = def
+    settings = def { writerExtensions = ribExts }
 
 pandoc2Html :: Pandoc -> Text
 pandoc2Html = either (error . show) id . pandoc2Html'
@@ -71,16 +71,18 @@ highlightingCss = T.pack $ styleToCss tango
 
 parsePandoc :: Text -> Pandoc
 parsePandoc = either (error . show) id . runPure . readMarkdown markdownReaderOptions
-  where
-    -- | Reasonable options for reading a markdown file
-    markdownReaderOptions :: ReaderOptions
-    markdownReaderOptions = def { readerExtensions = exts }
-      where
-      exts = mconcat
-        [ extensionsFromList
-          [ Ext_yaml_metadata_block
-          , Ext_fenced_code_attributes
-          , Ext_auto_identifiers
-          ]
-        , githubMarkdownExtensions
-        ]
+
+-- Reasonable options for reading a markdown file
+markdownReaderOptions :: ReaderOptions
+markdownReaderOptions = def { readerExtensions = ribExts }
+
+ribExts :: Extensions
+ribExts = mconcat
+  [ extensionsFromList
+    [ Ext_yaml_metadata_block
+    , Ext_fenced_code_attributes
+    , Ext_auto_identifiers
+    , Ext_smart
+    ]
+  , githubMarkdownExtensions
+  ]

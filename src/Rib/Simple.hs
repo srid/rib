@@ -13,10 +13,12 @@ module Rib.Simple
   ) where
 
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.ByteString.Char8 as BSC
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
 
 import Development.Shake
@@ -24,7 +26,7 @@ import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
-import Rib.App (ribOutputDir, ribInputDir)
+import Rib.App (ribInputDir, ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import Rib.Shake (Action, jsonCacheAction)
@@ -70,15 +72,17 @@ buildAction' staticFilePatterns postFilePatterns renderPage = do
     let inp = ribInputDir </> f
         out = ribOutputDir </> f -<.> "html"
     Page_Post post <- jsonCacheAction inp $ readPage inp
-    liftIO $ renderToFile out $ renderPage $ Page_Post post
+    writePage renderPage out $ Page_Post post
     pure post
 
   -- Generate the main table of contents
   let publicPosts = filter (not . isDraft) posts
-  liftIO $ renderToFile (ribOutputDir </> "index.html") $
-    renderPage $ Page_Index publicPosts
+  writePage renderPage (ribOutputDir </> "index.html") $ Page_Index publicPosts
 
 readPage :: FilePath -> Action Page
 readPage f = do
-  doc <- parsePandoc . T.pack <$> readFile' f
+  doc <- parsePandoc . T.decodeUtf8 . BSC.pack <$> readFile' f
   pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
+
+writePage :: MonadIO m => (Page -> Html ()) -> FilePath -> Page -> m ()
+writePage renderPage f page = liftIO $ renderToFile f $ renderPage page
