@@ -20,7 +20,7 @@ description: This stuff is hidden if not private
 
 - [X] Drafts
 - [ ] Tasks
-- [ ] Simplify `Settings` (seems gobbled together)
+- [X] Simplify `Settings` (seems gobbled together)
 
 #### Rib, for journaling
 

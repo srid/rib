@@ -1,41 +1,42 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 
 module Rib.Shake
   ( ribShake
-  , parsePandocCached
+  , jsonCacheAction
+  , Action
   ) where
 
-import Data.Aeson
+import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson as Aeson
+import Data.Binary
 import Data.Bool (bool)
 import Data.Maybe
+import Data.Typeable
 
 import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
 
-import qualified Rib.Settings as S
 
-
+-- TODO: Should we get rid of this, and have the user directly call shakeForward?
+-- As this way we can get rid of the "framework" feel in Main.hs
 ribShake
   :: Bool
-  -- ^ Force generate of requested targes
-  -> S.Settings page
-  -- ^ Site settings
+  -- ^ Force generate of requested targets
+  -> Action ()
+  -- ^ Site build action
   -> IO ()
-ribShake forceGen cfg = do
+ribShake forceGen buildAction = do
   let opts = shakeOptions
         { shakeVerbosity = Chatty
-        , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
+        , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
         }
-  shakeForward opts $
-    S.buildRules cfg cfg
+  shakeForward opts buildAction
 
-parsePandocCached :: (FromJSON page, ToJSON page) => S.Settings page -> FilePath -> Action page
-parsePandocCached cfg f =
-  jsonCacheAction f $ S.parsePage cfg f
-  where
-    jsonCacheAction k =
-      fmap (fromMaybe (error "cache error") . decode) . cacheAction k . fmap encode
+-- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
+jsonCacheAction :: (FromJSON b, Typeable k, Binary k, Show k, ToJSON a) => k -> Action a -> Action b
+jsonCacheAction k =
+    fmap (fromMaybe (error "cache error") . Aeson.decode)
+  . cacheAction k
+  . fmap Aeson.encode

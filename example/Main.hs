@@ -14,7 +14,6 @@ import Lucid
 
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
-import qualified Rib.Settings as S
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
@@ -23,13 +22,7 @@ data PostCategory
   deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
-main = App.run settings
-
-settings :: S.Settings Page
-settings =  Simple.settings
-  { S.renderPage = renderPage
-  -- ^ How to render a page type
-  }
+main = App.run $ Simple.buildAction renderPage
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do

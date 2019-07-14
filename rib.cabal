@@ -21,7 +21,6 @@ library
   exposed-modules:
       Rib.App
     , Rib.Pandoc
-    , Rib.Settings
     , Rib.Shake
     , Rib.Simple
   other-modules:
