@@ -18,7 +18,7 @@ import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
 data PostCategory
-  = Programming
+  = Blog
   deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
@@ -28,7 +28,7 @@ renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [name_ "charset", content_ "utf-8"]
-    meta_ [name_ "description", content_ "Sridhar's notes"]
+    meta_ [name_ "description", content_ "Rib - Haskell static site generator"]
     meta_ [name_ "author", content_ "Sridhar Ratnakumar"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
     title_ pageTitle
@@ -38,30 +38,29 @@ renderPage page = with html_ [lang_ "en"] $ do
   body_ $ do
     with div_ [class_ "ui text container", id_ "thesite"] $
       with div_ [class_ "ui raised segment"] $ do
-        with a_ [class_ "ui violet ribbon label", href_ "/"] "Srid's notes"
+        with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] pageTitle
         case page of
           Page_Index posts -> do
-            let (progPosts, otherPosts) =
-                  partition ((== Just Programming) . getPandocMetaValue "category" . _post_doc) posts
-            with h2_ [class_ "ui header"] "Haskell & Nix notes"
-            postList progPosts
-            with h2_ [class_ "ui header"] "Other notes"
+            let (blogPosts, otherPosts) =
+                  partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) posts
             postList otherPosts
+            with h2_ [class_ "ui header"] "Blog"
+            postList blogPosts
           Page_Post post -> do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
             with article_ [class_ "post"] $
               toHtmlRaw $ pandoc2Html $ _post_doc post
-        with a_ [class_ "ui green right ribbon label", href_ "https://www.srid.ca"] "Sridhar Ratnakumar"
+        with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
     pageTitle = case page of
-      Page_Index _ -> "Srid's notes"
+      Page_Index _ -> "Rib - Haskell static site generator"
       Page_Post post -> postTitle post
 
     -- Render the post title (Markdown supported)
