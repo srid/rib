@@ -27,8 +27,7 @@ import Text.Pandoc (Pandoc)
 import Rib.App (ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
-import qualified Rib.Settings as S
-import Rib.Shake (jsonCacheAction)
+import Rib.Shake (jsonCacheAction, RibAction)
 
 -- | Represents a HTML page that will be generated
 data Page
@@ -80,5 +79,5 @@ simpleBuildRules staticFilePatterns postFilePatterns renderPage = do
       pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
 
 
-settings :: (Page -> Html ()) -> S.RibAction Page
+settings :: (Page -> Html ()) -> RibAction Page
 settings = simpleBuildRules ["content/static//**"] ["content/*.md"]

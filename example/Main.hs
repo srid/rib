@@ -14,9 +14,9 @@ import Lucid
 
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
-import qualified Rib.Settings as S
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
+import Rib.Shake (RibAction)
 
 data PostCategory
   = Programming
@@ -25,7 +25,7 @@ data PostCategory
 main :: IO ()
 main = App.run settings
 
-settings :: S.RibAction Page
+settings :: RibAction Page
 settings =  Simple.settings renderPage
 
 renderPage :: Page -> Html ()

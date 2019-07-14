@@ -1,12 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 
 module Rib.Shake
   ( ribShake
   , jsonCacheAction
+  , RibAction
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -19,13 +18,13 @@ import Data.Binary
 import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
 
-import qualified Rib.Settings as S
 
+type RibAction page = Action ()
 
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> S.RibAction page
+  -> RibAction page
   -- ^ Site settings
   -> IO ()
 ribShake forceGen buildAction = do
