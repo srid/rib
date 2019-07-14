@@ -33,6 +33,10 @@ data App
 ribOutputDir :: FilePath
 ribOutputDir = "b"
 
+-- | Directory from which content will be read.
+--
+-- This should ideally not be "." as the watchTree below can interfere with
+-- Shake's file scaning.
 ribInputDir :: FilePath
 ribInputDir = "a"
 
@@ -61,7 +65,7 @@ runWith action = \case
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runWith action $ Generate True
     -- And then every time a file changes under the current directory
-    void $ watchTree mgr "." (const True) $ const $
+    void $ watchTree mgr ribInputDir (const True) $ const $
       runWith action $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
