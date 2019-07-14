@@ -42,12 +42,13 @@ This will:
   - Whenever Haskell sources change ghcid reloads them
 - Run `example/Main.hs:main` with `serve -w` CLI arguments
 - This does the following:
-  1. Generate ./content into ./content.generated using Shake
-  2. Listens for changes to ./content, and re-generate them (the `-w` argument)
-  3. Start a HTTP server serving the ./content.generated directory (the `serve` part)
+  1. Convert sources in `./example/a` into `./example/b` using Shake
+  2. Listens for changes to `./example/a`, and re-generate them (i.e., the `-w` argument)
+  3. Start a HTTP server serving the `./example/b` directory (i.e, the `serve` command)
 
-Thus, by running that one command you get a production-quality web server
-serving your statically generated HTML files that automatically get regenerated
-when the source content changes. What's more, you may change the Haskell sources
-such as `Main.hs` and ghcid will recompile and relaunch the whole thing. With
-`rib` you get hot reload for free.
+Thus, by running that one command one gets a production-quality web server
+serving the statically generated HTML files which automatically get regenerated
+when the source content changes. What's more, we may change the Haskell sources
+such as `Main.hs` and ghcid will recompile and relaunch the whole thing. 
+
+With `rib` we get hot reload for free.
