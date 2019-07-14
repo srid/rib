@@ -24,7 +24,7 @@ import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
-import Rib.App (ribOutputDir)
+import Rib.App (ribOutputDir, ribInputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import Rib.Shake (Action, jsonCacheAction)
@@ -46,7 +46,7 @@ isDraft :: Post -> Bool
 isDraft = fromMaybe False . getPandocMetaValue "draft" . _post_doc
 
 buildAction :: (Page -> Html ()) -> Action ()
-buildAction = buildAction' ["content/static//**"] ["content/*.md"]
+buildAction = buildAction' ["static//**"] ["*.md"]
 
 -- Build rules for the simplest site possible.
 --
@@ -60,15 +60,16 @@ buildAction'
   -> Action ()
 buildAction' staticFilePatterns postFilePatterns renderPage = do
   -- Copy static assets
-  files <- getDirectoryFiles "." staticFilePatterns
-  void $ forP files $ \inp ->
-    copyFileChanged inp (ribOutputDir </> dropDirectory1 inp)
+  files <- getDirectoryFiles ribInputDir staticFilePatterns
+  void $ forP files $ \f ->
+    copyFileChanged (ribInputDir </> f) (ribOutputDir </> f)
 
   -- Generate posts
-  postFiles <- getDirectoryFiles "." postFilePatterns
+  postFiles <- getDirectoryFiles ribInputDir postFilePatterns
   posts <- forP postFiles $ \f -> do
-    let out = ribOutputDir </> dropDirectory1 f -<.> "html"
-    Page_Post post <- jsonCacheAction f $ parsePage f
+    let inp = ribInputDir </> f
+        out = ribOutputDir </> f -<.> "html"
+    Page_Post post <- jsonCacheAction inp $ readPage inp
     liftIO $ renderToFile out $ renderPage $ Page_Post post
     pure post
 
@@ -76,7 +77,8 @@ buildAction' staticFilePatterns postFilePatterns renderPage = do
   let publicPosts = filter (not . isDraft) posts
   liftIO $ renderToFile (ribOutputDir </> "index.html") $
     renderPage $ Page_Index publicPosts
-  where
-    parsePage f = do
-      doc <- parsePandoc . T.pack <$> readFile' f
-      pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
+
+readPage :: FilePath -> Action Page
+readPage f = do
+  doc <- parsePandoc . T.pack <$> readFile' f
+  pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f

@@ -7,6 +7,7 @@ module Rib.App
   , run
   , runWith
   , ribOutputDir
+  , ribInputDir
   ) where
 
 import Control.Concurrent (threadDelay)
@@ -30,7 +31,10 @@ data App
 --
 -- Rib's server uses this directory when serving files.
 ribOutputDir :: FilePath
-ribOutputDir = ".riboutput"
+ribOutputDir = "b"
+
+ribInputDir :: FilePath
+ribInputDir = "a"
 
 -- | CLI entry point for running the Rib app
 run :: Action () -> IO ()
