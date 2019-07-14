@@ -19,9 +19,11 @@ import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
 
 
+-- TODO: Should we get rid of this, and have the user directly call shakeForward?
+-- As this way we can get rid of the "framework" feel in Main.hs
 ribShake
   :: Bool
-  -- ^ Force generate of requested targes
+  -- ^ Force generate of requested targets
   -> Action ()
   -- ^ Site build action
   -> IO ()
