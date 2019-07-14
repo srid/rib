@@ -5,27 +5,32 @@ description: Start using Rib to generate your own static website
 
 We will use `Rib.Simple` to create the simplest static site possible -- a site
 with a list of posts and optional static files. First
-create the required directory layout:
+create the required directory layout (content will be under directory `a`; and generated
+files will be under directory `b`)
 
 
 ```bash
-mkdir -p mysite/content/static 
+mkdir -p mysite/a/static
 cd mysite
 ```
 
-Add some content by creating the file `content/first-post.md` with the following content:
+Add some content by creating the file `a/first-post.md` with the following content:
 
 
 ```markdown
 # Hello world
 
 _This_ file is be written in *Markdown*.
+
+    Life is meant to be fun!
 ```
 
 
 Finally add the Haskell source `Main.hs` that wires everything together. Notice
 how we use `Rib.Simple` that does the necessary Shake machinary for us. The
-`App.run` here provides file monitoring and http serving on top of shake generation.
+`App.run` here provides file monitoring and http serving on top of shake
+generation. Everything else in this file is your site specific HTML and CSS
+written in Haskell DSL.
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -43,10 +48,6 @@ import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html)
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
-
-data PostCategory
-  = Blog
-  deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
 main = App.run $ Simple.buildAction renderPage
@@ -96,3 +97,6 @@ Include the `rib` library in your repo and invoke the ghcid script:
 git clone https://github.com/srid/rib rib
 ./rib/ghcid
 ```
+
+This will launch the Rib app server running at http://localhost:8080. Watch it
+regenerate the HTML files as you change the source (be they content or Haskell sources!).

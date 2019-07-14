@@ -6,6 +6,7 @@ import Prelude hiding (div, (**))
 
 import Control.Monad
 import Data.List (partition)
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -31,7 +32,7 @@ renderPage page = with html_ [lang_ "en"] $ do
     meta_ [name_ "description", content_ "Rib - Haskell static site generator"]
     meta_ [name_ "author", content_ "Sridhar Ratnakumar"]
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-    title_ pageTitle
+    title_ $ maybe siteTitle (<> " - " <> siteTitle) pageTitle
     style_ [type_ "text/css"] $ Clay.render pageStyle
     style_ [type_ "text/css"] highlightingCss
     link_ [rel_ "stylesheet", href_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"]
@@ -40,14 +41,16 @@ renderPage page = with html_ [lang_ "en"] $ do
       with div_ [class_ "ui raised segment"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
-        with h1_ [class_ "ui huge header"] pageTitle
+        with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
         case page of
           Page_Index posts -> do
+            p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
             let (blogPosts, otherPosts) =
                   partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) posts
             postList otherPosts
-            with h2_ [class_ "ui header"] "Blog"
-            postList blogPosts
+            unless (null blogPosts) $ do
+              with h2_ [class_ "ui header"] "Blog"
+              postList blogPosts
           Page_Post post -> do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
@@ -59,9 +62,10 @@ renderPage page = with html_ [lang_ "en"] $ do
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
+    siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
-      Page_Index _ -> "Rib - Haskell static site generator"
-      Page_Post post -> postTitle post
+      Page_Index _ -> Nothing
+      Page_Post post -> Just $ postTitle post
 
     -- Render the post title (Markdown supported)
     postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title" . _post_doc
