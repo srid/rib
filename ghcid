@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 
-RIB=$(cd `dirname $0` && pwd)
-MAIN="Main.hs"
+# The path to git checkout of github.com/srid/rib.
+# As this script resides under this repo, it is simply the parent directory of it.
+RIBDIR=$(cd `dirname $0` && pwd)
 
-nix-shell ${RIB}/default.nix --run \
-  "ghcid --reload=${MAIN} -c 'ghci -Wall -i${RIB}/src ${MAIN}' -T 'System.Environment.withArgs [\"serve\", \"-w\"] Main.main'"
+# If your program file is Main.hs set this to Main
+MAIN="Main"
+
+nix-shell ${RIBDIR}/default.nix --run \
+  "ghcid --reload=${MAIN}.hs -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'System.Environment.withArgs [\"serve\", \"-w\"] ${MAIN}.main'"
