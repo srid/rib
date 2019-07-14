@@ -8,8 +8,8 @@ module Rib.Simple
   ( Page(..)
   , Post(..)
   , isDraft
-  , simpleBuildRules
-  , settings
+  , buildAction'
+  , buildAction
   ) where
 
 import Control.Monad
@@ -45,17 +45,20 @@ data Post = Post
 isDraft :: Post -> Bool
 isDraft = fromMaybe False . getPandocMetaValue "draft" . _post_doc
 
+buildAction :: (Page -> Html ()) -> Action ()
+buildAction = buildAction' ["content/static//**"] ["content/*.md"]
+
 -- Build rules for the simplest site possible.
 --
 -- Just posts and static files.
-simpleBuildRules
+buildAction'
   :: [FilePath]
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
   -> (Page -> Html ())
   -> Action ()
-simpleBuildRules staticFilePatterns postFilePatterns renderPage = do
+buildAction' staticFilePatterns postFilePatterns renderPage = do
   -- Copy static assets
   files <- getDirectoryFiles "." staticFilePatterns
   void $ forP files $ \inp ->
@@ -77,7 +80,3 @@ simpleBuildRules staticFilePatterns postFilePatterns renderPage = do
     parsePage f = do
       doc <- parsePandoc . T.pack <$> readFile' f
       pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
-
-
-settings :: (Page -> Html ()) -> Action ()
-settings = simpleBuildRules ["content/static//**"] ["content/*.md"]

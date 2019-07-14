@@ -16,17 +16,13 @@ import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
-import Rib.Shake (Action)
 
 data PostCategory
   = Programming
   deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
-main = App.run settings
-
-settings :: Action ()
-settings =  Simple.settings renderPage
+main = App.run $ Simple.buildAction renderPage
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
