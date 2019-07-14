@@ -6,6 +6,7 @@ module Rib.App
   ( App(..)
   , run
   , runWith
+  , ribOutputDir
   ) where
 
 import Control.Concurrent (threadDelay)
@@ -25,9 +26,12 @@ data App
   | Generate { force :: Bool }
   deriving (Data,Typeable,Show,Eq)
 
+ribOutputDir :: FilePath
+ribOutputDir = ".riboutput"
+
 -- | CLI entry point for running the Rib app
-run :: S.Settings page -> IO ()
-run cfg = runWith cfg =<< cmdArgs ribCli
+run :: S.RibAction page -> IO ()
+run action = runWith action =<< cmdArgs ribCli
   where
     ribCli = modes
       [ Watch
@@ -44,20 +48,20 @@ run cfg = runWith cfg =<< cmdArgs ribCli
 
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
-runWith :: S.Settings page -> App -> IO ()
-runWith cfg = \case
+runWith :: S.RibAction page -> App -> IO ()
+runWith action = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
-    runWith cfg $ Generate True
-    -- And then every time a file changes under the content directory.
-    void $ watchTree mgr (S.contentDir cfg) (const True) $ const $
-      runWith cfg $ Generate False
+    runWith action $ Generate True
+    -- And then every time a file changes under the current directory
+    void $ watchTree mgr "." (const True) $ const $
+      runWith action $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
-    (when w $ runWith cfg Watch)
-    (Server.serve p $ S.destDir cfg)
+    (when w $ runWith action Watch)
+    (Server.serve p ribOutputDir)
 
   Generate forceGen ->
-    Shake.ribShake forceGen cfg
+    Shake.ribShake forceGen action

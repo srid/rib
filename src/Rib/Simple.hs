@@ -24,10 +24,11 @@ import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
+import Rib.App (ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Settings as S
-import Rib.Shake (parsePandocCached)
+import Rib.Shake (jsonCacheAction)
 
 -- | Represents a HTML page that will be generated
 data Page
@@ -53,40 +54,31 @@ simpleBuildRules
   -- ^ Which files are considered to be static files.
   -> [FilePath]
   -- ^ Which files are considered to be post files
-  -> S.Settings Page
+  -> (Page -> Html ())
   -> Action ()
-simpleBuildRules staticFilePatterns postFilePatterns cfg@S.Settings {..} = do
+simpleBuildRules staticFilePatterns postFilePatterns renderPage = do
   -- Copy static assets
-  files <- getDirectoryFiles contentDir staticFilePatterns
+  files <- getDirectoryFiles "." staticFilePatterns
   void $ forP files $ \inp ->
-    copyFileChanged (contentDir </> inp) (destDir </> inp)
+    copyFileChanged inp (ribOutputDir </> dropDirectory1 inp)
 
   -- Generate posts
-  postFiles <- getDirectoryFiles contentDir postFilePatterns
+  postFiles <- getDirectoryFiles "." postFilePatterns
   posts <- forP postFiles $ \f -> do
-    let out = destDir </> f -<.> "html"
-        inp = contentDir </> f
-    Page_Post post <- parsePandocCached cfg inp
+    let out = ribOutputDir </> dropDirectory1 f -<.> "html"
+    Page_Post post <- jsonCacheAction f $ parsePage f
     liftIO $ renderToFile out $ renderPage $ Page_Post post
     pure post
 
   -- Generate the main table of contents
   let publicPosts = filter (not . isDraft) posts
-  liftIO $ renderToFile (destDir </> "index.html") $
+  liftIO $ renderToFile (ribOutputDir </> "index.html") $
     renderPage $ Page_Index publicPosts
-
-
-settings :: S.Settings Page
-settings = S.Settings
-  { renderPage = \page -> do
-      h1_ "TODO: You should override the renderPage function in your settings"
-      pre_ $ toHtml $ T.pack $ show page
-  , parsePage = \f -> do
+  where
+    parsePage = \f -> do
       doc <- parsePandoc . T.pack <$> readFile' f
       pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
-  , contentDir = "content"
-  , destDir = "content.generated"
-  , rebuildPatterns = ["**/*.html", "**/*.md"]
 
-  , buildRules = simpleBuildRules ["static//**"] ["*.md"]
-  }
+
+settings :: (Page -> Html ()) -> S.RibAction Page
+settings = simpleBuildRules ["content/static//**"] ["content/*.md"]

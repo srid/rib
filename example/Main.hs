@@ -25,11 +25,8 @@ data PostCategory
 main :: IO ()
 main = App.run settings
 
-settings :: S.Settings Page
-settings =  Simple.settings
-  { S.renderPage = renderPage
-  -- ^ How to render a page type
-  }
+settings :: S.RibAction Page
+settings =  Simple.settings renderPage
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do

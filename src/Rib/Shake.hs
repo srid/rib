@@ -6,12 +6,15 @@
 
 module Rib.Shake
   ( ribShake
-  , parsePandocCached
+  , jsonCacheAction
   ) where
 
-import Data.Aeson
+import Data.Aeson (FromJSON, ToJSON)
+import qualified Data.Aeson as Aeson
 import Data.Bool (bool)
 import Data.Maybe
+import Data.Typeable
+import Data.Binary
 
 import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
@@ -22,20 +25,19 @@ import qualified Rib.Settings as S
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> S.Settings page
+  -> S.RibAction page
   -- ^ Site settings
   -> IO ()
-ribShake forceGen cfg = do
+ribShake forceGen buildAction = do
   let opts = shakeOptions
         { shakeVerbosity = Chatty
-        , shakeRebuild = bool [] ((RebuildNow,) <$> S.rebuildPatterns cfg) forceGen
+        , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
         }
-  shakeForward opts $
-    S.buildRules cfg cfg
+  shakeForward opts buildAction
 
-parsePandocCached :: (FromJSON page, ToJSON page) => S.Settings page -> FilePath -> Action page
-parsePandocCached cfg f =
-  jsonCacheAction f $ S.parsePage cfg f
-  where
-    jsonCacheAction k =
-      fmap (fromMaybe (error "cache error") . decode) . cacheAction k . fmap encode
+-- jsonCacheAction :: (FromJSON b, ToJSON b, Typeable a, Binary a, Show a, Typeable b, Binary b, Show b) => a -> Action b -> Action b
+jsonCacheAction :: (FromJSON b, Typeable k, Binary k, Show k, ToJSON a) => k -> Action a -> Action b
+jsonCacheAction k =
+    fmap (fromMaybe (error "cache error") . Aeson.decode)
+  . cacheAction k
+  . fmap Aeson.encode
