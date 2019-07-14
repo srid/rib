@@ -13,9 +13,9 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forever, void, when)
 
+import Development.Shake (Action)
 import System.Console.CmdArgs
 import System.FSNotify (watchTree, withManager)
-import Development.Shake (Action)
 
 import qualified Rib.Server as Server
 import qualified Rib.Shake as Shake
@@ -26,6 +26,9 @@ data App
   | Generate { force :: Bool }
   deriving (Data,Typeable,Show,Eq)
 
+-- | The path where static files will be generated.
+--
+-- Rib's server uses this directory when serving files.
 ribOutputDir :: FilePath
 ribOutputDir = ".riboutput"
 

@@ -27,7 +27,7 @@ import Text.Pandoc (Pandoc)
 import Rib.App (ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Shake (jsonCacheAction, Action)
+import Rib.Shake (Action, jsonCacheAction)
 
 -- | Represents a HTML page that will be generated
 data Page
