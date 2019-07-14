@@ -5,7 +5,7 @@
 module Rib.Shake
   ( ribShake
   , jsonCacheAction
-  , RibAction
+  , Action
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -19,13 +19,11 @@ import Development.Shake
 import Development.Shake.Forward (cacheAction, shakeForward)
 
 
-type RibAction page = Action ()
-
 ribShake
   :: Bool
   -- ^ Force generate of requested targes
-  -> RibAction page
-  -- ^ Site settings
+  -> Action ()
+  -- ^ Site build action
   -> IO ()
 ribShake forceGen buildAction = do
   let opts = shakeOptions

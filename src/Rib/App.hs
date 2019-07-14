@@ -15,6 +15,7 @@ import Control.Monad (forever, void, when)
 
 import System.Console.CmdArgs
 import System.FSNotify (watchTree, withManager)
+import Development.Shake (Action)
 
 import qualified Rib.Server as Server
 import qualified Rib.Shake as Shake
@@ -29,7 +30,7 @@ ribOutputDir :: FilePath
 ribOutputDir = ".riboutput"
 
 -- | CLI entry point for running the Rib app
-run :: Shake.RibAction page -> IO ()
+run :: Action () -> IO ()
 run action = runWith action =<< cmdArgs ribCli
   where
     ribCli = modes
@@ -47,7 +48,7 @@ run action = runWith action =<< cmdArgs ribCli
 
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
-runWith :: Shake.RibAction page -> App -> IO ()
+runWith :: Action () -> App -> IO ()
 runWith action = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
