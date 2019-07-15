@@ -4,4 +4,25 @@ draft: 'True'
 description: This stuff is hidden if not private
 ---
 
-This is empty now.
+## Tasks
+
+- [X] Drafts
+- [X] Simplify `Settings` (seems gobbled together)
+- [ ] Tasks
+- [ ] Pandoc metadata to/from ADT (kind of like FromJSON/ToJSON)
+  - Use `flattenMeta` from Slick
+
+### Rib, for documentation
+
+- [X] MVP - rib.srid.ca
+- [ ] Navigation (next <> title <> prev)
+
+
+### Rib, for journaling
+
+- [ ] Render Seinfeld diary view of good/bad/etc.
+
+### [ ] Rib, for invoice generation
+
+- Lucid to render
+- Use google-chrome --headless to convert to PDF
