@@ -14,7 +14,7 @@ import Clay hiding (type_)
 import Lucid
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html)
+import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc)
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
@@ -42,6 +42,8 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
+        with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
+          "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the associated documentation."
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
@@ -55,7 +57,7 @@ renderPage page = with html_ [lang_ "en"] $ do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
             with article_ [class_ "post"] $
-              toHtmlRaw $ pandoc2Html $ _post_doc post
+              pandoc2Html $ _post_doc post
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
@@ -68,7 +70,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post post -> Just $ postTitle post
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title" . _post_doc
+    postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title" . _post_doc
 
     -- Render a list of posts
     postList :: [Post] -> Html ()
@@ -76,7 +78,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       with div_ [class_ "item"] $ do
         with a_ [class_ "header", href_ (_post_url x)] $
           postTitle x
-        small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" $ _post_doc x
+        small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
 
     -- | CSS
     pageStyle :: Css

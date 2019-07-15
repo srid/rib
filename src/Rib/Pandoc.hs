@@ -8,6 +8,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Read (readMaybe)
 
+import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Highlighting (styleToCss, tango)
 
@@ -43,7 +44,7 @@ getPandocMetaValue k doc = do
   pure $ fromMaybe (error $ "Invalid metadata value for key: " <> k) $ readMaybe s
 
 -- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
-getPandocMetaHTML :: String -> Pandoc -> Maybe Text
+getPandocMetaHTML :: String -> Pandoc -> Maybe (Html ())
 getPandocMetaHTML k = fmap pandocInlines2Html . getPandocMetaInlines k
 
 pandoc2Html' :: Pandoc -> Either PandocError Text
@@ -52,16 +53,16 @@ pandoc2Html' = runPure . writeHtml5String settings
     settings :: WriterOptions
     settings = def { writerExtensions = ribExts }
 
-pandoc2Html :: Pandoc -> Text
-pandoc2Html = either (error . show) id . pandoc2Html'
+pandoc2Html :: Pandoc -> Html ()
+pandoc2Html = either (error . show) toHtmlRaw . pandoc2Html'
 
 pandocInlines2Html' :: [Inline] -> Either PandocError Text
 pandocInlines2Html' = pandoc2Html' . Pandoc mempty . pure . Plain
 
-pandocInlines2Html :: [Inline] -> Text
-pandocInlines2Html = either (error . show) id . pandocInlines2Html'
+pandocInlines2Html :: [Inline] -> Html ()
+pandocInlines2Html = either (error . show) toHtmlRaw . pandocInlines2Html'
 
-pandocH1 :: Pandoc -> Maybe Text
+pandocH1 :: Pandoc -> Maybe (Html ())
 pandocH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \case
   Header 1 _ xs -> Just $ pandocInlines2Html xs
   _ -> Nothing

@@ -100,7 +100,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       marginBottom $ em 2
 ```
 
-Include the `rib` library in your repo and invoke the ghcid script:
+Include the `rib` library in your repo, install Nix and invoke the ghcid script:
 
 ```bash
 git clone https://github.com/srid/rib rib
