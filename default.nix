@@ -20,4 +20,8 @@ haskellPackages.developPackage {
   overrides = self: super: with pkgs.haskell.lib; {
     clay = dontCheck super.clay;
   };
+
+  modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {
+    buildTools = (attrs.buildTools or []) ++ [haskellPackages.ghcid] ;
+  });
 }
