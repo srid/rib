@@ -3,10 +3,10 @@ title: "Getting Started"
 description: Start using Rib to generate your own static website
 ---
 
-We will use `Rib.Simple` to create the simplest static site possible -- a site
-with a list of posts and optional static files. First
-create the required directory layout (content will be under directory `a`; and generated
-files will be under directory `b`)
+We will use `Rib.Simple` to create the simplest static site possible---a site
+with a list of posts and optional static files. First create the required
+directory layout (content will be under directory `a`; and generated files will
+be under directory `b`).
 
 
 ```bash
@@ -29,11 +29,11 @@ _This_ file is be written in *Markdown*.
 Finally, add the Haskell source `Main.hs` that wires everything together. Notice
 the following:
 
-- we use `Rib.Simple` that does the necessary Shake machinary for us -- take a
+- We use `Rib.Simple` that does the necessary Shake machinery for us---take a
 peek at that module if you'd like to customize the behaviour of static site
-generation by writing your own Shake action -- in addition to providing the
-`Page` type that distinguishes between a `Post` file and the index
-(`index.html`) file, which links to the list of posts.
+generation by writing your own Shake action---in addition to providing the
+`Page` type that distinguishes between a `Post` file (i.e., the Markdown file
+above) and the index file (`index.html`), which links to the list of posts.
 
 - `App.run` provides file monitoring and http serving on top of site
 generation.

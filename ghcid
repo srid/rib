@@ -7,5 +7,7 @@ RIBDIR=$(cd `dirname $0` && pwd)
 # If your program file is Main.hs set this to Main
 MAIN="Main"
 
+PORT=${1:-8080}
+
 nix-shell ${RIBDIR}/default.nix --run \
-  "ghcid --reload=${MAIN}.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'System.Environment.withArgs [\"serve\", \"-w\"] ${MAIN}.main'"
+  "ghcid --reload=${MAIN}.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'System.Environment.withArgs [\"serve\", \"-w\", \"-p\", \"${PORT}\"] ${MAIN}.main'"
