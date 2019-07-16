@@ -17,7 +17,6 @@ import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.ByteString.Char8 as BSC
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
 
@@ -28,7 +27,6 @@ import Text.Pandoc (Pandoc)
 
 import Rib.App (ribInputDir, ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
-import Rib.Server (getHTMLFileUrl)
 import Rib.Shake (Action, jsonCacheAction)
 
 -- | Represents a HTML page that will be generated
@@ -40,7 +38,7 @@ data Page
 -- | A Post corresponding to the Markdown content
 data Post = Post
   { _post_doc :: Pandoc
-  , _post_url :: Text
+  , _post_srcPath :: FilePath
   }
   deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
 
@@ -71,7 +69,7 @@ buildAction' staticFilePatterns postFilePatterns renderPage = do
   posts <- forP postFiles $ \f -> do
     let inp = ribInputDir </> f
         out = ribOutputDir </> f -<.> "html"
-    Page_Post post <- jsonCacheAction inp $ readPage inp
+    Page_Post post <- jsonCacheAction inp $ readPage f
     writePage renderPage out $ Page_Post post
     pure post
 
@@ -81,8 +79,8 @@ buildAction' staticFilePatterns postFilePatterns renderPage = do
 
 readPage :: FilePath -> Action Page
 readPage f = do
-  doc <- parsePandoc . T.decodeUtf8 . BSC.pack <$> readFile' f
-  pure $ Page_Post $ Post doc $ getHTMLFileUrl $ dropDirectory1 f
+  doc <- parsePandoc . T.decodeUtf8 . BSC.pack <$> readFile' (ribInputDir </> f)
+  pure $ Page_Post $ Post doc f
 
 writePage :: MonadIO m => (Page -> Html ()) -> FilePath -> Page -> m ()
-writePage renderPage f page = liftIO $ renderToFile f $ renderPage page
+writePage renderPage f = liftIO . renderToFile f . renderPage

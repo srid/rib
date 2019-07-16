@@ -16,6 +16,13 @@ description: This stuff is hidden if not private
 
 - [X] MVP - rib.srid.ca
 - [ ] Navigation (next <> title <> prev)
+  - Define post slugs (/inbox.md => "/inbox.md")
+    - Make a `map` of posts keyed by their slug
+    - Have getPageUrl use this
+  - Define hierarchy in Main.hs:
+    ```
+    postHierarchy = [ "/introduction", "/getting-started" ]
+    ```
 
 
 ### Rib, for journaling

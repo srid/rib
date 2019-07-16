@@ -21,7 +21,7 @@ Add some content by creating the file `a/first-post.md` with the following conte
 ```markdown
 # Hello world
 
-_This_ file is be written in *Markdown*.
+_This_ file is written in **Markdown**.
 
     Life is meant to be fun!
 ```

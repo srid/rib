@@ -1,22 +1,29 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
 import Prelude hiding (div, (**))
 
 import Control.Monad
-import Data.List (partition)
+import Data.List (partition, sortOn)
+import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe
-import Data.List (sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Aeson
+import Data.Text.Encoding (encodeUtf8)
+
 
 import Clay hiding (type_)
 import Lucid
+import Development.Shake
+import Development.Shake.FilePath
 
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc)
 import Rib.Simple (Page (..), Post (..), isDraft)
+import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Simple as Simple
 
 data PostCategory
@@ -24,10 +31,20 @@ data PostCategory
   deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
-main = App.run $ Simple.buildAction renderPage
+main = App.run buildAction
 
-renderPage :: Page -> Html ()
-renderPage page = with html_ [lang_ "en"] $ do
+buildAction :: Action ()
+buildAction = do
+  toc <- guideToc
+  Simple.buildAction $ renderPage toc
+
+guideToc :: Action [Text]
+guideToc = do
+  x :: Maybe [Text] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $ readFile' $ App.ribInputDir </> "guide.json"
+  pure $ fromMaybe (fail "Bad JSON") x
+
+renderPage :: [Text] -> Page -> Html ()
+renderPage toc page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     meta_ [name_ "description", content_ "Rib - Haskell static site generator"]
@@ -43,6 +60,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
+        pre_ $ toHtml $ show toc
         with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
@@ -79,7 +97,7 @@ renderPage page = with html_ [lang_ "en"] $ do
     postList :: [Post] -> Html ()
     postList xs = with div_ [class_ "ui relaxed divided list"] $ forM_ xs $ \x ->
       with div_ [class_ "item"] $ do
-        with a_ [class_ "header", href_ (_post_url x)] $
+        with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
           postTitle x
         small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
 
