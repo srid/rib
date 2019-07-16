@@ -42,8 +42,9 @@ buildAction = do
 
 guideToc :: Action [FilePath]
 guideToc = do
-  x :: Maybe [FilePath] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $ readFile' $ App.ribInputDir </> "guide.json"
-  pure $ fromMaybe (fail "Bad JSON") x
+  toc :: Maybe [FilePath] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $
+    readFile' $ App.ribInputDir </> "guide.json"
+  pure $ fromMaybe (fail "bad guide.json") toc
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do

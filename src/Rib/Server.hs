@@ -43,6 +43,9 @@ staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtm
 -- | Return the URL for the given .html file under serve directory
 --
 -- File path must be relative to the serve directory.
+--
+-- You may also pass source paths as long as they map directly to destination
+-- path except for file extension.
 getHTMLFileUrl :: FilePath -> Text
 getHTMLFileUrl = T.pack . ("/" ++) . dropExtension
 
