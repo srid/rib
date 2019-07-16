@@ -1,7 +1,6 @@
 ---
 title: "Getting Started"
 description: Start using Rib to generate your own static website
-order: 1
 ---
 
 We will use `Rib.Simple` to create the simplest static site possible---a site

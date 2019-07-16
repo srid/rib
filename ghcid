@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
+# This script works with Main.hs (with `buildAction` top-level) in the current directory.
+
 # The path to git checkout of github.com/srid/rib.
 # As this script resides under this repo, it is simply the parent directory of it.
 RIBDIR=$(cd `dirname $0` && pwd)
 
-# If your program file is Main.hs set this to Main
-MAIN="Main"
-
+# HTTP server port
 PORT=${1:-8080}
 
 nix-shell ${RIBDIR}/default.nix --run \
-  "ghcid --reload=${MAIN}.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src ${MAIN}.hs' -T 'Rib.App.dev ${PORT} ${MAIN}.buildAction'"
+  "ghcid --reload=Main.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src Main.hs' -T 'Rib.App.dev ${PORT} Main.buildAction'"
