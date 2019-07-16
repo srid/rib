@@ -4,13 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- Sensible defaults for writing the most simple static site
-module Rib.Simple
-  ( Page(..)
-  , Post(..)
-  , isDraft
-  , buildAction'
-  , buildAction
-  ) where
+module Rib.Simple where
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -59,23 +53,36 @@ buildAction'
   -> (Page -> Html ())
   -> Action ()
 buildAction' staticFilePatterns postFilePatterns renderPage = do
-  -- Copy static assets
+  void $ buildStaticFiles staticFilePatterns
+  posts <- buildPostFiles postFilePatterns renderPage
+  buildIndex posts renderPage
+
+-- | Shake action to copy static files as is
+buildStaticFiles :: [FilePattern] -> Action [FilePath]
+buildStaticFiles staticFilePatterns = do
   files <- getDirectoryFiles ribInputDir staticFilePatterns
   void $ forP files $ \f ->
     copyFileChanged (ribInputDir </> f) (ribOutputDir </> f)
+  pure files
 
-  -- Generate posts
+-- | Shake action for generating HTML for post sources
+--
+-- Return the list of build post objects.
+buildPostFiles :: [FilePattern] -> (Page -> Html ()) -> Action [Post]
+buildPostFiles postFilePatterns renderPage = do
   postFiles <- getDirectoryFiles ribInputDir postFilePatterns
-  posts <- forP postFiles $ \f -> do
+  forP postFiles $ \f -> do
     let inp = ribInputDir </> f
         out = ribOutputDir </> f -<.> "html"
     Page_Post post <- jsonCacheAction inp $ readPage f
     writePage renderPage out $ Page_Post post
     pure post
 
-  -- Generate the main table of contents
+buildIndex :: [Post] -> (Page -> Html ()) -> Action ()
+buildIndex posts renderPage = do
   let publicPosts = filter (not . isDraft) posts
   writePage renderPage (ribOutputDir </> "index.html") $ Page_Index publicPosts
+
 
 readPage :: FilePath -> Action Page
 readPage f = do

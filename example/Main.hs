@@ -6,11 +6,12 @@ module Main where
 import Prelude hiding (div, (**))
 
 import Control.Monad
-import Data.List (partition, sortOn)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Functor ((<&>))
+import qualified Data.Map as Map
 import Data.Aeson
 import Data.Text.Encoding (encodeUtf8)
 
@@ -21,14 +22,10 @@ import Development.Shake
 import Development.Shake.FilePath
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc)
+import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
 import Rib.Simple (Page (..), Post (..), isDraft)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Simple as Simple
-
-data PostCategory
-  = Blog
-  deriving (Eq, Ord, Show, Read)
 
 main :: IO ()
 main = App.run buildAction
@@ -36,15 +33,20 @@ main = App.run buildAction
 buildAction :: Action ()
 buildAction = do
   toc <- guideToc
-  Simple.buildAction $ renderPage toc
+  void $ Simple.buildStaticFiles ["static//**"]
+  posts <- Simple.buildPostFiles ["*.md"] renderPage
+  let postMap = Map.fromList $ posts <&> \post -> (_post_srcPath post, post)
+  guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
+    Map.lookup slug postMap
+  Simple.buildIndex guidePosts renderPage
 
-guideToc :: Action [Text]
+guideToc :: Action [FilePath]
 guideToc = do
-  x :: Maybe [Text] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $ readFile' $ App.ribInputDir </> "guide.json"
+  x :: Maybe [FilePath] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $ readFile' $ App.ribInputDir </> "guide.json"
   pure $ fromMaybe (fail "Bad JSON") x
 
-renderPage :: [Text] -> Page -> Html ()
-renderPage toc page = with html_ [lang_ "en"] $ do
+renderPage :: Page -> Html ()
+renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     meta_ [name_ "description", content_ "Rib - Haskell static site generator"]
@@ -60,18 +62,16 @@ renderPage toc page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
-        pre_ $ toHtml $ show toc
         with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
-            let (blogPosts, otherPosts) =
-                  partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) $ sortPosts posts
-            postList otherPosts
-            unless (null blogPosts) $ do
-              with h2_ [class_ "ui header"] "Blog"
-              postList blogPosts
+            with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \x ->
+              with div_ [class_ "item"] $ do
+                with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
+                  postTitle x
+                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
           Page_Post post -> do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
@@ -83,8 +83,6 @@ renderPage toc page = with html_ [lang_ "en"] $ do
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
-    sortPosts = sortOn (getPandocMetaValue "order" . _post_doc :: Post -> Maybe Int)
-
     siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
       Page_Index _ -> Nothing
@@ -92,14 +90,6 @@ renderPage toc page = with html_ [lang_ "en"] $ do
 
     -- Render the post title (Markdown supported)
     postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title" . _post_doc
-
-    -- Render a list of posts
-    postList :: [Post] -> Html ()
-    postList xs = with div_ [class_ "ui relaxed divided list"] $ forM_ xs $ \x ->
-      with div_ [class_ "item"] $ do
-        with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
-          postTitle x
-        small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
 
     -- | CSS
     pageStyle :: Css
