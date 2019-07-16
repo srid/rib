@@ -12,7 +12,6 @@ import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Binary
 import Data.Bool (bool)
-import Data.Maybe
 import Data.Typeable
 
 import Development.Shake
@@ -37,6 +36,6 @@ ribShake forceGen buildAction = do
 -- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
 jsonCacheAction :: (FromJSON b, Typeable k, Binary k, Show k, ToJSON a) => k -> Action a -> Action b
 jsonCacheAction k =
-    fmap (fromMaybe (error "cache error") . Aeson.decode)
+    fmap (either error id . Aeson.eitherDecode)
   . cacheAction k
   . fmap Aeson.encode

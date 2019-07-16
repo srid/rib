@@ -1,30 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
 import Prelude hiding (div, (**))
 
 import Control.Monad
-import Data.List (partition)
+import Data.Aeson
+import qualified Data.ByteString.Lazy as BSL
+import Data.Functor ((<&>))
+import qualified Data.Map as Map
 import Data.Maybe
-import Data.List (sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
+
 
 import Clay hiding (type_)
+import Development.Shake
+import Development.Shake.FilePath
 import Lucid
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc)
+import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
+import Rib.Server (getHTMLFileUrl)
 import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
-data PostCategory
-  = Blog
-  deriving (Eq, Ord, Show, Read)
-
 main :: IO ()
-main = App.run $ Simple.buildAction renderPage
+main = App.run buildAction
+
+buildAction :: Action ()
+buildAction = do
+  toc <- guideToc
+  void $ Simple.buildStaticFiles ["static//**"]
+  posts <- Simple.buildPostFiles ["*.md"] renderPage
+  let postMap = Map.fromList $ posts <&> \post -> (_post_srcPath post, post)
+  guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
+    Map.lookup slug postMap
+  Simple.buildIndex guidePosts renderPage
+
+guideToc :: Action [FilePath]
+guideToc = do
+  toc :: Maybe [FilePath] <- fmap (decode . BSL.fromStrict . encodeUtf8 . T.pack) $
+    readFile' $ App.ribInputDir </> "guide.json"
+  pure $ fromMaybe (fail "bad guide.json") toc
 
 renderPage :: Page -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
@@ -48,12 +68,11 @@ renderPage page = with html_ [lang_ "en"] $ do
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
-            let (blogPosts, otherPosts) =
-                  partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) $ sortPosts posts
-            postList otherPosts
-            unless (null blogPosts) $ do
-              with h2_ [class_ "ui header"] "Blog"
-              postList blogPosts
+            with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \x ->
+              with div_ [class_ "item"] $ do
+                with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
+                  postTitle x
+                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
           Page_Post post -> do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
@@ -65,8 +84,6 @@ renderPage page = with html_ [lang_ "en"] $ do
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
-    sortPosts = sortOn (getPandocMetaValue "order" . _post_doc :: Post -> Maybe Int)
-
     siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
       Page_Index _ -> Nothing
@@ -74,14 +91,6 @@ renderPage page = with html_ [lang_ "en"] $ do
 
     -- Render the post title (Markdown supported)
     postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title" . _post_doc
-
-    -- Render a list of posts
-    postList :: [Post] -> Html ()
-    postList xs = with div_ [class_ "ui relaxed divided list"] $ forM_ xs $ \x ->
-      with div_ [class_ "item"] $ do
-        with a_ [class_ "header", href_ (_post_url x)] $
-          postTitle x
-        small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
 
     -- | CSS
     pageStyle :: Css

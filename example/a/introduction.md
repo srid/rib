@@ -1,7 +1,6 @@
 ---
 title: Introduction
 description: What is, and *why* use, Rib?
-order: 0
 ---
 
 Rib was designed to use *existing* tools instead of reinventing them while giving the
