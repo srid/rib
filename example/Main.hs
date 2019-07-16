@@ -7,6 +7,7 @@ import Prelude hiding (div, (**))
 import Control.Monad
 import Data.List (partition)
 import Data.Maybe
+import Data.List (sortOn)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -43,12 +44,12 @@ renderPage page = with html_ [lang_ "en"] $ do
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
         with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
-          "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the associated documentation."
+          "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
             let (blogPosts, otherPosts) =
-                  partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) posts
+                  partition ((== Just Blog) . getPandocMetaValue "category" . _post_doc) $ sortPosts posts
             postList otherPosts
             unless (null blogPosts) $ do
               with h2_ [class_ "ui header"] "Blog"
@@ -64,6 +65,8 @@ renderPage page = with html_ [lang_ "en"] $ do
       link_ [href_ $ "https://fonts.googleapis.com/css?family=" <> T.replace " " "+" f, rel_ "stylesheet"]
 
   where
+    sortPosts = sortOn (getPandocMetaValue "order" . _post_doc :: Post -> Maybe Int)
+
     siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
       Page_Index _ -> Nothing
