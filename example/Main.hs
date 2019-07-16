@@ -6,25 +6,25 @@ module Main where
 import Prelude hiding (div, (**))
 
 import Control.Monad
+import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.Functor ((<&>))
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Functor ((<&>))
-import qualified Data.Map as Map
-import Data.Aeson
 import Data.Text.Encoding (encodeUtf8)
 
 
 import Clay hiding (type_)
-import Lucid
 import Development.Shake
 import Development.Shake.FilePath
+import Lucid
 
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
-import Rib.Simple (Page (..), Post (..), isDraft)
 import Rib.Server (getHTMLFileUrl)
+import Rib.Simple (Page (..), Post (..), isDraft)
 import qualified Rib.Simple as Simple
 
 main :: IO ()
