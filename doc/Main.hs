@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 
 
-import Clay hiding (type_)
+import Clay hiding (type_, filter, not)
 import Development.Shake
 import Development.Shake.FilePath
 import Lucid
@@ -24,8 +24,12 @@ import Lucid
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Simple (Page (..), Post (..), isDraft)
+import Rib.Simple (Post (..), isDraft)
 import qualified Rib.Simple as Simple
+
+data DocPage
+  = DocPage_Post Post
+  | DocPage_Index [Post]
 
 main :: IO ()
 main = App.run buildAction
@@ -34,11 +38,13 @@ buildAction :: Action ()
 buildAction = do
   toc <- guideToc
   void $ Simple.buildStaticFiles ["static//**"]
-  posts <- Simple.buildPostFiles ["*.md"] renderPage
+  posts <- fmap (fmap $ uncurry Post) <$>
+    Simple.buildHtmlMulti ["*.md"] $ renderPage . DocPage_Post . uncurry Post
   let postMap = Map.fromList $ posts <&> \post -> (_post_srcPath post, post)
   guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
     Map.lookup slug postMap
-  Simple.buildIndex guidePosts renderPage
+  let publicGuidePosts = filter (not . isDraft) guidePosts
+  Simple.buildHtml "index.html" $ renderPage $ DocPage_Index publicGuidePosts
 
 guideToc :: Action [FilePath]
 guideToc = do
@@ -46,7 +52,7 @@ guideToc = do
     readFile' $ App.ribInputDir </> "guide.json"
   pure $ fromMaybe (fail "bad guide.json") toc
 
-renderPage :: Page -> Html ()
+renderPage :: DocPage -> Html ()
 renderPage page = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
@@ -66,14 +72,14 @@ renderPage page = with html_ [lang_ "en"] $ do
         with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
-          Page_Index posts -> do
+          DocPage_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
             with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \x ->
               with div_ [class_ "item"] $ do
                 with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
                   postTitle x
                 small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
-          Page_Post post -> do
+          DocPage_Post post -> do
             when (isDraft post) $
               with div_ [class_ "ui warning message"] "This is a draft"
             with article_ [class_ "post"] $
@@ -86,8 +92,8 @@ renderPage page = with html_ [lang_ "en"] $ do
   where
     siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
-      Page_Index _ -> Nothing
-      Page_Post post -> Just $ postTitle post
+      DocPage_Index _ -> Nothing
+      DocPage_Post post -> Just $ postTitle post
 
     -- Render the post title (Markdown supported)
     postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title" . _post_doc

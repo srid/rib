@@ -2,6 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 -- Sensible defaults for writing the most simple static site
 module Rib.Simple where
@@ -32,8 +34,8 @@ data Page
 
 -- | A Post corresponding to the Markdown content
 data Post = Post
-  { _post_doc :: Pandoc
-  , _post_srcPath :: FilePath
+  { _post_srcPath :: FilePath
+  , _post_doc :: Pandoc
   }
   deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
 
@@ -41,22 +43,14 @@ isDraft :: Post -> Bool
 isDraft = fromMaybe False . getPandocMetaValue "draft" . _post_doc
 
 buildAction :: (Page -> Html ()) -> Action ()
-buildAction = buildAction' ["static//**"] ["*.md"]
+buildAction renderPage = do
+  void $ buildStaticFiles ["static/**"]
+  posts <- fmap (fmap $ uncurry Post) <$>
+    buildHtmlMulti ["*.md"] $ renderPage . Page_Post . uncurry Post
+  let publicPosts = filter (not . isDraft) posts
+  buildHtml "index.html" $  renderPage $ Page_Index publicPosts
 
--- Build rules for the simplest site possible.
---
--- Just posts and static files.
-buildAction'
-  :: [FilePath]
-  -- ^ Which files are considered to be static files.
-  -> [FilePath]
-  -- ^ Which files are considered to be post files
-  -> (Page -> Html ())
-  -> Action ()
-buildAction' staticFilePatterns postFilePatterns renderPage = do
-  void $ buildStaticFiles staticFilePatterns
-  posts <- buildPostFiles postFilePatterns renderPage
-  buildIndex posts renderPage
+-- XXX: everything below is independent of Page/Post type. yay!
 
 -- | Shake action to copy static files as is
 buildStaticFiles :: [FilePattern] -> Action [FilePath]
@@ -66,29 +60,37 @@ buildStaticFiles staticFilePatterns = do
     copyFileChanged (ribInputDir </> f) (ribOutputDir </> f)
   pure files
 
--- | Shake action for generating HTML for post sources
+-- | Build multiple HTML files given a pattern of source files
 --
--- Return the list of build post objects.
-buildPostFiles :: [FilePattern] -> (Page -> Html ()) -> Action [Post]
-buildPostFiles postFilePatterns renderPage = do
-  postFiles <- getDirectoryFiles ribInputDir postFilePatterns
-  forP postFiles $ \f -> do
-    let inp = ribInputDir </> f
-        out = ribOutputDir </> f -<.> "html"
-    Page_Post post <- jsonCacheAction inp $ readPage f
-    writePage renderPage out $ Page_Post post
-    pure post
+-- Call `mkA` to create the final value given a file and its pandoc structure.
+-- Return the list of final values used to render their HTMLs.
+buildHtmlMulti
+  -- :: (ToJSON a, FromJSON a)
+  -- => (FilePath -> Pandoc -> a)
+  -- ^ TODO: Just deal with `(FilePath, Pandoc)` instead of some `a`
+  :: [FilePattern]
+  -- ^ Source file patterns
+  -> ((FilePath, Pandoc) -> Html ())
+  -> Action [(FilePath, Pandoc)]
+buildHtmlMulti pat r = do
+  fs <- getDirectoryFiles ribInputDir pat
+  forP fs $ \f -> do
+    let out = ribOutputDir </> f -<.> "html"
+    v <- jsonCacheAction f $ (f, ) <$> readPandoc f
+    writeHtml out $ r v
+    pure v
 
-buildIndex :: [Post] -> (Page -> Html ()) -> Action ()
-buildIndex posts renderPage = do
-  let publicPosts = filter (not . isDraft) posts
-  writePage renderPage (ribOutputDir </> "index.html") $ Page_Index publicPosts
+-- | Build a single HTML file with the given value
+buildHtml :: FilePath -> Html () -> Action ()
+buildHtml f html = do
+  let out = ribOutputDir </> f
+  writeHtml out html
 
+readPandoc :: FilePath -> Action Pandoc
+readPandoc =
+    fmap (parsePandoc . T.decodeUtf8With T.lenientDecode . BSC.pack)
+  . readFile'
+  . (ribInputDir </>)
 
-readPage :: FilePath -> Action Page
-readPage f = do
-  doc <- parsePandoc . T.decodeUtf8With T.lenientDecode . BSC.pack <$> readFile' (ribInputDir </> f)
-  pure $ Page_Post $ Post doc f
-
-writePage :: MonadIO m => (Page -> Html ()) -> FilePath -> Page -> m ()
-writePage renderPage f = liftIO . renderToFile f . renderPage
+writeHtml :: MonadIO m => FilePath -> Html () -> m ()
+writeHtml f = liftIO . renderToFile f
