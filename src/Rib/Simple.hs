@@ -66,24 +66,28 @@ buildHtmlMulti
   -> ((FilePath, Pandoc) -> Html ())
   -> Action [(FilePath, Pandoc)]
 buildHtmlMulti pat r = do
-  fs <- getDirectoryFiles ribInputDir pat
-  forP fs $ \f -> do
-    let out = ribOutputDir </> f -<.> "html"
-    v <- jsonCacheAction f $ (f, ) <$> readPandoc f
-    writeHtml out $ r v
-    pure v
+  xs <- readPandocMulti pat
+  void $ forP xs $ \x ->
+    buildHtml (fst x -<.> "html") (r x)
+  pure xs
 
--- | Build a single HTML file with the given value
-buildHtml :: FilePath -> Html () -> Action ()
-buildHtml f html = do
-  let out = ribOutputDir </> f
-  writeHtml out html
+readPandocMulti :: [FilePattern] -> Action [(FilePath, Pandoc)]
+readPandocMulti pat = do
+  fs <- getDirectoryFiles ribInputDir pat
+  forP fs $ \f ->
+    jsonCacheAction f $ (f, ) <$> readPandoc f
 
 readPandoc :: FilePath -> Action Pandoc
 readPandoc =
     fmap (parsePandoc . T.decodeUtf8With T.lenientDecode . BSC.pack)
   . readFile'
   . (ribInputDir </>)
+
+-- | Build a single HTML file with the given value
+buildHtml :: FilePath -> Html () -> Action ()
+buildHtml f html = do
+  let out = ribOutputDir </> f
+  writeHtml out html
 
 writeHtml :: MonadIO m => FilePath -> Html () -> m ()
 writeHtml f = liftIO . renderToFile f
