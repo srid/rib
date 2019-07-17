@@ -26,31 +26,23 @@ import Rib.App (ribInputDir, ribOutputDir)
 import Rib.Pandoc (getPandocMetaValue, parsePandoc)
 import Rib.Shake (Action, jsonCacheAction)
 
--- | Represents a HTML page that will be generated
+-- | An HTML page that will be generated
 data Page
-  = Page_Index [Post]
-  | Page_Post Post
+  = Page_Index [(FilePath, Pandoc)]
+  | Page_Post (FilePath, Pandoc)
   deriving (Generic, Show, FromJSON, ToJSON)
 
--- | A Post corresponding to the Markdown content
-data Post = Post
-  { _post_srcPath :: FilePath
-  , _post_doc :: Pandoc
-  }
-  deriving (Generic, Eq, Ord, Show, FromJSON, ToJSON)
-
-isDraft :: Post -> Bool
-isDraft = fromMaybe False . getPandocMetaValue "draft" . _post_doc
+isDraft :: Pandoc -> Bool
+isDraft = fromMaybe False . getPandocMetaValue "draft"
 
 buildAction :: (Page -> Html ()) -> Action ()
 buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]
-  posts <- fmap (fmap $ uncurry Post) <$>
-    buildHtmlMulti ["*.md"] $ renderPage . Page_Post . uncurry Post
-  let publicPosts = filter (not . isDraft) posts
+  posts <- buildHtmlMulti ["*.md"] $ renderPage . Page_Post
+  let publicPosts = filter (not . isDraft . snd) posts
   buildHtml "index.html" $  renderPage $ Page_Index publicPosts
 
--- XXX: everything below is independent of Page/Post type. yay!
+-- XXX: everything below is independent of Page type. yay!
 
 -- | Shake action to copy static files as is
 buildStaticFiles :: [FilePattern] -> Action [FilePath]
