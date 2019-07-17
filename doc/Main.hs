@@ -9,21 +9,22 @@ import Prelude hiding (div, (**))
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.List (elemIndex)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 
-
-import Clay hiding (filter, not, type_)
+import Clay hiding (filter, not, reverse, type_)
 import Development.Shake
 import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc (Pandoc)
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
+import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
+                   setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Simple as Simple
 
@@ -37,8 +38,19 @@ main = App.run buildAction
 buildAction :: Action ()
 buildAction = do
   toc <- guideToc
+  let setNext f doc = maybe (f, doc) (\v -> (f, setPandocMetaValue "next" v doc)) $ do
+        idx <- elemIndex f toc
+        listToMaybe $ drop (idx + 1) toc
+  let setPrev f doc = (f, ) $ maybe doc (\v -> setPandocMetaValue "prev" v doc) $ do
+        idx <- elemIndex f $ reverse toc
+        listToMaybe $ drop (idx + 1) $ reverse toc
   void $ Simple.buildStaticFiles ["static//**"]
-  posts <- Simple.buildHtmlMulti ["*.md"] $ renderPage . DocPage_Post
+  -- FIXME: How to include title of next/ prev docs that have not been parsed yet? :-S
+  posts <- Simple.buildHtmlMulti ["*.md"] $
+      renderPage
+    . DocPage_Post
+    . uncurry setNext
+    . uncurry setPrev
   let postMap = Map.fromList posts
   guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
     (slug, ) <$> Map.lookup slug postMap
@@ -81,6 +93,18 @@ renderPage page = with html_ [lang_ "en"] $ do
           DocPage_Post (_, doc) -> do
             when (Simple.isDraft doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
+            case getPandocMetaValue "prev" doc of
+              Nothing -> mempty
+              Just (prev :: FilePath) ->
+                with a_ [class_ "header", href_ (getHTMLFileUrl prev)] $ do
+                  "Prev: "
+                  toHtml prev -- postTitle doc
+            case getPandocMetaValue "next" doc of
+              Nothing -> mempty
+              Just (next :: FilePath) ->
+                with a_ [class_ "header", href_ (getHTMLFileUrl next)] $ do
+                  "Next: "
+                  toHtml next -- postTitle doc
             with article_ [class_ "post"] $
               pandoc2Html doc
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
