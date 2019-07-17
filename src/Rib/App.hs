@@ -4,6 +4,7 @@
 
 module Rib.App
   ( App(..)
+  , dev
   , run
   , runWith
   , ribOutputDir
@@ -56,6 +57,10 @@ run action = runWith action =<< cmdArgs ribCli
           } &= help "Generate the site"
             &= auto  -- Generate is the default command.
       ]
+
+-- | CLI entry point for development server for use with GHCID
+dev :: Int -> Action () -> IO ()
+dev p a = runWith a $ Serve p True
 
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
