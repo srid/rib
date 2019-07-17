@@ -3,7 +3,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img src="https://raw.githubusercontent.com/srid/rib/master/example/a/static/ribs.svg?sanitize=true" width="150" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/ribs.svg?sanitize=true" width="150" />
 
 Rib is a static site generator written in Haskell that reuses existing tools
 (`Shake`, `Lucid` and `Clay`) and is thus non-monolithic. It is nearly done but
