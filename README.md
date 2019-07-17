@@ -5,13 +5,15 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
 <img src="https://raw.githubusercontent.com/srid/rib/master/example/a/static/ribs.svg?sanitize=true" width="150" />
 
-Rib is a static site generator written in Haskell that reuses existing tools (`Shake`, `Lucid` and `Clay`) and is thus non-monolithic. It is nearly done but still a work in progress and will soon be ready for general use.
+Rib is a static site generator written in Haskell that reuses existing tools
+(`Shake`, `Lucid` and `Clay`) and is thus non-monolithic. It is nearly done but
+still a work in progress and will soon be ready for general use.
 
 ## Example
 
-See `./example` (Rib's project site in fact) to see how the `Rib` library
-can be used to write your own static site generator in a few lines of code which
-includes the HTML and CSS of the site:
+See `./example` to see how the `Rib` library can be used to write your own
+static site generator in a few lines of code which includes the HTML and CSS of
+the site:
 
 ```
 $ cloc --by-file example/Main.hs
@@ -19,14 +21,18 @@ $ cloc --by-file example/Main.hs
 -------------------------------------------------------------------------------
 File                             blank        comment           code
 -------------------------------------------------------------------------------
-example/Main.hs                     14              5             86
+example/Main.hs                     10              3             45
 -------------------------------------------------------------------------------
 ```
 
-(See `Rib.Simple` if you need further customization.)
+See `./doc` for a real-world example---Rib's own documentation site.
+
+(Refer to `Rib.Simple` if you need further customization of the Shake action.)
 
 With Rib you do not have to deal with less powerful template engines or
 write raw HTML/CSS by hand. Do everything in Haskell, and concisely at that!
+
+---
 
 To get the example site up and running run:
 
