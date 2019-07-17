@@ -12,6 +12,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.ByteString.Char8 as BSC
 import Data.Maybe
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding.Error as T
 import GHC.Generics (Generic)
 
 import Development.Shake
@@ -86,7 +87,7 @@ buildIndex posts renderPage = do
 
 readPage :: FilePath -> Action Page
 readPage f = do
-  doc <- parsePandoc . T.decodeUtf8 . BSC.pack <$> readFile' (ribInputDir </> f)
+  doc <- parsePandoc . T.decodeUtf8With T.lenientDecode . BSC.pack <$> readFile' (ribInputDir </> f)
   pure $ Page_Post $ Post doc f
 
 writePage :: MonadIO m => (Page -> Html ()) -> FilePath -> Page -> m ()
