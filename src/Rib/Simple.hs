@@ -32,6 +32,7 @@ data Page
   | Page_Post (FilePath, Pandoc)
   deriving (Generic, Show, FromJSON, ToJSON)
 
+-- TODO: Eventually this should be subsumed into our Pandoc metadata system.
 isDraft :: Pandoc -> Bool
 isDraft = fromMaybe False . getPandocMetaValue "draft"
 

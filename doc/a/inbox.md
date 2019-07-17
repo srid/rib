@@ -16,13 +16,11 @@ description: This stuff is hidden if not private
 
 - [X] MVP - rib.srid.ca
 - [ ] Navigation (next <> title <> prev)
-  - Define post slugs (/inbox.md => "/inbox.md")
-    - Make a `map` of posts keyed by their slug
-    - Have getPageUrl use this
-  - Define hierarchy in Main.hs:
-    ```
-    postHierarchy = [ "/introduction", "/getting-started" ]
-    ```
+  - [X] Post slugs and `guide.json`
+  - [ ] Pandoc metadata system (at least, as simple as `setPandocMetaValue`)
+  - [ ] Inject next/prev keys into Pandoc metadata
+    - [ ] Patch `DocPage` in the render function passed to `buildHtmlMulti`
+      - Need to do a lookup guide.json each time, which is okay.
 
 
 ### Rib, for journaling
