@@ -27,6 +27,7 @@ import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
                    setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
+import qualified Rib.Shake as Shake
 import Rib.Simple (Page (..))
 import qualified Rib.Simple as Simple
 
@@ -35,15 +36,15 @@ main = App.run buildAction
 
 buildAction :: Action ()
 buildAction = do
-  void $ Simple.buildStaticFiles ["static//**"]
+  void $ Shake.buildStaticFiles ["static//**"]
 
   toc <- guideToc
-  posts <- applyGuide toc <$> Simple.readPandocMulti ["*.md"]
+  posts <- applyGuide toc <$> Shake.readPandocMulti ["*.md"]
 
   void $ forP posts $ \x ->
-    Simple.buildHtml (fst x -<.> "html") (renderPage $ Page_Post x)
+    Shake.buildHtml (fst x -<.> "html") (renderPage $ Page_Post x)
 
-  Simple.buildHtml "index.html" $ renderPage $ Page_Index posts
+  Shake.buildHtml "index.html" $ renderPage $ Page_Index posts
 
 -- | Apply the guide metadata to a list of pages
 -- TODO: refactor
