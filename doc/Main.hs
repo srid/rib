@@ -20,10 +20,10 @@ import Clay hiding (filter, not, reverse, type_)
 import Development.Shake
 import Development.Shake.FilePath
 import Lucid
-import Text.Pandoc (Pandoc)
+import Text.Pandoc
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
+import Rib.Pandoc (getPandocMetaHTML, pandocInlines2Html, getPandocMetaValue, getPandocMetaInlines,  highlightingCss, pandoc2Html, parsePandoc,
                    setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Simple as Simple
@@ -37,25 +37,34 @@ main = App.run buildAction
 
 buildAction :: Action ()
 buildAction = do
-  toc <- guideToc
-  let setNext f doc = maybe (f, doc) (\v -> (f, setPandocMetaValue "next" v doc)) $ do
-        idx <- elemIndex f toc
-        listToMaybe $ drop (idx + 1) toc
-  let setPrev f doc = (f, ) $ maybe doc (\v -> setPandocMetaValue "prev" v doc) $ do
-        idx <- elemIndex f $ reverse toc
-        listToMaybe $ drop (idx + 1) $ reverse toc
   void $ Simple.buildStaticFiles ["static//**"]
-  -- FIXME: How to include title of next/ prev docs that have not been parsed yet? :-S
-  posts <- Simple.buildHtmlMulti ["*.md"] $
-      renderPage
-    . DocPage_Post
-    . uncurry setNext
-    . uncurry setPrev
-  let postMap = Map.fromList posts
-  guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
-    (slug, ) <$> Map.lookup slug postMap
-  let publicGuidePosts = filter (not . Simple.isDraft . snd) guidePosts
-  Simple.buildHtml "index.html" $ renderPage $ DocPage_Index publicGuidePosts
+
+  toc <- guideToc
+  posts <- applyGuide toc <$> Simple.readPandocMulti ["*.md"]
+
+  void $ forP posts $ \x ->
+    Simple.buildHtml (fst x -<.> "html") (renderPage $ DocPage_Post x)
+
+  Simple.buildHtml "index.html" $ renderPage $ DocPage_Index posts
+
+-- | Apply the guide metadata to a list of pages
+-- TODO: refactor
+-- TODO: add title to prev too
+applyGuide :: [FilePath] -> [(FilePath, Pandoc)] -> [(FilePath, Pandoc)]
+applyGuide toc xs = fromMaybe (error "somethin wrong") $ forM toc $ \f -> (f,) <$> Map.lookup f tocMap'
+  where
+    tocMap' = Map.mapWithKey updateX tocMap
+    updateX f doc = setNext f $ setPrev f doc
+    tocMap = Map.fromList $ flip fmap toc $ \slug -> maybe (error "slug not found") (slug,) $
+      Map.lookup slug $ Map.fromList xs
+    setNext f doc = maybe doc (\v -> setPandocMetaValue "next" v doc) $ do
+      idx <- elemIndex f toc
+      y <- listToMaybe $ drop (idx + 1) toc
+      t  <- getPandocMetaInlines "title" =<< Map.lookup y tocMap
+      pure (y, t)
+    setPrev f doc = maybe doc (\v -> setPandocMetaValue "prev" v doc) $ do
+      idx <- elemIndex f $ reverse toc
+      listToMaybe $ drop (idx + 1) $ reverse toc
 
 guideToc :: Action [FilePath]
 guideToc = do
@@ -101,10 +110,10 @@ renderPage page = with html_ [lang_ "en"] $ do
                   toHtml prev -- postTitle doc
             case getPandocMetaValue "next" doc of
               Nothing -> mempty
-              Just (next :: FilePath) ->
+              Just (next :: FilePath, t :: [Inline]) ->
                 with a_ [class_ "header", href_ (getHTMLFileUrl next)] $ do
                   "Next: "
-                  toHtml next -- postTitle doc
+                  pandocInlines2Html t
             with article_ [class_ "post"] $
               pandoc2Html doc
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"

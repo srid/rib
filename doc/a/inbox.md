@@ -21,7 +21,10 @@ description: This stuff is hidden if not private
   - [ ] Inject next/prev keys into Pandoc metadata
     - [X] Patch `DocPage` in the render function passed to `buildHtmlMulti`
       - Need to do a lookup guide.json each time, which is okay.
-    - [ ] Include title from yet-unparsed next/prev docs. How? :-S
+    - [X] Include title from yet-unparsed next/prev docs. How? :-S
+      - [ ] Refactor
+- [ ] getting-started: instruct cp example/Main.hs and create a separate page
+      explaining Main.hs (literate haskell if possible;)
 
 
 ### Rib, for journaling

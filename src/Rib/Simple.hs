@@ -44,6 +44,8 @@ buildAction renderPage = do
   buildHtml "index.html" $  renderPage $ Page_Index publicPosts
 
 -- XXX: everything below is independent of Page type. yay!
+-- TODO: Move to `Rib.Shake`?
+-- TODO: And get rid of the above, and have Main.hs do it manually.
 
 -- | Shake action to copy static files as is
 buildStaticFiles :: [FilePattern] -> Action [FilePath]
