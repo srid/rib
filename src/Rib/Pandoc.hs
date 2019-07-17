@@ -3,10 +3,10 @@
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc where
 
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Map as Map
 import Text.Read (readMaybe)
 
 import Lucid (Html, toHtmlRaw)

@@ -34,5 +34,3 @@ buildAction renderPage = do
   posts <- buildHtmlMulti ["*.md"] $ renderPage . Page_Post
   let publicPosts = filter (not . isDraft . snd) posts
   buildHtml "index.html" $  renderPage $ Page_Index publicPosts
-
--- TODO: Get get rid of the above, and have Main.hs do it manually.
