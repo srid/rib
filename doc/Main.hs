@@ -50,19 +50,16 @@ buildAction = do
 -- TODO: refactor
 applyGuide :: (Ord f, Show f) => [f] -> [(f, Pandoc)] -> [(f, Pandoc)]
 applyGuide fs xs =
-  flip zipWithTriplets fsComplete $ \mprev (f, doc) mnext -> (f,) $
+  flip mapWithAdj fsComplete $ \mprev (f, doc) mnext -> (f,) $
     setPandocMetaValueMaybe "next" mnext $
     setPandocMetaValueMaybe "prev" mprev doc
   where
-    -- | Zip a list with a function taking each element along with its
-    -- predecessor and successor
-    zipWithTriplets :: (Maybe a -> a -> Maybe a -> b) -> [a] -> [b]
-    zipWithTriplets f l = zipWith3 f
-      (dimap reverse reverse shift1 l)
-      l
-      (shift1 l)
+    -- | Like `fmap` on lists but passes the previous and next element as well.
+    mapWithAdj :: (Maybe a -> a -> Maybe a -> b) -> [a] -> [b]
+    mapWithAdj f l = zipWith3 f (rshift1 l) l (shift1 l)
       where
-        shift1 ls = (Just <$> drop 1 ls) <> [Nothing]
+        shift1 = (<> [Nothing]) . fmap Just . drop 1
+        rshift1 = dimap reverse reverse shift1
     setPandocMetaValueMaybe :: Show a => String -> Maybe a -> Pandoc -> Pandoc
     setPandocMetaValueMaybe k mv doc = maybe doc (\v -> setPandocMetaValue k v doc) mv
     -- Like `fs` but along with the associated Pandoc document (pulled from `xs`)
@@ -92,7 +89,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
-        with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
+        with div_ [class_ "ui warning message"] $ pandoc2Html $ parsePandoc
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
@@ -105,19 +102,7 @@ renderPage page = with html_ [lang_ "en"] $ do
           Page_Post (_, doc) -> do
             when (Simple.isDraft doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
-            case getPandocMetaValue "prev" doc of
-              Nothing -> mempty
-              -- FIXME: Don't have to specify type here; figure out a better solution.
-              Just (prevf :: FilePath, prevdoc  :: Pandoc) ->
-                with a_ [class_ "header", href_ (getHTMLFileUrl prevf)] $ do
-                  "Prev: "
-                  fromMaybe "Untitled" $ getPandocMetaHTML "title" prevdoc
-            case getPandocMetaValue "next" doc of
-              Nothing -> mempty
-              Just (nextf :: FilePath, nextdoc  :: Pandoc) ->
-                with a_ [class_ "header", href_ (getHTMLFileUrl nextf)] $ do
-                  "Next: "
-                  fromMaybe "Untitled" $ getPandocMetaHTML "title" nextdoc
+            postNav doc
             with article_ [class_ "post"] $
               pandoc2Html doc
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
@@ -133,6 +118,21 @@ renderPage page = with html_ [lang_ "en"] $ do
 
     -- Render the post title (Markdown supported)
     postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title"
+
+    -- Post navigation header
+    postNav :: Pandoc -> Html ()
+    postNav doc = with div_ [class_ "ui secondary segment"] $
+      with div_ [class_ "ui grid"] $
+        with div_ [class_ "four column row"] $
+          forM_ [("prev", "Prev", "left"), ("next", "Next", "right")] $
+            \(k, navLabel, navDir) -> with div_ [class_ $ navDir <> " floated column"] $
+              case getPandocMetaValue k doc of
+                Nothing -> mempty
+                -- FIXME: Don't have to specify type here; figure out a better solution.
+                Just (f :: FilePath, otherDoc  :: Pandoc) -> strong_ $
+                  with a_ [class_ "header", href_ (getHTMLFileUrl f)] $ do
+                    navLabel <> ": "
+                    fromMaybe "Untitled" $ getPandocMetaHTML "title" otherDoc
 
     -- | CSS
     pageStyle :: Css

@@ -55,14 +55,6 @@ setPandocMetaValue k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
     meta' = Map.insert k v' meta
     v' = MetaInlines [Str $ show v]
 
-data PostMeta = PostMeta
-  { _postMeta_title :: Maybe [Inline]
-  , _postMeta_draft :: Maybe Bool
-  , _postMeta_next :: Maybe FilePath
-  }
--- TODO: can I use dependent map here?
--- getPandocMeta :: Pandoc -> [(String, DSum a Identity)] -> DMap a Identity
-
 pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings
   where
