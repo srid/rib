@@ -47,7 +47,6 @@ buildAction = do
   Shake.buildHtml "index.html" $ renderPage $ Page_Index posts
 
 -- | Apply the guide metadata to a list of pages
--- TODO: refactor
 applyGuide :: (Ord f, Show f) => [f] -> [(f, Pandoc)] -> [(f, Pandoc)]
 applyGuide fs xs =
   flip mapWithAdj fsComplete $ \mprev (f, doc) mnext -> (f,) $

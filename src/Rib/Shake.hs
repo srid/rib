@@ -39,9 +39,6 @@ buildStaticFiles staticFilePatterns = do
 -- Call `mkA` to create the final value given a file and its pandoc structure.
 -- Return the list of final values used to render their HTMLs.
 buildHtmlMulti
-  -- :: (ToJSON a, FromJSON a)
-  -- => (FilePath -> Pandoc -> a)
-  -- ^ TODO: Just deal with `(FilePath, Pandoc)` instead of some `a`
   :: [FilePattern]
   -- ^ Source file patterns
   -> ((FilePath, Pandoc) -> Html ())
