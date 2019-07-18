@@ -3,6 +3,7 @@
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc where
 
+import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -46,6 +47,13 @@ getPandocMetaValue k doc = do
 -- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
 getPandocMetaHTML :: String -> Pandoc -> Maybe (Html ())
 getPandocMetaHTML k = fmap pandocInlines2Html . getPandocMetaInlines k
+
+-- | Add, or set, a metadata data key to the given Haskell value
+setPandocMetaValue :: Show a => String -> a -> Pandoc -> Pandoc
+setPandocMetaValue k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
+  where
+    meta' = Map.insert k v' meta
+    v' = MetaInlines [Str $ show v]
 
 pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings

@@ -29,11 +29,10 @@ _This_ file is written in **Markdown**.
 Finally, add the Haskell source `Main.hs` that wires everything together. Notice
 the following:
 
-- We use `Rib.Simple` that does the necessary Shake machinery for us---take a
-peek at that module if you'd like to customize the behaviour of static site
-generation by writing your own Shake action---in addition to providing the
-`Page` type that distinguishes between a `Post` file (i.e., the Markdown file
-above) and the index file (`index.html`), which links to the list of posts.
+- We use `Rib.Simple.buildAction` that wires together the necessary Shake
+combinators (defined in `Rib.Shake`) for us---take a peek at that module if
+you'd like to customize the behaviour of static site generation by writing your
+own Shake action.
 
 - `App.run` provides file monitoring and http serving on top of site
 generation.
@@ -57,7 +56,7 @@ import Lucid
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Simple (Page (..), Post (..), isDraft)
+import Rib.Simple (Page (..), isDraft)
 import qualified Rib.Simple as Simple
 
 main :: IO ()
@@ -79,21 +78,21 @@ renderPage page = with html_ [lang_ "en"] $ do
       h1_ pageTitle
       case page of
         Page_Index posts ->
-          div_ $ forM_ posts $ \post -> div_ $ do
-            with a_ [href_ (getHTMLFileUrl $ _post_srcPath post)] $ postTitle post
-            small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" $ _post_doc post
-        Page_Post post -> do
-          when (isDraft post) $
+          div_ $ forM_ posts $ \(f, doc) -> div_ $ do
+            with a_ [href_ (getHTMLFileUrl f)] $ postTitle doc
+            small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" doc
+        Page_Post (_, doc) -> do
+          when (isDraft doc) $
             div_ "This is a draft"
           with article_ [class_ "post"] $
-            toHtmlRaw $ pandoc2Html $ _post_doc post
+            toHtmlRaw $ pandoc2Html doc
   where
     pageTitle = case page of
       Page_Index _ -> "My website!"
-      Page_Post post -> postTitle post
+      Page_Post (_, doc) -> postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title" . _post_doc
+    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title"
 
     -- | CSS
     pageStyle :: Css

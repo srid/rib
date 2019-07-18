@@ -13,7 +13,7 @@ import Lucid
 import qualified Rib.App as App
 import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Simple (Page (..), Post (..), isDraft)
+import Rib.Simple (Page (..), isDraft)
 import qualified Rib.Simple as Simple
 
 main :: IO ()
@@ -35,21 +35,21 @@ renderPage page = with html_ [lang_ "en"] $ do
       h1_ pageTitle
       case page of
         Page_Index posts ->
-          div_ $ forM_ posts $ \post -> div_ $ do
-            with a_ [href_ (getHTMLFileUrl $ _post_srcPath post)] $ postTitle post
-            small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" $ _post_doc post
-        Page_Post post -> do
-          when (isDraft post) $
+          div_ $ forM_ posts $ \(f, doc) -> div_ $ do
+            with a_ [href_ (getHTMLFileUrl f)] $ postTitle doc
+            small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" doc
+        Page_Post (_, doc) -> do
+          when (isDraft doc) $
             div_ "This is a draft"
           with article_ [class_ "post"] $
-            toHtmlRaw $ pandoc2Html $ _post_doc post
+            toHtmlRaw $ pandoc2Html doc
   where
     pageTitle = case page of
       Page_Index _ -> "My website!"
-      Page_Post post -> postTitle post
+      Page_Post (_, doc) -> postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title" . _post_doc
+    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title"
 
     -- | CSS
     pageStyle :: Css

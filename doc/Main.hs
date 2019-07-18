@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main where
 
@@ -11,20 +12,23 @@ import qualified Data.ByteString.Lazy as BSL
 import Data.Functor ((<&>))
 import qualified Data.Map as Map
 import Data.Maybe
+import Data.Profunctor (dimap)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 
-
-import Clay hiding (type_)
+import Clay hiding (filter, not, reverse, type_)
 import Development.Shake
 import Development.Shake.FilePath
 import Lucid
+import Text.Pandoc
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html, parsePandoc)
+import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
+                   setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Simple (Page (..), Post (..), isDraft)
+import qualified Rib.Shake as Shake
+import Rib.Simple (Page (..))
 import qualified Rib.Simple as Simple
 
 main :: IO ()
@@ -32,13 +36,34 @@ main = App.run buildAction
 
 buildAction :: Action ()
 buildAction = do
+  void $ Shake.buildStaticFiles ["static//**"]
+
   toc <- guideToc
-  void $ Simple.buildStaticFiles ["static//**"]
-  posts <- Simple.buildPostFiles ["*.md"] renderPage
-  let postMap = Map.fromList $ posts <&> \post -> (_post_srcPath post, post)
-  guidePosts <- forM toc $ \slug -> maybe (fail "slug not found") pure $
-    Map.lookup slug postMap
-  Simple.buildIndex guidePosts renderPage
+  posts <- applyGuide toc <$> Shake.readPandocMulti ["*.md"]
+
+  void $ forP posts $ \x ->
+    Shake.buildHtml (fst x -<.> "html") (renderPage $ Page_Post x)
+
+  Shake.buildHtml "index.html" $ renderPage $ Page_Index posts
+
+-- | Apply the guide metadata to a list of pages
+applyGuide :: (Ord f, Show f) => [f] -> [(f, Pandoc)] -> [(f, Pandoc)]
+applyGuide fs xs =
+  flip mapWithAdj fsComplete $ \mprev (f, doc) mnext -> (f,) $
+    setPandocMetaValueMaybe "next" mnext $
+    setPandocMetaValueMaybe "prev" mprev doc
+  where
+    -- | Like `fmap` on lists but passes the previous and next element as well.
+    mapWithAdj :: (Maybe a -> a -> Maybe a -> b) -> [a] -> [b]
+    mapWithAdj f l = zipWith3 f (rshift1 l) l (shift1 l)
+      where
+        shift1 = (<> [Nothing]) . fmap Just . drop 1
+        rshift1 = dimap reverse reverse shift1
+    setPandocMetaValueMaybe :: Show a => String -> Maybe a -> Pandoc -> Pandoc
+    setPandocMetaValueMaybe k mv doc = maybe doc (\v -> setPandocMetaValue k v doc) mv
+    -- Like `fs` but along with the associated Pandoc document (pulled from `xs`)
+    fsComplete = fs <&> \f -> (f,) $ fromJust $ Map.lookup f xsMap
+    xsMap = Map.fromList xs
 
 guideToc :: Action [FilePath]
 guideToc = do
@@ -63,21 +88,22 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
-        with div_ [class_ "ui note message"] $ pandoc2Html $ parsePandoc
+        with div_ [class_ "ui warning message"] $ pandoc2Html $ parsePandoc
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
-            with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \x ->
+            with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \(f, doc) ->
               with div_ [class_ "item"] $ do
-                with a_ [class_ "header", href_ (getHTMLFileUrl $ _post_srcPath x)] $
-                  postTitle x
-                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" $ _post_doc x
-          Page_Post post -> do
-            when (isDraft post) $
+                with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
+                  postTitle doc
+                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" doc
+          Page_Post (_, doc) -> do
+            when (Simple.isDraft doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
+            postNav doc
             with article_ [class_ "post"] $
-              pandoc2Html $ _post_doc post
+              pandoc2Html doc
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
@@ -87,10 +113,25 @@ renderPage page = with html_ [lang_ "en"] $ do
     siteTitle = "Rib - Haskell static site generator"
     pageTitle = case page of
       Page_Index _ -> Nothing
-      Page_Post post -> Just $ postTitle post
+      Page_Post (_, doc) -> Just $ postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title" . _post_doc
+    postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title"
+
+    -- Post navigation header
+    postNav :: Pandoc -> Html ()
+    postNav doc = with div_ [class_ "ui secondary segment"] $
+      with div_ [class_ "ui grid"] $
+        with div_ [class_ "four column row"] $
+          forM_ [("prev", "Prev", "left"), ("next", "Next", "right")] $
+            \(k, navLabel, navDir) -> with div_ [class_ $ navDir <> " floated column"] $
+              case getPandocMetaValue k doc of
+                Nothing -> mempty
+                -- FIXME: Don't have to specify type here; figure out a better solution.
+                Just (f :: FilePath, otherDoc  :: Pandoc) -> strong_ $
+                  with a_ [class_ "header", href_ (getHTMLFileUrl f)] $ do
+                    navLabel <> ": "
+                    fromMaybe "Untitled" $ getPandocMetaHTML "title" otherDoc
 
     -- | CSS
     pageStyle :: Css

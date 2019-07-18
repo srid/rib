@@ -46,7 +46,7 @@ This will:
 - Drop into a nix-shell with needed Haskell dependencies
 - Compile the `rib` library and `example/Main.hs` through ghcid
   - Whenever Haskell sources change ghcid reloads them
-- Run `example/Main.hs:main` with `serve -w` CLI arguments
+- Run `example/Main.hs:buildAction` (as if with `serve -w` CLI arguments)
 - This does the following:
   1. Convert sources in `./example/a` into `./example/b` using Shake
   2. Listens for changes to `./example/a`, and re-generate them (i.e., the `-w` argument)

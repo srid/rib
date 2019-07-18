@@ -14,13 +14,14 @@ module Rib.App
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forever, void, when)
+import Data.Bool (bool)
 
-import Development.Shake (Action)
+import Development.Shake
+import Development.Shake.Forward (shakeForward)
 import System.Console.CmdArgs
 import System.FSNotify (watchTree, withManager)
 
 import qualified Rib.Server as Server
-import qualified Rib.Shake as Shake
 
 data App
   = Watch
@@ -43,7 +44,7 @@ ribInputDir = "a"
 
 -- | CLI entry point for running the Rib app
 run :: Action () -> IO ()
-run action = runWith action =<< cmdArgs ribCli
+run buildAction = runWith buildAction =<< cmdArgs ribCli
   where
     ribCli = modes
       [ Watch
@@ -65,19 +66,23 @@ dev p a = runWith a $ Serve p True
 -- | Like `run` but uses the given `App` mode instead of reading it from CLI
 -- arguments.
 runWith :: Action () -> App -> IO ()
-runWith action = \case
+runWith buildAction = \case
   Watch -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
-    runWith action $ Generate True
+    runWith buildAction $ Generate True
     -- And then every time a file changes under the current directory
     void $ watchTree mgr ribInputDir (const True) $ const $
-      runWith action $ Generate False
+      runWith buildAction $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p w -> concurrently_
-    (when w $ runWith action Watch)
+    (when w $ runWith buildAction Watch)
     (Server.serve p ribOutputDir)
 
   Generate forceGen ->
-    Shake.ribShake forceGen action
+    let opts = shakeOptions
+          { shakeVerbosity = Chatty
+          , shakeRebuild = bool [] [(RebuildNow, "**")] forceGen
+          }
+    in shakeForward opts buildAction
