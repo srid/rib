@@ -1,54 +1,65 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc where
 
+import Control.Arrow ((>>>))
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Text.Read (readMaybe)
 
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Highlighting (styleToCss, tango)
 
--- Get the YAML metadata for the given key in a post.
+
+class IsMetaValue a where
+  parseMetaValue :: MetaValue -> a
+
+instance {-# Overlaps #-} IsMetaValue [Inline] where
+  parseMetaValue = \case
+    MetaInlines inlines -> inlines
+    _ -> error "Not a MetaInline"
+
+instance {-# Overlaps #-} IsMetaValue Text where
+  parseMetaValue = parseMetaValue >>> \case
+    [Str v] -> T.pack v
+    _ -> error "Not a single Str"
+
+instance IsMetaValue a => IsMetaValue [a] where
+  parseMetaValue = \case
+    MetaList vals -> parseMetaValue <$> vals
+    _ -> error "Not a MetaList"
+
+instance {-# Overlaps #-} IsMetaValue (Html ()) where
+  parseMetaValue = pandocInlines2Html . parseMetaValue @[Inline]
+
+-- XXX: This requires UndecidableInstances, but is there a better way?
+instance Read a => IsMetaValue a where
+  parseMetaValue = read . T.unpack . parseMetaValue @Text
+
+-- | Get the metadata value for the given key in a Pandoc document.
 --
--- We expect this to return `[Inline]` unless we upgrade pandoc. See
--- https://github.com/jgm/pandoc/issues/2139#issuecomment-310522113
-getPandocMetaInlines :: String -> Pandoc -> Maybe [Inline]
-getPandocMetaInlines k (Pandoc meta _) =
-  case lookupMeta k meta of
-    Just (MetaInlines inlines) -> Just inlines
-    _ -> Nothing
+-- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
+-- Typical instances:
+-- * `Html ()`: parse value as a Pandoc document and convert to Lucid Html
+-- * `Text`: parse a raw value (Inline with one Str value)
+-- * `[a]`: parse a list of values
+-- * `Read a => a`: parse a raw value and then read it.
+getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
+getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
 
--- Get the YAML metadata for a key that is a list of text values
-getPandocMetaList :: String -> Pandoc -> Maybe [Text]
-getPandocMetaList k (Pandoc meta _) =
-  case lookupMeta k meta of
-    Just (MetaList vals) -> Just $ catMaybes $ flip fmap vals $ \case
-      MetaInlines [Str val] -> Just $ T.pack val
-      _ -> Nothing
-    _ -> Nothing
-
-getPandocMetaRaw :: String -> Pandoc -> Maybe String
-getPandocMetaRaw k p =
-  getPandocMetaInlines k p >>= \case
-    [Str v] -> Just v
-    _ -> Nothing
-
--- Like getPandocMetaRaw but expects the value to be of Haskell syntax
-getPandocMetaValue :: Read a => String -> Pandoc -> Maybe a
-getPandocMetaValue k doc = do
-  s <- getPandocMetaRaw k doc
-  pure $ fromMaybe (error $ "Invalid metadata value for key: " <> k) $ readMaybe s
-
--- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
-getPandocMetaHTML :: String -> Pandoc -> Maybe (Html ())
-getPandocMetaHTML k = fmap pandocInlines2Html . getPandocMetaInlines k
+-- | Like `getMeta` but with a default value
+-- TODO: Is this worth the abstraction cost?
+fromMeta :: IsMetaValue a => a -> String -> Pandoc -> a
+fromMeta v k = fromMaybe v . getMeta k
 
 -- | Add, or set, a metadata data key to the given Haskell value
+-- TODO
 setPandocMetaValue :: Show a => String -> a -> Pandoc -> Pandoc
 setPandocMetaValue k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
   where
@@ -58,7 +69,6 @@ setPandocMetaValue k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
 pandoc2Html' :: Pandoc -> Either PandocError Text
 pandoc2Html' = runPure . writeHtml5String settings
   where
-    settings :: WriterOptions
     settings = def { writerExtensions = ribExts }
 
 pandoc2Html :: Pandoc -> Html ()

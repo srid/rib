@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
@@ -24,12 +25,10 @@ import Lucid
 import Text.Pandoc
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
-                   setPandocMetaValue)
+import Rib.Pandoc (getMeta, fromMeta, highlightingCss, pandoc2Html, parsePandoc, setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Shake as Shake
 import Rib.Simple (Page (..))
-import qualified Rib.Simple as Simple
 
 main :: IO ()
 main = App.run buildAction
@@ -97,9 +96,9 @@ renderPage page = with html_ [lang_ "en"] $ do
               with div_ [class_ "item"] $ do
                 with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
                   postTitle doc
-                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" doc
+                small_ $ fromMeta mempty "description" doc
           Page_Post (_, doc) -> do
-            when (Simple.isDraft doc) $
+            when (fromMeta False "draft" doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
             postNav doc
             with article_ [class_ "post"] $
@@ -116,7 +115,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post (_, doc) -> Just $ postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title"
+    postTitle = fromMeta @(Html ()) "Untitled" "title"
 
     -- Post navigation header
     postNav :: Pandoc -> Html ()
@@ -125,13 +124,12 @@ renderPage page = with html_ [lang_ "en"] $ do
         with div_ [class_ "four column row"] $
           forM_ [("prev", "Prev", "left"), ("next", "Next", "right")] $
             \(k, navLabel, navDir) -> with div_ [class_ $ navDir <> " floated column"] $
-              case getPandocMetaValue k doc of
+              case getMeta @(FilePath, Pandoc) k doc of
                 Nothing -> mempty
-                -- FIXME: Don't have to specify type here; figure out a better solution.
-                Just (f :: FilePath, otherDoc  :: Pandoc) -> strong_ $
+                Just (f, otherDoc) -> strong_ $
                   with a_ [class_ "header", href_ (getHTMLFileUrl f)] $ do
                     navLabel <> ": "
-                    fromMaybe "Untitled" $ getPandocMetaHTML "title" otherDoc
+                    postTitle otherDoc
 
     -- | CSS
     pageStyle :: Css

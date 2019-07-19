@@ -19,7 +19,7 @@ import Data.Typeable
 import Development.Shake
 import Development.Shake.FilePath
 import Development.Shake.Forward (cacheAction)
-import Lucid
+import Lucid (Html, renderToFile)
 import Text.Pandoc (Pandoc)
 
 import Rib.App (ribInputDir, ribOutputDir)

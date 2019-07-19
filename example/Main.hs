@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
@@ -11,9 +12,9 @@ import Development.Shake
 import Lucid
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, highlightingCss, pandoc2Html)
+import Rib.Pandoc (fromMeta, highlightingCss, pandoc2Html)
 import Rib.Server (getHTMLFileUrl)
-import Rib.Simple (Page (..), isDraft)
+import Rib.Simple (Page (..))
 import qualified Rib.Simple as Simple
 
 main :: IO ()
@@ -37,9 +38,9 @@ renderPage page = with html_ [lang_ "en"] $ do
         Page_Index posts ->
           div_ $ forM_ posts $ \(f, doc) -> div_ $ do
             with a_ [href_ (getHTMLFileUrl f)] $ postTitle doc
-            small_ $ maybe mempty toHtmlRaw $ getPandocMetaHTML "description" doc
+            small_ $ fromMeta @(Html ()) mempty "description" doc
         Page_Post (_, doc) -> do
-          when (isDraft doc) $
+          when (fromMeta @Bool False "draft" doc) $
             div_ "This is a draft"
           with article_ [class_ "post"] $
             toHtmlRaw $ pandoc2Html doc
@@ -49,7 +50,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post (_, doc) -> postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = maybe "Untitled" toHtmlRaw . getPandocMetaHTML "title"
+    postTitle = fromMeta @(Html ()) "Untitled" "title"
 
     -- | CSS
     pageStyle :: Css

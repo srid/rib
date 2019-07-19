@@ -44,7 +44,7 @@ library
     , lens-aeson
     , lucid
     , mtl
-    , pandoc
+    , pandoc >= 2.7
     , pandoc-types
     , safe
     , shake
