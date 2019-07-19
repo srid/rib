@@ -43,7 +43,7 @@ instance {-# Overlaps #-} IsMetaValue Text where
 instance {-# Overlaps #-} IsMetaValue (Html ()) where
   parseMetaValue = renderInlines . parseMetaValue @[Inline]
 
--- XXX: This requires UndecidableInstances, but is there a better way?
+-- NOTE: This requires UndecidableInstances, but is there a better way?
 instance Read a => IsMetaValue a where
   parseMetaValue = read . T.unpack . parseMetaValue @Text
 
@@ -59,7 +59,6 @@ getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
 getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
 
 -- | Add, or set, a metadata data key to the given Haskell value
--- TODO
 setMeta :: Show a => String -> a -> Pandoc -> Pandoc
 setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
   where
