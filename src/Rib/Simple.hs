@@ -30,6 +30,6 @@ buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]
   posts <- buildHtmlMulti ["*.md"] $ renderPage . Page_Post
   let publicPosts = filter (not . isDraft . snd) posts
-  buildHtml "index.html" $  renderPage $ Page_Index publicPosts
+  buildHtml "index.html" $ renderPage $ Page_Index publicPosts
   where
     isDraft = fromMaybe False . getMeta @Bool "draft"

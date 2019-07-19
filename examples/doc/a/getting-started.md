@@ -40,7 +40,7 @@ generation.
 - Everything else in this file is your site specific HTML and CSS
 written in Haskell DSL (via `Lucid` and `Clay`).
 
-```{.haskell include=../example/Main.hs}
+```{.haskell include=../hello-world/Main.hs}
 ```
 
 Include the `rib` library in your repo, install Nix and invoke the ghcid script:
