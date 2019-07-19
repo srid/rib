@@ -11,7 +11,7 @@ Are these blog-worthy? Write articles in doc/?
 - [X] Drafts
 - [X] Simplify `Settings` (seems gobbled together)
 - [X] Rib.Shake combinators
-- [ ] Pandoc metadata refactoring (using type class)
+- [X] Pandoc metadata refactoring (using type class)
 - [ ] Tasks
 
 ### Rib, for documentation
