@@ -1,12 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc where
 
-import Control.Arrow ((>>>))
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
@@ -15,6 +14,7 @@ import qualified Data.Text as T
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Highlighting (styleToCss, tango)
+import Text.Pandoc.Shared (stringify)
 
 
 class IsMetaValue a where
@@ -25,15 +25,13 @@ instance {-# Overlaps #-} IsMetaValue [Inline] where
     MetaInlines inlines -> inlines
     _ -> error "Not a MetaInline"
 
-instance {-# Overlaps #-} IsMetaValue Text where
-  parseMetaValue = parseMetaValue >>> \case
-    [Str v] -> T.pack v
-    _ -> error "Not a single Str"
-
 instance IsMetaValue a => IsMetaValue [a] where
   parseMetaValue = \case
     MetaList vals -> parseMetaValue <$> vals
     _ -> error "Not a MetaList"
+
+instance {-# Overlaps #-} IsMetaValue Text where
+  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
 
 instance {-# Overlaps #-} IsMetaValue (Html ()) where
   parseMetaValue = pandocInlines2Html . parseMetaValue @[Inline]
@@ -52,11 +50,6 @@ instance Read a => IsMetaValue a where
 -- * `Read a => a`: parse a raw value and then read it.
 getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
 getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
-
--- | Like `getMeta` but with a default value
--- TODO: Is this worth the abstraction cost?
-fromMeta :: IsMetaValue a => a -> String -> Pandoc -> a
-fromMeta v k = fromMaybe v . getMeta k
 
 -- | Add, or set, a metadata data key to the given Haskell value
 -- TODO
@@ -85,6 +78,7 @@ pandocH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \c
   Header 1 _ xs -> Just $ pandocInlines2Html xs
   _ -> Nothing
 
+-- TODO: Do we need this?
 highlightingCss :: Text
 highlightingCss = T.pack $ styleToCss tango
 

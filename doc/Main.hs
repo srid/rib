@@ -25,7 +25,7 @@ import Lucid
 import Text.Pandoc
 
 import qualified Rib.App as App
-import Rib.Pandoc (getMeta, fromMeta, highlightingCss, pandoc2Html, parsePandoc, setPandocMetaValue)
+import Rib.Pandoc (getMeta, highlightingCss, pandoc2Html, parsePandoc, setPandocMetaValue)
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Shake as Shake
 import Rib.Simple (Page (..))
@@ -96,9 +96,9 @@ renderPage page = with html_ [lang_ "en"] $ do
               with div_ [class_ "item"] $ do
                 with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
                   postTitle doc
-                small_ $ fromMeta mempty "description" doc
+                maybe mempty small_ $ getMeta "description" doc
           Page_Post (_, doc) -> do
-            when (fromMeta False "draft" doc) $
+            when (fromMaybe False $ getMeta "draft" doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
             postNav doc
             with article_ [class_ "post"] $
@@ -115,7 +115,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post (_, doc) -> Just $ postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = fromMeta @(Html ()) "Untitled" "title"
+    postTitle = fromMaybe "Untitled" . getMeta @(Html ()) "title"
 
     -- Post navigation header
     postNav :: Pandoc -> Html ()
