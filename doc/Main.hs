@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Main where
 
@@ -22,14 +23,13 @@ import Development.Shake
 import Development.Shake.FilePath
 import Lucid
 import Text.Pandoc
+import Text.Pandoc.Highlighting (styleToCss, tango)
 
 import qualified Rib.App as App
-import Rib.Pandoc (getPandocMetaHTML, getPandocMetaValue, highlightingCss, pandoc2Html, parsePandoc,
-                   setPandocMetaValue)
+import qualified Rib.Pandoc as Pandoc
 import Rib.Server (getHTMLFileUrl)
 import qualified Rib.Shake as Shake
 import Rib.Simple (Page (..))
-import qualified Rib.Simple as Simple
 
 main :: IO ()
 main = App.run buildAction
@@ -50,8 +50,8 @@ buildAction = do
 applyGuide :: (Ord f, Show f) => [f] -> [(f, Pandoc)] -> [(f, Pandoc)]
 applyGuide fs xs =
   flip mapWithAdj fsComplete $ \mprev (f, doc) mnext -> (f,) $
-    setPandocMetaValueMaybe "next" mnext $
-    setPandocMetaValueMaybe "prev" mprev doc
+    setMetaMaybe "next" mnext $
+    setMetaMaybe "prev" mprev doc
   where
     -- | Like `fmap` on lists but passes the previous and next element as well.
     mapWithAdj :: (Maybe a -> a -> Maybe a -> b) -> [a] -> [b]
@@ -59,8 +59,8 @@ applyGuide fs xs =
       where
         shift1 = (<> [Nothing]) . fmap Just . drop 1
         rshift1 = dimap reverse reverse shift1
-    setPandocMetaValueMaybe :: Show a => String -> Maybe a -> Pandoc -> Pandoc
-    setPandocMetaValueMaybe k mv doc = maybe doc (\v -> setPandocMetaValue k v doc) mv
+    setMetaMaybe :: Show a => String -> Maybe a -> Pandoc -> Pandoc
+    setMetaMaybe k mv doc = maybe doc (\v -> Pandoc.setMeta k v doc) mv
     -- Like `fs` but along with the associated Pandoc document (pulled from `xs`)
     fsComplete = fs <&> \f -> (f,) $ fromJust $ Map.lookup f xsMap
     xsMap = Map.fromList xs
@@ -80,7 +80,7 @@ renderPage page = with html_ [lang_ "en"] $ do
     meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
     title_ $ maybe siteTitle (<> " - " <> siteTitle) pageTitle
     style_ [type_ "text/css"] $ Clay.render pageStyle
-    style_ [type_ "text/css"] highlightingCss
+    style_ [type_ "text/css"] $ styleToCss tango
     link_ [rel_ "stylesheet", href_ "https://cdn.jsdelivr.net/npm/semantic-ui@2.4.2/dist/semantic.min.css"]
   body_ $ do
     with div_ [class_ "ui text container", id_ "thesite"] $
@@ -88,7 +88,8 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
-        with div_ [class_ "ui warning message"] $ pandoc2Html $ parsePandoc
+        with div_ [class_ "ui warning message"] $
+          Pandoc.render $ Pandoc.parse
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
@@ -97,13 +98,13 @@ renderPage page = with html_ [lang_ "en"] $ do
               with div_ [class_ "item"] $ do
                 with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
                   postTitle doc
-                small_ $ fromMaybe mempty $ getPandocMetaHTML "description" doc
+                maybe mempty small_ $ Pandoc.getMeta "description" doc
           Page_Post (_, doc) -> do
-            when (Simple.isDraft doc) $
+            when (fromMaybe False $ Pandoc.getMeta "draft" doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
             postNav doc
             with article_ [class_ "post"] $
-              pandoc2Html doc
+              Pandoc.render doc
         with a_ [class_ "ui green right ribbon label", href_ "https://github.com/srid/rib"] "Github"
     -- Load Google fonts at the very end for quicker page load.
     forM_ googleFonts $ \f ->
@@ -116,7 +117,7 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post (_, doc) -> Just $ postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = fromMaybe "Untitled" . getPandocMetaHTML "title"
+    postTitle = fromMaybe "Untitled" . Pandoc.getMeta @(Html ()) "title"
 
     -- Post navigation header
     postNav :: Pandoc -> Html ()
@@ -125,13 +126,12 @@ renderPage page = with html_ [lang_ "en"] $ do
         with div_ [class_ "four column row"] $
           forM_ [("prev", "Prev", "left"), ("next", "Next", "right")] $
             \(k, navLabel, navDir) -> with div_ [class_ $ navDir <> " floated column"] $
-              case getPandocMetaValue k doc of
+              case Pandoc.getMeta @(FilePath, Pandoc) k doc of
                 Nothing -> mempty
-                -- FIXME: Don't have to specify type here; figure out a better solution.
-                Just (f :: FilePath, otherDoc  :: Pandoc) -> strong_ $
+                Just (f, otherDoc) -> strong_ $
                   with a_ [class_ "header", href_ (getHTMLFileUrl f)] $ do
                     navLabel <> ": "
-                    fromMaybe "Untitled" $ getPandocMetaHTML "title" otherDoc
+                    postTitle otherDoc
 
     -- | CSS
     pageStyle :: Css

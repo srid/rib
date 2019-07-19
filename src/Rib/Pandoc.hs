@@ -1,92 +1,100 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | Helpers for working with Pandoc documents
-module Rib.Pandoc where
+module Rib.Pandoc
+  ( getMeta
+  , setMeta
+  , parse
+  , render
+  , renderInlines
+  , getH1
+  )
+where
 
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Text.Read (readMaybe)
 
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
-import Text.Pandoc.Highlighting (styleToCss, tango)
+import Text.Pandoc.Shared (stringify)
 
--- Get the YAML metadata for the given key in a post.
+
+class IsMetaValue a where
+  parseMetaValue :: MetaValue -> a
+
+instance {-# Overlaps #-} IsMetaValue [Inline] where
+  parseMetaValue = \case
+    MetaInlines inlines -> inlines
+    _ -> error "Not a MetaInline"
+
+instance IsMetaValue a => IsMetaValue [a] where
+  parseMetaValue = \case
+    MetaList vals -> parseMetaValue <$> vals
+    _ -> error "Not a MetaList"
+
+instance {-# Overlaps #-} IsMetaValue Text where
+  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
+
+instance {-# Overlaps #-} IsMetaValue (Html ()) where
+  parseMetaValue = renderInlines . parseMetaValue @[Inline]
+
+-- NOTE: This requires UndecidableInstances, but is there a better way?
+instance Read a => IsMetaValue a where
+  parseMetaValue = read . T.unpack . parseMetaValue @Text
+
+-- | Get the metadata value for the given key in a Pandoc document.
 --
--- We expect this to return `[Inline]` unless we upgrade pandoc. See
--- https://github.com/jgm/pandoc/issues/2139#issuecomment-310522113
-getPandocMetaInlines :: String -> Pandoc -> Maybe [Inline]
-getPandocMetaInlines k (Pandoc meta _) =
-  case lookupMeta k meta of
-    Just (MetaInlines inlines) -> Just inlines
-    _ -> Nothing
-
--- Get the YAML metadata for a key that is a list of text values
-getPandocMetaList :: String -> Pandoc -> Maybe [Text]
-getPandocMetaList k (Pandoc meta _) =
-  case lookupMeta k meta of
-    Just (MetaList vals) -> Just $ catMaybes $ flip fmap vals $ \case
-      MetaInlines [Str val] -> Just $ T.pack val
-      _ -> Nothing
-    _ -> Nothing
-
-getPandocMetaRaw :: String -> Pandoc -> Maybe String
-getPandocMetaRaw k p =
-  getPandocMetaInlines k p >>= \case
-    [Str v] -> Just v
-    _ -> Nothing
-
--- Like getPandocMetaRaw but expects the value to be of Haskell syntax
-getPandocMetaValue :: Read a => String -> Pandoc -> Maybe a
-getPandocMetaValue k doc = do
-  s <- getPandocMetaRaw k doc
-  pure $ fromMaybe (error $ "Invalid metadata value for key: " <> k) $ readMaybe s
-
--- | Get the YAML metadata, parsing it to Pandoc doc and then to HTML
-getPandocMetaHTML :: String -> Pandoc -> Maybe (Html ())
-getPandocMetaHTML k = fmap pandocInlines2Html . getPandocMetaInlines k
+-- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
+-- Typical instances:
+-- * `Html ()`: parse value as a Pandoc document and convert to Lucid Html
+-- * `Text`: parse a raw value (Inline with one Str value)
+-- * `[a]`: parse a list of values
+-- * `Read a => a`: parse a raw value and then read it.
+getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
+getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
 
 -- | Add, or set, a metadata data key to the given Haskell value
-setPandocMetaValue :: Show a => String -> a -> Pandoc -> Pandoc
-setPandocMetaValue k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
+setMeta :: Show a => String -> a -> Pandoc -> Pandoc
+setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
   where
     meta' = Map.insert k v' meta
     v' = MetaInlines [Str $ show v]
 
-pandoc2Html' :: Pandoc -> Either PandocError Text
-pandoc2Html' = runPure . writeHtml5String settings
+-- | Parse a pandoc document
+parse :: Text -> Pandoc
+parse = either (error . show) id . runPure . readMarkdown settings
   where
-    settings :: WriterOptions
-    settings = def { writerExtensions = ribExts }
+    settings = def { readerExtensions = exts }
 
-pandoc2Html :: Pandoc -> Html ()
-pandoc2Html = either (error . show) toHtmlRaw . pandoc2Html'
+render' :: Pandoc -> Either PandocError Text
+render' = runPure . writeHtml5String settings
+  where
+    settings = def { writerExtensions = exts }
 
-pandocInlines2Html' :: [Inline] -> Either PandocError Text
-pandocInlines2Html' = pandoc2Html' . Pandoc mempty . pure . Plain
+-- | Render a Pandoc document as Lucid HTML
+render :: Pandoc -> Html ()
+render = either (error . show) toHtmlRaw . render'
 
-pandocInlines2Html :: [Inline] -> Html ()
-pandocInlines2Html = either (error . show) toHtmlRaw . pandocInlines2Html'
+renderInlines' :: [Inline] -> Either PandocError Text
+renderInlines' = render' . Pandoc mempty . pure . Plain
 
-pandocH1 :: Pandoc -> Maybe (Html ())
-pandocH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \case
-  Header 1 _ xs -> Just $ pandocInlines2Html xs
+-- | Render Pandoc inlines as Lucid HTML
+renderInlines :: [Inline] -> Html ()
+renderInlines = either (error . show) toHtmlRaw . renderInlines'
+
+-- | Get the top-level heading as Lucid HTML
+getH1 :: Pandoc -> Maybe (Html ())
+getH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \case
+  Header 1 _ xs -> Just $ renderInlines xs
   _ -> Nothing
 
-highlightingCss :: Text
-highlightingCss = T.pack $ styleToCss tango
-
-parsePandoc :: Text -> Pandoc
-parsePandoc = either (error . show) id . runPure . readMarkdown markdownReaderOptions
-
--- Reasonable options for reading a markdown file
-markdownReaderOptions :: ReaderOptions
-markdownReaderOptions = def { readerExtensions = ribExts }
-
-ribExts :: Extensions
-ribExts = mconcat
+exts :: Extensions
+exts = mconcat
   [ extensionsFromList
     [ Ext_yaml_metadata_block
     , Ext_fenced_code_attributes
