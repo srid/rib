@@ -8,6 +8,7 @@ module Rib.Pandoc
   ( getMeta
   , setMeta
   , parse
+  , parsePure
   , render
   , renderInlines
   , getH1
@@ -21,7 +22,9 @@ import qualified Data.Text as T
 
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
+import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Shared (stringify)
+import Text.Pandoc.Walk (walkM)
 
 
 class IsMetaValue a where
@@ -66,10 +69,20 @@ setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
     v' = MetaInlines [Str $ show v]
 
 -- | Parse a pandoc document
-parse :: Text -> Pandoc
-parse = either (error . show) id . runPure . readMarkdown settings
+parsePure :: Text -> Pandoc
+parsePure = either (error . show) id . runPure . readMarkdown settings
   where
     settings = def { readerExtensions = exts }
+
+parse :: Text -> IO Pandoc
+parse s =
+  runIO (readMarkdown settings s) >>= \case
+    Left e -> error (show e)
+    Right doc -> includeCodeTransform doc
+  where
+    settings = def { readerExtensions = exts }
+    includeCodeTransform :: Pandoc -> IO Pandoc
+    includeCodeTransform = walkM (includeCode (Just (Format "html5")))
 
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings

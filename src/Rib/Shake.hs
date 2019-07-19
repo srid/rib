@@ -56,10 +56,11 @@ readPandocMulti pat = do
     jsonCacheAction f $ (f, ) <$> readPandoc f
 
 readPandoc :: FilePath -> Action Pandoc
-readPandoc =
-    fmap (Rib.Pandoc.parse . T.decodeUtf8With T.lenientDecode . BSC.pack)
-  . readFile'
-  . (ribInputDir </>)
+readPandoc f = do
+  let inp = ribInputDir </> f
+  contents <- readFile' inp
+  let s = T.decodeUtf8With T.lenientDecode $ BSC.pack contents
+  liftIO $ Rib.Pandoc.parse s
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

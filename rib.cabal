@@ -46,6 +46,7 @@ library
     , mtl
     , pandoc >= 2.7
     , pandoc-types
+    , pandoc-include-code
     , safe
     , shake
     , skylighting
