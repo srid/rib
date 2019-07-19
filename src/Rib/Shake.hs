@@ -23,7 +23,7 @@ import Lucid (Html, renderToFile)
 import Text.Pandoc (Pandoc)
 
 import Rib.App (ribInputDir, ribOutputDir)
-import Rib.Pandoc (parsePandoc)
+import qualified Rib.Pandoc
 
 
 -- | Shake action to copy static files as is
@@ -57,7 +57,7 @@ readPandocMulti pat = do
 
 readPandoc :: FilePath -> Action Pandoc
 readPandoc =
-    fmap (parsePandoc . T.decodeUtf8With T.lenientDecode . BSC.pack)
+    fmap (Rib.Pandoc.parse . T.decodeUtf8With T.lenientDecode . BSC.pack)
   . readFile'
   . (ribInputDir </>)
 
