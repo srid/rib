@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -67,10 +69,10 @@ renderPage invoice = with html_ [lang_ "en"] $ do
       row_ $ with div_ [class_ "olive column"] $
         h1_ pageTitle
       row_ $ do
-        with div_ [class_ "left floated six wide left aligned column"]
-          companyCard
-        with div_ [class_ "right floated six wide right aligned column"]
-          userCard
+        with div_ [class_ "left floated six wide left aligned column"] $
+          companyCard $ _invoice_company invoice
+        with div_ [class_ "right floated six wide right aligned column"] $
+          userCard $ _invoice_author invoice
       row_ $
         with div_ [class_ "sixteen wide column"] $
           with table_ [class_ "ui celled table"] $ do
@@ -85,12 +87,23 @@ renderPage invoice = with html_ [lang_ "en"] $ do
   where
     pageTitle = toHtml $ "Invoice #" <> show (_invoice_date invoice)
 
-    companyCard = do
-      b_ "Company"
-      p_ $ toHtml $ show $ _invoice_company invoice
-    userCard = do
-      b_ "From"
-      p_ $ toHtml $ show $ _invoice_author invoice
+    companyCard :: Company -> Html ()
+    companyCard Company {..} = with div_ [class_ "ui card"] $ do
+      with div_ [class_ "image"] mempty
+      with div_ [class_ "content"] $ do
+        with a_ [class_ "header"] $ toHtml _company_name
+        with div_ [class_ "description"] $ do
+          p_ $ toHtml _company_address1
+          p_ $ toHtml _company_address2
+
+    userCard :: Author -> Html ()
+    userCard Author {..} = with div_ [class_ "ui card"] $ do
+      with div_ [class_ "image"] mempty
+      with div_ [class_ "content"] $ do
+        with a_ [class_ "header"] $ toHtml _author_name
+        with div_ [class_ "description"] $ do
+          p_ $ toHtml _author_address1
+          p_ $ toHtml _author_address2
 
     row_ = with div_ [class_ "row"]
     -- col_ = with div_ [class_ "column"]
