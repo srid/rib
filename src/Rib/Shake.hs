@@ -26,6 +26,8 @@ import Text.Pandoc (Pandoc)
 import Rib.App (ribInputDir, ribOutputDir)
 import qualified Rib.Pandoc
 
+-- FIXME: Auto create ./b directory
+
 
 -- | Shake action to copy static files as is
 buildStaticFiles :: [FilePattern] -> Action [FilePath]
