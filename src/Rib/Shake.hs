@@ -11,9 +11,8 @@ import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Binary
-import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString as BS
 import qualified Data.Text.Encoding as T
-import qualified Data.Text.Encoding.Error as T
 import Data.Typeable
 
 import Development.Shake
@@ -58,8 +57,9 @@ readPandocMulti pat = do
 readPandoc :: FilePath -> Action Pandoc
 readPandoc f = do
   let inp = ribInputDir </> f
-  contents <- readFile' inp
-  let s = T.decodeUtf8With T.lenientDecode $ BSC.pack contents
+  need [inp]
+  contents <- liftIO $ BS.readFile inp
+  let s = T.decodeUtf8 contents
   liftIO $ Rib.Pandoc.parse s
 
 -- | Build a single HTML file with the given value
