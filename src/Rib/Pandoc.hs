@@ -30,27 +30,30 @@ import Text.Pandoc.Walk (walkM)
 class IsMetaValue a where
   parseMetaValue :: MetaValue -> a
 
-instance {-# Overlaps #-} IsMetaValue [Inline] where
+instance IsMetaValue [Inline] where
   parseMetaValue = \case
     MetaInlines inlines -> inlines
     _ -> error "Not a MetaInline"
 
-instance IsMetaValue a => IsMetaValue [a] where
+instance IsMetaValue (Html ()) where
+  parseMetaValue = renderInlines . parseMetaValue @[Inline]
+
+instance IsMetaValue Text where
+  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
+
+instance {-# Overlappable #-} IsMetaValue a => IsMetaValue [a] where
   parseMetaValue = \case
     MetaList vals -> parseMetaValue <$> vals
     _ -> error "Not a MetaList"
 
-instance {-# Overlaps #-} IsMetaValue Text where
-  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
-
-instance {-# Overlaps #-} IsMetaValue (Html ()) where
-  parseMetaValue = renderInlines . parseMetaValue @[Inline]
-
 -- NOTE: This requires UndecidableInstances, but is there a better way?
-instance Read a => IsMetaValue a where
+instance {-# Overlappable #-} Read a => IsMetaValue a where
   parseMetaValue = read . T.unpack . parseMetaValue @Text
 
 -- | Get the metadata value for the given key in a Pandoc document.
+--
+-- It is recommended to call this function with TypeApplications specifying the
+-- type of `a`.
 --
 -- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
 -- Typical instances:
