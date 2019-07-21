@@ -13,12 +13,13 @@ import qualified Data.Aeson as Aeson
 import Data.Binary
 import qualified Data.ByteString as BS
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy.IO as T
 import Data.Typeable
 
 import Development.Shake
 import Development.Shake.FilePath
 import Development.Shake.Forward (cacheAction)
-import Lucid (Html, renderToFile)
+import Lucid (Html, renderText)
 import Text.Pandoc (Pandoc)
 
 import Rib.App (ribInputDir, ribOutputDir)
@@ -69,7 +70,7 @@ buildHtml f html = do
   writeHtml out html
 
 writeHtml :: MonadIO m => FilePath -> Html () -> m ()
-writeHtml f = liftIO . renderToFile f
+writeHtml f = liftIO . T.writeFile f . renderText
 
 -- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
 jsonCacheAction :: (FromJSON b, Typeable k, Binary k, Show k, ToJSON a) => k -> Action a -> Action b
