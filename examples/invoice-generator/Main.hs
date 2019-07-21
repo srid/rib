@@ -15,6 +15,7 @@ import Lucid
 
 import qualified Rib.App as App
 import qualified Rib.Shake as S
+import qualified Rib.Pandoc as Pandoc
 
 data BankAccount = BankAccount
 
@@ -42,7 +43,7 @@ data Invoice = Invoice
 
 theInvoice :: Invoice
 theInvoice = Invoice
-  { _invoice_author = Author "Sridhar Ratnakumar" "555-111-9020" "2142 4e Avenue" "Quebec H7S J8A"
+  { _invoice_author = Author "Sridhar Ratnakumar" "555-111-9020" "2142 8e Avenue" "Quebec H7S J8A"
   , _invoice_company = Company "Obsidian Systems" "19 W 21st St, 503" "NY 10011"
   , _invoice_date = fromGregorian 2019 7 19
   }
@@ -68,7 +69,7 @@ renderPage invoice = with html_ [lang_ "en"] $ do
     with div_ [class_ "ui center aligned padded grid ", id_ "thesite"] $ do
       row_ $ with div_ [class_ "olive column"] $
         h1_ pageTitle
-      row_ $ do
+      with div_ [class_ "two column row"] $ do
         with div_ [class_ "left floated six wide left aligned column"] $
           companyCard $ _invoice_company invoice
         with div_ [class_ "right floated six wide right aligned column"] $
@@ -78,11 +79,13 @@ renderPage invoice = with html_ [lang_ "en"] $ do
           with table_ [class_ "ui celled table"] $ do
             thead_ $ tr_ $ do
               th_ "Pos"
+              th_ "Date"
               th_ "Description"
               th_ "Prices in INR"
             tbody_ $ tr_ $ do
               td_ "1"
-              td_ "8 working hours on Jul 27"
+              td_ "Jul 27"
+              td_ $ Pandoc.render $ Pandoc.parsePure "*Client1*---8 working hours"
               td_ "25000"
   where
     pageTitle = toHtml $ "Invoice #" <> show (_invoice_date invoice)
