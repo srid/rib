@@ -15,6 +15,7 @@ module Rib.Pandoc
   )
 where
 
+import Control.Monad
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
@@ -73,19 +74,19 @@ setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
 
 -- | Parse a pandoc document
 parsePure :: Text -> Pandoc
-parsePure = either (error . show) id . runPure . readMarkdown settings
-  where
-    settings = def { readerExtensions = exts }
+parsePure =
+  either (error . show) id . runPure . parseMarkdown
 
 parse :: Text -> IO Pandoc
-parse s =
-  runIO (readMarkdown settings s) >>= \case
-    Left e -> error (show e)
-    Right doc -> includeCodeTransform doc
+parse =
+  either (error . show) (walkM includeSources) <=< runIO . parseMarkdown
+  where
+    includeSources = includeCode $ Just $ Format "html5"
+
+parseMarkdown :: PandocMonad m => Text -> m Pandoc
+parseMarkdown = readMarkdown settings
   where
     settings = def { readerExtensions = exts }
-    includeCodeTransform :: Pandoc -> IO Pandoc
-    includeCodeTransform = walkM (includeCode (Just (Format "html5")))
 
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings
