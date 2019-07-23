@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 
 import Development.Shake (Action)
 import Lucid (Html)
-import Text.Pandoc (Pandoc, readMarkdown, readRST)
+import Text.Pandoc (Pandoc, readMarkdown, readRST, readOrg)
 
 import Rib.Pandoc (getMeta)
 import Rib.Shake
@@ -38,4 +38,5 @@ buildAction renderPage = do
     pats =
       [ ("*.md", readMarkdown)
       , ("*.rst", readRST)
+      , ("*.org", readOrg)
       ]

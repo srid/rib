@@ -56,9 +56,18 @@ renderPage page = with html_ [lang_ "en"] $ do
     pageStyle = div # "#thesite" ? do
       marginLeft $ pct 20
       marginTop $ em 4
+      "h1" ? do
+        fontSize $ em 2.3
       -- Style reST admonition rendering by Pandoc
       "div.note" ? do
         padding (em 0.1) (em 1) (em 0.1) (em 1)
         backgroundColor lightyellow
-        "div.admonition-title" ? do
+        "div.admonition-title" ?
           fontWeight bold
+      -- Org mode styling
+      "span.todo" ? color red
+      "span.done" ? color green
+      "span.tag" ? do
+        fontFamily [] [monospace]
+        backgroundColor lightgray
+        sym padding $ px 3
