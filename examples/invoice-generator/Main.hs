@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: This is still a big work in progress.
 module Main where
 
 import Prelude hiding (div, (**))
