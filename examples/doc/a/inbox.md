@@ -1,7 +1,6 @@
 ---
 title: Random stuff related to Rib
 draft: 'True'
-description: This stuff is hidden if not private
 ---
 
 ## Tasks
@@ -34,3 +33,10 @@ the notes in my Dropbox.
 - Use google-chrome --headless to directly convert to PDF
 
 - No need for serve/watch; just generate. Make ./ghcid generic enough for this?
+
+### Rib, for SlowNews
+
+Drop obelisk; generate HTML statically.
+
+- Generate only once a week
+- Implement emailing as someone requested

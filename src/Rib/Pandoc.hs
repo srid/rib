@@ -15,6 +15,7 @@ module Rib.Pandoc
   )
 where
 
+import Control.Monad
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
@@ -30,27 +31,30 @@ import Text.Pandoc.Walk (walkM)
 class IsMetaValue a where
   parseMetaValue :: MetaValue -> a
 
-instance {-# Overlaps #-} IsMetaValue [Inline] where
+instance IsMetaValue [Inline] where
   parseMetaValue = \case
     MetaInlines inlines -> inlines
     _ -> error "Not a MetaInline"
 
-instance IsMetaValue a => IsMetaValue [a] where
+instance IsMetaValue (Html ()) where
+  parseMetaValue = renderInlines . parseMetaValue @[Inline]
+
+instance IsMetaValue Text where
+  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
+
+instance {-# Overlappable #-} IsMetaValue a => IsMetaValue [a] where
   parseMetaValue = \case
     MetaList vals -> parseMetaValue <$> vals
     _ -> error "Not a MetaList"
 
-instance {-# Overlaps #-} IsMetaValue Text where
-  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
-
-instance {-# Overlaps #-} IsMetaValue (Html ()) where
-  parseMetaValue = renderInlines . parseMetaValue @[Inline]
-
 -- NOTE: This requires UndecidableInstances, but is there a better way?
-instance Read a => IsMetaValue a where
+instance {-# Overlappable #-} Read a => IsMetaValue a where
   parseMetaValue = read . T.unpack . parseMetaValue @Text
 
 -- | Get the metadata value for the given key in a Pandoc document.
+--
+-- It is recommended to call this function with TypeApplications specifying the
+-- type of `a`.
 --
 -- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
 -- Typical instances:
@@ -70,19 +74,19 @@ setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
 
 -- | Parse a pandoc document
 parsePure :: Text -> Pandoc
-parsePure = either (error . show) id . runPure . readMarkdown settings
-  where
-    settings = def { readerExtensions = exts }
+parsePure =
+  either (error . show) id . runPure . parseMarkdown
 
 parse :: Text -> IO Pandoc
-parse s =
-  runIO (readMarkdown settings s) >>= \case
-    Left e -> error (show e)
-    Right doc -> includeCodeTransform doc
+parse =
+  either (error . show) (walkM includeSources) <=< runIO . parseMarkdown
+  where
+    includeSources = includeCode $ Just $ Format "html5"
+
+parseMarkdown :: PandocMonad m => Text -> m Pandoc
+parseMarkdown = readMarkdown settings
   where
     settings = def { readerExtensions = exts }
-    includeCodeTransform :: Pandoc -> IO Pandoc
-    includeCodeTransform = walkM (includeCode (Just (Format "html5")))
 
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings

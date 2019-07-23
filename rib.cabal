@@ -57,14 +57,3 @@ library
     , wai-extra
     , warp
   default-language: Haskell2010
-
-executable rib-example
-  main-is: Main.hs
-  hs-source-dirs: example
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
-  build-depends:
-      base
-    , clay
-    , lucid
-    , rib
-    , text
