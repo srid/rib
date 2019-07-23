@@ -9,12 +9,12 @@ module Rib.Simple where
 
 import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Maybe
+import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 
-import Development.Shake
-import Lucid
-import Text.Pandoc (Pandoc)
+import Development.Shake (Action)
+import Lucid (Html)
+import Text.Pandoc (Pandoc, readMarkdown, readRST)
 
 import Rib.Pandoc (getMeta)
 import Rib.Shake
@@ -28,8 +28,14 @@ data Page
 buildAction :: (Page -> Html ()) -> Action ()
 buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]
-  posts <- buildHtmlMulti ["*.md"] $ renderPage . Page_Post
+  posts <- concat <$> forM pats
+    (flip buildHtmlMulti $ renderPage . Page_Post)
   let publicPosts = filter (not . isDraft . snd) posts
-  buildHtml "index.html" $ renderPage $ Page_Index publicPosts
+  buildHtml "index.html" $
+    renderPage $ Page_Index publicPosts
   where
     isDraft = fromMaybe False . getMeta @Bool "draft"
+    pats =
+      [ ("*.md", readMarkdown)
+      , ("*.rst", readRST)
+      ]

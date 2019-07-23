@@ -33,15 +33,14 @@ renderPage page = with html_ [lang_ "en"] $ do
   body_ $
     with div_ [id_ "thesite"] $ do
       -- Main content
-      h1_ pageTitle
+      with a_ [href_ "/"] "Back to Home"
+      hr_ []
       case page of
         Page_Index posts ->
           div_ $ forM_ posts $ \(f, doc) -> div_ $ do
             with a_ [href_ (getHTMLFileUrl f)] $ postTitle doc
             maybe mempty small_ $ Pandoc.getMeta @(Html ()) "description" doc
-        Page_Post (_, doc) -> do
-          when (fromMaybe False $ Pandoc.getMeta @Bool "draft" doc) $
-            div_ "This is a draft"
+        Page_Post (_, doc) ->
           with article_ [class_ "post"] $
             toHtmlRaw $ Pandoc.render doc
   where
@@ -50,10 +49,16 @@ renderPage page = with html_ [lang_ "en"] $ do
       Page_Post (_, doc) -> postTitle doc
 
     -- Render the post title (Markdown supported)
-    postTitle = fromMaybe "Untitled" . Pandoc.getMeta @(Html ()) "title"
+    postTitle = fromMaybe "Untitled" . Pandoc.getH1
 
     -- | CSS
     pageStyle :: Css
     pageStyle = div # "#thesite" ? do
       marginLeft $ pct 20
       marginTop $ em 4
+      -- Style reST admonition rendering by Pandoc
+      "div.note" ? do
+        padding (em 0.1) (em 1) (em 0.1) (em 1)
+        backgroundColor lightyellow
+        "div.admonition-title" ? do
+          fontWeight bold

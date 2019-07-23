@@ -13,6 +13,7 @@ import qualified Data.Aeson as Aeson
 import Data.Binary
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
+import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Typeable
 
@@ -21,7 +22,7 @@ import Development.Shake.FilePath
 import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
-import Text.Pandoc (Pandoc)
+import Text.Pandoc (Pandoc, PandocIO, ReaderOptions)
 
 import Rib.App (ribInputDir, ribOutputDir)
 import qualified Rib.Pandoc
@@ -42,29 +43,34 @@ buildStaticFiles staticFilePatterns = do
 -- Call `mkA` to create the final value given a file and its pandoc structure.
 -- Return the list of final values used to render their HTMLs.
 buildHtmlMulti
-  :: [FilePattern]
-  -- ^ Source file patterns
+  :: (FilePattern, ReaderOptions -> Text -> PandocIO Pandoc)
+  -- ^ Source file patterns & their associated Pandoc readers
   -> ((FilePath, Pandoc) -> Html ())
+  -- ^ How to render the given Pandoc document to HTML
   -> Action [(FilePath, Pandoc)]
-buildHtmlMulti pat r = do
-  xs <- readPandocMulti pat
+buildHtmlMulti spec r = do
+  xs <- readPandocMulti spec
   void $ forP xs $ \x ->
     buildHtml (fst x -<.> "html") (r x)
   pure xs
 
-readPandocMulti :: [FilePattern] -> Action [(FilePath, Pandoc)]
-readPandocMulti pat = do
-  fs <- getDirectoryFiles ribInputDir pat
+readPandocMulti
+  :: (FilePattern, ReaderOptions -> Text -> PandocIO Pandoc)
+  -> Action [(FilePath, Pandoc)]
+readPandocMulti (pat, r) = do
+  fs <- getDirectoryFiles ribInputDir [pat]
   forP fs $ \f ->
-    jsonCacheAction f $ (f, ) <$> readPandoc f
+    jsonCacheAction f $ (f, ) <$> readPandoc r f
 
-readPandoc :: FilePath -> Action Pandoc
-readPandoc f = do
+readPandoc
+  :: (ReaderOptions -> Text -> PandocIO Pandoc)
+  -> FilePath
+  ->  Action Pandoc
+readPandoc r f = do
   let inp = ribInputDir </> f
   need [inp]
-  contents <- liftIO $ BS.readFile inp
-  let s = T.decodeUtf8 contents
-  liftIO $ Rib.Pandoc.parse s
+  content <- T.decodeUtf8 <$> liftIO (BS.readFile inp)
+  liftIO $ Rib.Pandoc.parse r content
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

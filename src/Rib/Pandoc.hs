@@ -73,20 +73,18 @@ setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
     v' = MetaInlines [Str $ show v]
 
 -- | Parse a pandoc document
-parsePure :: Text -> Pandoc
-parsePure =
-  either (error . show) id . runPure . parseMarkdown
-
-parse :: Text -> IO Pandoc
-parse =
-  either (error . show) (walkM includeSources) <=< runIO . parseMarkdown
-  where
-    includeSources = includeCode $ Just $ Format "html5"
-
-parseMarkdown :: PandocMonad m => Text -> m Pandoc
-parseMarkdown = readMarkdown settings
+parsePure :: (ReaderOptions -> Text -> PandocPure Pandoc) -> Text -> Pandoc
+parsePure r =
+  either (error . show) id . runPure . r settings
   where
     settings = def { readerExtensions = exts }
+
+parse :: (ReaderOptions -> Text -> PandocIO Pandoc) -> Text -> IO Pandoc
+parse r =
+  either (error . show) (walkM includeSources) <=< runIO . r settings
+  where
+    settings = def { readerExtensions = exts }
+    includeSources = includeCode $ Just $ Format "html5"
 
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings

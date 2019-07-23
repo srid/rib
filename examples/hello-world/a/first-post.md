@@ -1,6 +1,4 @@
----
-title: Hello World
----
+# Hello World
 
 Welcome to your [`Rib`](https://rib.srid.ca) generated site.
 

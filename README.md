@@ -48,3 +48,10 @@ when the source content changes. What's more, we may change the Haskell sources
 such as `Main.hs` and ghcid will recompile and relaunch the whole thing.
 
 With `rib` we get hot reload for free.
+
+## Use cases
+
+- Website / Blog generation
+- Documentation
+- Org Mode interface
+- Invoice generation

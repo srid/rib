@@ -39,7 +39,7 @@ buildAction = do
   void $ Shake.buildStaticFiles ["static//**"]
 
   toc <- guideToc
-  posts <- applyGuide toc <$> Shake.readPandocMulti ["*.md"]
+  posts <- applyGuide toc <$> Shake.readPandocMulti ("*.md", readMarkdown)
 
   void $ forP posts $ \x ->
     Shake.buildHtml (fst x -<.> "html") (renderPage $ Page_Post x)
@@ -89,7 +89,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
         with div_ [class_ "ui warning message"] $
-          Pandoc.render $ Pandoc.parsePure
+          Pandoc.render $ Pandoc.parsePure readMarkdown
           "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
