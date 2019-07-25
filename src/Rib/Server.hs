@@ -13,13 +13,16 @@ import qualified Data.Text as T
 import Safe (initMay, lastMay)
 
 import Development.Shake.FilePath
-import Network.Wai.Application.Static (defaultFileServerSettings, ssLookupFile, staticApp)
+import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import WaiAppStatic.Types (LookupResult (..), Pieces, StaticSettings, fromPiece, unsafeToPiece)
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings
-staticSiteServerSettings root = settings { ssLookupFile = lookupFileForgivingHtmlExt }
+staticSiteServerSettings root = settings
+  { ssLookupFile = lookupFileForgivingHtmlExt
+  , ssListing = Nothing  -- Disable directory listings
+  }
   where
     settings = defaultFileServerSettings root
 

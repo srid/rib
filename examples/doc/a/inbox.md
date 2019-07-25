@@ -11,7 +11,6 @@ Are these blog-worthy? Write articles in doc/?
 - [X] Simplify `Settings` (seems gobbled together)
 - [X] Rib.Shake combinators
 - [X] Pandoc metadata refactoring (using type class)
-- [ ] Tasks
 
 ### Rib, for documentation
 
@@ -21,20 +20,8 @@ Are these blog-worthy? Write articles in doc/?
 
 ### Rib, for journaling
 
-Start ./examples/journal and use example data, while a private version to use
-the notes in my Dropbox.
-
+- [X] Support orgmode format
 - [ ] Render Seinfeld diary view of good/bad/etc.
-
-- [ ] Make it easy to add entries (some cli script)
-  - As simple as getting today's date for the file name
-  - Goal: collect years of journal data, so I can look back say 4 years
-  
-- [ ] Search 
-  - If I have years of data, it makes sense to provide search feature.
-    - Just use doom-emacs project search!?
-    
-- [ ] Just use org-mode!
 
 ### [ ] Rib, for invoice generation
 
