@@ -39,7 +39,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         Page_Index posts ->
           div_ $ forM_ posts $ \(f, doc) -> div_ $ do
             with a_ [href_ (getHTMLFileUrl f)] $ postTitle doc
-            maybe mempty small_ $ Pandoc.getMeta @(Html ()) "description" doc
+            div_ $ maybe mempty small_ $ Pandoc.getMeta @(Html ()) "description" doc
         Page_Post (_, doc) ->
           with article_ [class_ "post"] $
             toHtmlRaw $ Pandoc.render doc

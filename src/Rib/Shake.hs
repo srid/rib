@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -11,6 +12,7 @@ import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as Aeson
 import Data.Binary
+import Data.Bool
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text (Text)
@@ -22,7 +24,7 @@ import Development.Shake.FilePath
 import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
-import Text.Pandoc (Pandoc, PandocIO, ReaderOptions)
+import Text.Pandoc (Pandoc (Pandoc), PandocIO, ReaderOptions)
 
 import Rib.App (ribInputDir, ribOutputDir)
 import qualified Rib.Pandoc
@@ -62,15 +64,32 @@ readPandocMulti (pat, r) = do
   forP fs $ \f ->
     jsonCacheAction f $ (f, ) <$> readPandoc r f
 
+-- | Read a Pandoc source document and return the parsed structure
+--
+-- If an associated metadata file exists (same filename, with ".yaml" as
+-- extension), use it to specify the metadata of the document (which is
+-- especially useful when the format is anything but Markdown).
 readPandoc
   :: (ReaderOptions -> Text -> PandocIO Pandoc)
   -> FilePath
-  ->  Action Pandoc
+  -> Action Pandoc
 readPandoc r f = do
   let inp = ribInputDir </> f
   need [inp]
   content <- T.decodeUtf8 <$> liftIO (BS.readFile inp)
-  liftIO $ Rib.Pandoc.parse r content
+  doc <- liftIO $ Rib.Pandoc.parse r content
+  boolFileExists (inp -<.> "yaml") (pure doc) $
+    fmap (overrideMeta doc) . readMeta
+  where
+    overrideMeta (Pandoc _ bs) meta = Pandoc meta bs
+    readMeta mf = do
+      need [mf]
+      liftIO $ Rib.Pandoc.parseMeta =<< BSL.readFile mf
+    -- | Like `bool` but works on file existence value
+    --
+    -- The second function takes the filepath as value.
+    boolFileExists fp missingF existsF =
+      doesFileExist fp >>= bool missingF (existsF fp)
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

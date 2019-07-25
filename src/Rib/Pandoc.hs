@@ -9,6 +9,7 @@ module Rib.Pandoc
   , setMeta
   , parse
   , parsePure
+  , parseMeta
   , render
   , renderInlines
   , getH1
@@ -16,6 +17,7 @@ module Rib.Pandoc
 where
 
 import Control.Monad
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.Text (Text)
@@ -24,6 +26,7 @@ import qualified Data.Text as T
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
+import Text.Pandoc.Readers.Markdown (yamlToMeta)
 import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Walk (walkM)
 
@@ -85,6 +88,11 @@ parse r =
   where
     settings = def { readerExtensions = exts }
     includeSources = includeCode $ Just $ Format "html5"
+
+parseMeta :: ByteString -> IO Meta
+parseMeta = either (error . show) pure <=< runIO . yamlToMeta settings
+  where
+    settings = def { readerExtensions = exts }
 
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings

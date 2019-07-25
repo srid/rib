@@ -11,12 +11,7 @@ Are these blog-worthy? Write articles in doc/?
 - [X] Simplify `Settings` (seems gobbled together)
 - [X] Rib.Shake combinators
 - [X] Pandoc metadata refactoring (using type class)
-
-### Rib, for documentation
-
-- [X] MVP - rib.srid.ca
-- [X] getting-started: instruct cp example/Main.hs and create a separate page
-      explaining Main.hs (literate haskell if possible;)
+- [X] Metadata file (eg: `foo.rst.yaml`)
 
 ### Rib, for journaling
 
