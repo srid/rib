@@ -13,13 +13,13 @@ module Rib.Pandoc
   , render
   , renderInlines
   , getH1
+  , getFirstImg
   )
 where
 
 import Control.Monad
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.Map as Map
-import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -28,7 +28,7 @@ import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Readers.Markdown (yamlToMeta)
 import Text.Pandoc.Shared (stringify)
-import Text.Pandoc.Walk (walkM)
+import Text.Pandoc.Walk (walkM, query)
 
 
 class IsMetaValue a where
@@ -112,8 +112,14 @@ renderInlines = either (error . show) toHtmlRaw . renderInlines'
 
 -- | Get the top-level heading as Lucid HTML
 getH1 :: Pandoc -> Maybe (Html ())
-getH1 (Pandoc _meta blocks) = listToMaybe $ catMaybes $ flip fmap blocks $ \case
-  Header 1 _ xs -> Just $ renderInlines xs
+getH1 (Pandoc _ bs) = fmap renderInlines $ flip query bs $ \case
+  Header 1 _ xs -> Just xs
+  _ -> Nothing
+
+-- | Get the first image in the document
+getFirstImg :: Pandoc -> Maybe Text
+getFirstImg (Pandoc _ bs) = flip query bs $ \case
+  Image _ _ (url, _) -> Just $ T.pack url
   _ -> Nothing
 
 exts :: Extensions
