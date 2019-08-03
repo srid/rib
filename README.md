@@ -28,19 +28,19 @@ To get an example site up and running run:
 
 ```bash
 cd ./examples/hello-world
-../../ghcid
+nix-shell --run 'ghcid -T main'
 ```
 
 This will:
 
-- Drop into a nix-shell with needed Haskell dependencies
-- Compile the `rib` library and `Main.hs` through ghcid
-  - Whenever Haskell sources change ghcid reloads them
-- Run `Main.hs:buildAction` (as if with `serve -w` CLI arguments)
+- Drop into a nix-shell with needed Haskell dependencies (including `rib`)
+- Compile `Main.hs` through ghcid
+  - Whenever `Main.hs` changes ghcid reloads them
+- Run `Main.hs:main`
 - This does the following:
   1. Convert sources in `./a` into `./b` using Shake
-  2. Listens for changes to `./a`, and re-generate them (i.e., the `-w` argument)
-  3. Start a HTTP server serving the `./b` directory (i.e, the `serve` command)
+  2. Listens for changes to `./a`, and re-generate them
+  3. Start a HTTP server serving the `./b` directory
 
 Thus, by running that one command one gets a production-quality web server
 serving the statically generated HTML files which automatically get regenerated
@@ -48,10 +48,3 @@ when the source content changes. What's more, we may change the Haskell sources
 such as `Main.hs` and ghcid will recompile and relaunch the whole thing.
 
 With `rib` we get hot reload for free.
-
-## Use cases
-
-- Website / Blog generation
-- Documentation
-- Org Mode interface
-- Invoice generation

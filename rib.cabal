@@ -21,10 +21,9 @@ library
   exposed-modules:
       Rib.App
     , Rib.Pandoc
+    , Rib.Server
     , Rib.Shake
     , Rib.Simple
-  other-modules:
-      Rib.Server
   hs-source-dirs:
       src
   ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates

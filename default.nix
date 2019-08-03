@@ -1,13 +1,17 @@
+{ pkgs ? import <nixpkgs> {}
+, compiler ? "default"
+, root ? ./.
+, source-overrides ? {}
+, ...
+}:
 let
-  pkgs = import <nixpkgs> { };
-  compiler = "default";
   haskellPackages =
     if compiler == "default"
       then pkgs.haskellPackages
       else pkgs.haskell.packages.${compiler};
 in
 haskellPackages.developPackage {
-  root = ./.;
+  root = root;
   source-overrides = {
     clay = pkgs.fetchFromGitHub {
       owner = "sebastiaanvisser";
@@ -21,7 +25,8 @@ haskellPackages.developPackage {
       rev = "7e4d9d967ff3e3855a7eae48408c43b3400ae6f4";
       sha256 = "0wvml63hkhgmmkdd2ml5a3g7cb69hxwdsjmdhdzjbqbrwkmc20rd";
     };
-  };
+    rib = ./.;
+  } // source-overrides;
 
   overrides = self: super: with pkgs.haskell.lib; {
     clay = dontCheck super.clay;
