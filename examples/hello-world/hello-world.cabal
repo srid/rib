@@ -1,0 +1,17 @@
+cabal-version:       2.4
+
+name:                hello-world
+version:             0.1.0.0
+license:             BSD-3-Clause
+author:              Sridhar Ratnakumar
+maintainer:          srid@srid.ca
+category:            Web
+
+executable hello-world
+  main-is:             Main.hs
+  build-depends:       base ^>=4.12.0.0
+                     , rib
+                     , clay
+                     , shake
+                     , lucid
+  default-language:    Haskell2010
