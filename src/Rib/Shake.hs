@@ -78,6 +78,8 @@ readPandoc r f = do
   need [inp]
   content <- T.decodeUtf8 <$> liftIO (BS.readFile inp)
   doc <- liftIO $ Rib.Pandoc.parse r content
+  -- FIXME: When _creating_ the yaml file for first time, Shake doesn't know to
+  -- rebuild this.
   boolFileExists (inp -<.> "yaml") (pure doc) $
     fmap (overrideMeta doc) . readMeta
   where

@@ -13,6 +13,19 @@ Are these blog-worthy? Write articles in doc/?
 - [X] Pandoc metadata refactoring (using type class)
 - [X] Metadata file (eg: `foo.rst.yaml`)
 
+### Milestone: public announcement
+
+- Rib as library
+  - [X] Finish invoice generator example (as simple as possible)
+  - [ ] Publish to Hackage
+  - [ ] Add haddock before next publishing
+  - [ ] Add default.nix to each example, pulling rib from Github, and using
+        ghcid on it.
+  - [ ] Create Github project template to get started easily
+    - Emphasize the prequisitive of Nix!
+  - [ ] Finalize examples
+    - [ ] Include a demo version of them running somewhere.
+
 ### Rib, for journaling
 
 - [X] Support orgmode format
