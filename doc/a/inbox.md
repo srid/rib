@@ -17,11 +17,11 @@ Are these blog-worthy? Write articles in doc/?
 
 - Rib as library
   - [X] Finish invoice generator example (as simple as possible)
-  - [ ] Add default.nix to each example, pulling rib from Github, and using
+  - [X] Add default.nix to each example, pulling rib from Github, and using
         ghcid on it.
   - [ ] Publish to Hackage
   - [ ] Add haddock before next publishing
-  - [ ] Create Github project template to get started easily
+  - [X] Create Github project template to get started easily
     - Emphasize the prequisitive of Nix!
   - [ ] Finalize examples
     - [ ] Include a demo version of them running somewhere.
