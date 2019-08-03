@@ -10,4 +10,4 @@ RIBDIR=$(cd `dirname $0` && pwd)
 PORT=${1:-8080}
 
 nix-shell ${RIBDIR}/default.nix --run \
-  "ghcid --reload=Main.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src Main.hs' -T 'Rib.App.dev ${PORT} Main.buildAction'"
+  "ghcid --reload=Main.hs --reload=${RIBDIR}/src -c 'ghci -Wall -i${RIBDIR}/src Main.hs' -T 'Main.main'"
