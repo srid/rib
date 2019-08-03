@@ -1,3 +1,0 @@
-import ./../../default.nix {
-  root = ./.;
-}
