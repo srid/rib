@@ -4,8 +4,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
--- | Combinators for working with Shake
-module Rib.Shake where
+-- | Combinators for working with Shake.
+--
+-- The functions in this module work with `ribInputDir` and `ribOutputDir`.
+--
+-- See the source of `Rib.Simple.buildAction` for example usage.
+module Rib.Shake
+  (
+  -- * Basic helpers
+    buildHtmlMulti
+  , buildHtml
+  -- * Read helpers
+  , readPandoc
+  , readPandocMulti
+  -- * Misc
+  , buildStaticFiles
+  )
+where
 
 import Control.Monad
 import Control.Monad.IO.Class
@@ -40,37 +55,39 @@ buildStaticFiles staticFilePatterns = do
     copyFileChanged (ribInputDir </> f) (ribOutputDir </> f)
   pure files
 
--- | Build multiple HTML files given a pattern of source files
---
--- Call `mkA` to create the final value given a file and its pandoc structure.
--- Return the list of final values used to render their HTMLs.
+-- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
   :: (FilePattern, ReaderOptions -> Text -> PandocIO Pandoc)
   -- ^ Source file patterns & their associated Pandoc readers
   -> ((FilePath, Pandoc) -> Html ())
   -- ^ How to render the given Pandoc document to HTML
   -> Action [(FilePath, Pandoc)]
+  -- ^ List of relative path to generated HTML and the associated Pandoc document
 buildHtmlMulti spec r = do
   xs <- readPandocMulti spec
   void $ forP xs $ \x ->
     buildHtml (fst x -<.> "html") (r x)
   pure xs
 
+-- | Like `readPandoc` but operates on multiple files
 readPandocMulti
-  :: (FilePattern, ReaderOptions -> Text -> PandocIO Pandoc)
+  :: ( FilePattern
+     , ReaderOptions -> Text -> PandocIO Pandoc
+     )
+     -- ^ Tuple of pattern of files to work on and document format.
   -> Action [(FilePath, Pandoc)]
 readPandocMulti (pat, r) = do
   fs <- getDirectoryFiles ribInputDir [pat]
   forP fs $ \f ->
     jsonCacheAction f $ (f, ) <$> readPandoc r f
 
--- | Read a Pandoc source document and return the parsed structure
+-- | Read and parse a Pandoc source document
 --
--- If an associated metadata file exists (same filename, with ".yaml" as
--- extension), use it to specify the metadata of the document (which is
--- especially useful when the format is anything but Markdown).
+-- If an associated metadata file exists (same filename, with @.yaml@ as
+-- extension), use it to specify the metadata of the document.
 readPandoc
   :: (ReaderOptions -> Text -> PandocIO Pandoc)
+  -- ^ Document format. Example: `Text.Pandoc.Readers.readMarkdown`
   -> FilePath
   -> Action Pandoc
 readPandoc r f = do

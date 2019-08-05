@@ -5,13 +5,18 @@
 
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc
-  ( getMeta
-  , setMeta
-  , parse
+  (
+  -- * Parsing
+    parse
   , parsePure
-  , parseMeta
+  -- * Converting to HTML
   , render
   , renderInlines
+  -- * Metadata
+  , getMeta
+  , setMeta
+  , parseMeta
+  -- * Extracting information
   , getH1
   , getFirstImg
   )
@@ -56,15 +61,16 @@ instance {-# Overlappable #-} Read a => IsMetaValue a where
 
 -- | Get the metadata value for the given key in a Pandoc document.
 --
--- It is recommended to call this function with TypeApplications specifying the
+-- It is recommended to call this function with type application specifying the
 -- type of `a`.
 --
 -- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
--- Typical instances:
--- * `Html ()`: parse value as a Pandoc document and convert to Lucid Html
--- * `Text`: parse a raw value (Inline with one Str value)
--- * `[a]`: parse a list of values
--- * `Read a => a`: parse a raw value and then read it.
+-- Available instances:
+--
+-- - `Html`: parse value as a Pandoc document and convert to Lucid Html
+-- - `Text`: parse a raw value (Inline with one Str value)
+-- - @[a]@: parse a list of values
+-- - @Read a => a@: parse a raw value and then read it.
 getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
 getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
 
@@ -75,20 +81,29 @@ setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
     meta' = Map.insert k v' meta
     v' = MetaInlines [Str $ show v]
 
--- | Parse a pandoc document
+-- | Pure version of `parse`
 parsePure :: (ReaderOptions -> Text -> PandocPure Pandoc) -> Text -> Pandoc
 parsePure r =
   either (error . show) id . runPure . r settings
   where
     settings = def { readerExtensions = exts }
 
-parse :: (ReaderOptions -> Text -> PandocIO Pandoc) -> Text -> IO Pandoc
+-- | Parse the source text as a Pandoc document
+--
+-- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
+parse
+  :: (ReaderOptions -> Text -> PandocIO Pandoc)
+  -- ^ Document format. Example: `Text.Pandoc.Readers.readMarkdown`
+  -> Text
+  -- ^ Source text to parse
+  -> IO Pandoc
 parse r =
   either (error . show) (walkM includeSources) <=< runIO . r settings
   where
     settings = def { readerExtensions = exts }
     includeSources = includeCode $ Just $ Format "html5"
 
+-- | Parse the metadata source as a Pandoc Meta value
 parseMeta :: ByteString -> IO Meta
 parseMeta = either (error . show) pure <=< runIO . yamlToMeta settings
   where
@@ -106,7 +121,9 @@ render = either (error . show) toHtmlRaw . render'
 renderInlines' :: [Inline] -> Either PandocError Text
 renderInlines' = render' . Pandoc mempty . pure . Plain
 
--- | Render Pandoc inlines as Lucid HTML
+-- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
+--
+-- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
 renderInlines :: [Inline] -> Html ()
 renderInlines = either (error . show) toHtmlRaw . renderInlines'
 
@@ -116,8 +133,11 @@ getH1 (Pandoc _ bs) = fmap renderInlines $ flip query bs $ \case
   Header 1 _ xs -> Just xs
   _ -> Nothing
 
--- | Get the first image in the document
-getFirstImg :: Pandoc -> Maybe Text
+-- | Get the first image in the document if one exists
+getFirstImg
+  :: Pandoc
+  -> Maybe Text
+  -- ^ Relative URL path to the image
 getFirstImg (Pandoc _ bs) = flip query bs $ \case
   Image _ _ (url, _) -> Just $ T.pack url
   _ -> Nothing

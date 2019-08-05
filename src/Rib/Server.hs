@@ -1,7 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rib.Server where
+-- | Serve generated static files with HTTP
+module Rib.Server
+  (
+    serve
+  , getHTMLFileUrl
+  )
+where
 
 import Prelude hiding (init, last)
 
@@ -43,18 +49,21 @@ staticSiteServerSettings root = settings
       guard $ not $ ".html" `isSuffixOf` T.unpack last
       pure $ fmap unsafeToPiece $ init <> [last <> ".html"]
 
--- | Return the URL for the given .html file under serve directory
+-- | Return the URL for the given @.html@ file under serve directory
 --
 -- File path must be relative to the serve directory.
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-getHTMLFileUrl :: FilePath -> Text
+getHTMLFileUrl
+  :: FilePath
+  -- ^ Relative path to a page (extension is ignored)
+  -> Text
 getHTMLFileUrl = T.pack . ("/" ++) . dropExtension
 
 -- | Run a HTTP server to serve a directory of static files
 --
--- Allow URLs of the form `/foo/bar` to serve ${path}/foo/bar.html
+-- Allow URLs of the form @//foo//bar@ to serve @${path}//foo//bar.html@
 serve
   :: Int
   -- ^ Port number to bind to

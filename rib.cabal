@@ -2,7 +2,7 @@ cabal-version: 2.2
 
 name:           rib
 version:        0.2.0.0
-description:    Please see the README on GitHub at <https://github.com/srid/rib>
+description:    A non-monolithic static site generator written in Haskell
 homepage:       https://github.com/srid/rib#readme
 bug-reports:    https://github.com/srid/rib/issues
 author:         Sridhar Ratnakumar

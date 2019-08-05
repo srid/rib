@@ -2,6 +2,9 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+-- | CLI interface for Rib.
+--
+-- Typically you would call `Rib.App.run` passing your Shake build action.
 module Rib.App
   ( App(..)
   , run
@@ -34,15 +37,17 @@ data App
 ribOutputDir :: FilePath
 ribOutputDir = "b"
 
--- | Directory from which content will be read.
---
--- This should ideally not be "." as the watchTree below can interfere with
--- Shake's file scaning.
+-- | Directory from which source content will be read.
 ribInputDir :: FilePath
 ribInputDir = "a"
+-- NOTE: ^ This should ideally *not* be `"."` as our use of watchTree (of
+-- `runWith`) can interfere with Shake's file scaning.
 
--- | CLI entry point for running the Rib app
-run :: Action () -> IO ()
+-- | Run Rib using arguments passed in the command line.
+run
+  :: Action ()
+  -- ^ Shake build rules for building the static site
+  -> IO ()
 run buildAction = runWith buildAction =<< cmdArgs ribCli
   where
     ribCli = modes
@@ -58,8 +63,7 @@ run buildAction = runWith buildAction =<< cmdArgs ribCli
           } &= help "Generate the site"
       ]
 
--- | Like `run` but uses the given `App` mode instead of reading it from CLI
--- arguments.
+-- | Like `run` but with an explicitly passed `App` mode
 runWith :: Action () -> App -> IO ()
 runWith buildAction = \case
   Watch -> withManager $ \mgr -> do
