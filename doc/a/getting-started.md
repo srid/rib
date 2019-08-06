@@ -3,45 +3,91 @@ title: "Getting Started"
 description: Start using Rib to generate your own static website
 ---
 
-The easiest way to get started with your new site is start from the `rib-sample`
-repository. To do this go to the Github repository for
-[`rib-sample`](https://github.com/srid/rib-sample) and click **Use this
-template** and clone your new repo locally.
+The easiest way to get started is to copy the template repository,
+[`rib-sample`](https://github.com/srid/rib-sample) from Github. 
 
-Follow the sample's README.md and install [Nix](https://nixos.org/nix/) before
-running the dev server:
+Let's look at what's in the template repository:
 
-```
-nix-shell --run 'ghcid -T man'
+```shell
+$ ls -F
+a/  b/  default.nix  Main.hs  README.md  rib-sample.cabal
 ```
 
-Nix is a purely functional package manger (a tutorial for Haskellers is
-[available here](https://notes.srid.ca/haskell-nix)) that is used here to create
-the desired environment for running Rib. `ghcid` is used to launch the dev
-server; it automatically rebuilds and restarts it when the source file for your
-static site (i.e., `Main.hs`) changes.
+The three key files here are:
 
-Go to http://localhost:8080 to access your site. A few points to note:
+1. `Main.hs`: This contains the Haskell DSL for the HTML and CSS of your site.
+1. `a/`: This contains the source content (eg: Markdown files and static
+   content)
+1. `b/`: This directory, initially empty, will contain _generated_ content
+   (i.e., the HTML files, and copied over static content)
+   
+The template repository comes with a few sample posts under `a/`, and a basic
+HTML layout and CSS style defined in `Main.hs`. 
 
-- Content is available in the `./a` directory. 
-- HTML is generated in the `./b` directory
-- Editing either the content or the HTML/CSS (in `Main.css`) will restart the
-  dev server automatically in addition to Shake regenerating changed files.
-  
+Now let's run them all. 
 
-## What's in `Main.hs`
+Clone the sample repository locally, install [Nix](https://nixos.org/nix/) and
+run [ghcid](https://github.com/ndmitchell/ghcid) as follows:
 
-Take a look at
-[`Main.hs`](https://github.com/srid/rib-sample/blob/master/Main.hs) of
-`rib-sample`; you'll notice that most of the contents in that file is about
-defining the HTML and CSS of your site. The key part is in the `main` function
-invoking Rib's `Simple.buildAction` function.
+```shell
+nix-shell --run 'ghcid -T main'
+```
 
-Rib comes with a builtin Shake build action `Rib.Simple.buildAction`
-([forward-defined](http://hackage.haskell.org/package/shake-0.18.3/docs/Development-Shake-Forward.html)
-for simplicity) for use
-with the most simple static sites. If at any point you need to customize the
-behaviour of your static site build don't hesitate to write your build action,
-based on the template at
-[`Rib.Simple`](https://github.com/srid/rib/blob/master/src/Rib/Simple.hs) and
-using the helper functions from `Rib.Pandoc` and `Rib.Shake`.
+What will this do?
+
+1. `nix-shell` will run the given command in a shell environment with all of our
+dependencies (notably the Haskell ones including the `rib` library itself)
+installed. 
+
+1. `ghcid` will compile `Main.hs` and run its `main` function.
+
+1. `Main.hs:main` in turn calls the Shake build action (via `Rib.App.run`)
+   defined in `Rib.Simple.buildAction` passing it the function `renderPage`.
+
+There is quite a bit going on in that step 3! Let's break it down:
+
+1. `Rib.App.run`: this parses the CLI arguments and runs the rib CLI "app" which
+   can be run in one of a few modes --- generating static files, watching the `a/`
+   directory for changes, starting HTTP server for the `b/` directory. Without
+   any explicit arguments, by default this will run the Shake build action on
+   every file change and spin up a HTTP server.
+   
+1. `Rib.Simple.buildAction`: The `run` function takes a Shake build action to
+   run on file change. `Rib.Simple` provides a very simple build action for
+   generating the most simple static site --- a list of posts with static assets
+   --- which the sample repository uses.
+   
+Thus, by running the above command you get a local HTTP server which serves that
+generated files and that which automatically reloads when either the content
+(`a/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other words.
+
+Run that command, and visit http://localhost:8080 to view your site.
+
+Now try making some changes to the content, say `a/first-post.md`. You should
+see it reflected when you refresh the page. Or change the HTML or CSS of your
+site in `Main.hs`; this will trigger `ghcid` to rebuild the Haskell source and
+restart the server
+
+## What's next?
+
+Great, by now you should have your static site generator ready and running! What
+more can you do? Surely you may have specific needs; and this usually would
+translate to running custom Shake actions during the build. 
+
+Rib provides helper functions in `Rib.Shake` and `Rib.Pandoc` to do this. Indeed
+the `Rib.Simple.buildAction` function which the sample project readily uses
+makes use of these functions. 
+
+In order to customize your site's build actions,
+
+1. Copy the source for `buildAction` from the
+[`Rib.Simple`](https://github.com/srid/rib/blob/master/src/Rib/Simple.hs) module
+to your `Main.hs`
+
+1. Make any customizations you want in *your* `buildAction` function.
+
+1. Use that as the argument to the `Rib.App.run` function in your `main`
+
+Notice how Rib's builtin `buildAction` is 
+[forward-defined](http://hackage.haskell.org/package/shake-0.18.3/docs/Development-Shake-Forward.html)
+which adds to the simplicity of the entire thing.

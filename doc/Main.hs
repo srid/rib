@@ -90,6 +90,7 @@ renderPage page = with html_ [lang_ "en"] $ do
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
         case page of
           Page_Index posts -> do
+            img_ [src_ "/static/ribs.svg", class_ "ui right floated tiny image"]
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
             with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \(f, doc) ->
               with div_ [class_ "item"] $ do
@@ -140,8 +141,10 @@ renderPage page = with html_ [lang_ "en"] $ do
         fontFamily [headerFont] [sansSerif]
       forM_ [pre, code, "tt"] $ \sel -> sel ? do
         fontFamily [codeFont] [monospace]
-      "div.sourceCode" ? do
+      "pre" ? do
         sym padding $ em 1
+        backgroundColor "#EBF5FB"
+      "code" ?
         backgroundColor "#EBF5FB"
       h1 ? textAlign center
       (article ** h2) ? color darkviolet
