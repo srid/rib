@@ -88,9 +88,6 @@ renderPage page = with html_ [lang_ "en"] $ do
         with a_ [class_ "ui violet ribbon label", href_ "/"] "Rib"
         -- Main content
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
-        with div_ [class_ "ui warning message"] $
-          Pandoc.render $ Pandoc.parsePure readMarkdown
-          "Please note: Rib is still a **work in progress**. The API might change before the initial public release. The content you read here should be considered draft version of the upcoming documentation."
         case page of
           Page_Index posts -> do
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
