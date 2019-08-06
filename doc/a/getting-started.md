@@ -33,7 +33,12 @@ run [ghcid](https://github.com/ndmitchell/ghcid) as follows:
 nix-shell --run 'ghcid -T main'
 ```
 
-What will this do?
+Running this command gives you a local HTTP server at http://localhost:8080/
+(serving the generated files) that automatically reloads when either the content
+(`a/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other
+words.
+
+How does it work?
 
 1. `nix-shell` will run the given command in a shell environment with all of our
 dependencies (notably the Haskell ones including the `rib` library itself)
@@ -57,10 +62,6 @@ There is quite a bit going on in that step 3! Let's break it down:
    generating the most simple static site --- a list of posts with static assets
    --- which the sample repository uses.
    
-Thus, by running the above command you get a local HTTP server which serves that
-generated files and that which automatically reloads when either the content
-(`a/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other words.
-
 Run that command, and visit http://localhost:8080 to view your site.
 
 Now try making some changes to the content, say `a/first-post.md`. You should
