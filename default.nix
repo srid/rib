@@ -1,6 +1,7 @@
 { pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/002b853782e.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
+, name ? "rib"
 , source-overrides ? {}
 , ...
 }:
@@ -12,6 +13,7 @@ let
 in
 haskellPackages.developPackage {
   root = root;
+  name = name;
   source-overrides = {
     clay = pkgs.fetchFromGitHub {
       owner = "sebastiaanvisser";
