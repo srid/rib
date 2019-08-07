@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/002b853782e.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
 , source-overrides ? {}
