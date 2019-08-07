@@ -5,12 +5,14 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/ribs.svg?sanitize=true" width="150" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" width="150" />
 
 **Rib** is a static site generator written in Haskell with the goal of reusing
 existing tools (`Shake`, `Lucid` and `Clay`) instead of re-inventing them.
 
 See https://rib.srid.ca for documentation.
+
+<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png?sanitize=true" />
 
 ## Examples
 

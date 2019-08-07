@@ -90,13 +90,17 @@ renderPage page = with html_ [lang_ "en"] $ do
         with h1_ [class_ "ui huge header"] $ fromMaybe siteTitle pageTitle
         case page of
           Page_Index posts -> do
-            img_ [src_ "/static/ribs.svg", class_ "ui right floated tiny image"]
+            img_ [src_ "/static/rib.svg", class_ "ui left floated mini image"]
             p_ "Rib is a static site generator written in Haskell that reuses existing tools (Shake, Lucid and Clay) and is thus non-monolithic."
-            with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \(f, doc) ->
-              with div_ [class_ "item"] $ do
-                with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
-                  postTitle doc
-                maybe mempty small_ $ Pandoc.getMeta "description" doc
+            with div_ [class_ "ui segment"] $
+              with div_ [class_ "ui relaxed divided list"] $ forM_ posts $ \(f, doc) ->
+                with div_ [class_ "item"] $ do
+                  with a_ [class_ "header", href_ (getHTMLFileUrl f)] $
+                    postTitle doc
+                  maybe mempty small_ $ Pandoc.getMeta "description" doc
+            with a_ [class_ "ui centered fluid image", href_ "https://github.com/srid/rib-sample/blob/master/Main.hs"] $
+              img_ [src_ "/static/rib-sample-main.png"]
+            br_ mempty
           Page_Post (_, doc) -> do
             when (fromMaybe False $ Pandoc.getMeta "draft" doc) $
               with div_ [class_ "ui warning message"] "This is a draft"
