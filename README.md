@@ -12,7 +12,7 @@ existing tools (`Shake`, `Lucid` and `Clay`) instead of re-inventing them.
 
 See https://rib.srid.ca for documentation.
 
-<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png?sanitize=true" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png" />
 
 ## Examples
 
