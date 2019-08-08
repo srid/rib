@@ -35,6 +35,6 @@ haskellPackages.developPackage {
   };
 
   modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {
-    buildTools = (attrs.buildTools or []) ++ [haskellPackages.ghcid] ;
+    buildTools = with haskellPackages; (attrs.buildTools or []) ++ [cabal-install ghcid] ;
   });
 }
