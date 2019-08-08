@@ -1,9 +1,7 @@
-{ pkgs ? import <nixpkgs> {}
-# Cabal project root
-, root ? ./. 
-# Rib library source to use
+{ root ? ./. 
+, name ? "doc"
 , rib ? ../.
 , ...
 }:
 
-import rib { inherit pkgs root; }
+import rib { inherit root name; }
