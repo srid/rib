@@ -3,11 +3,11 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img align="left" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
+<img align="right" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
 
 Rib is a Haskell library for writing your own **static site generator**.
 
-Rib's unique advantages are:
+How does it compare to Hakyll?
 
 - Allow use of Haskell DSL to define the HTML
   ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS
