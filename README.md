@@ -5,8 +5,21 @@ Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
 <img align="left" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
 
-**Rib** is a static site generator written in Haskell with the goal of reusing
-existing tools (`Shake`, `Lucid` and `Clay`) instead of re-inventing them.
+Rib is a Haskell library for writing your own **static site generator**.
+
+Rib's unique advantages are:
+
+- Allow use of Haskell DSL to define the HTML
+  ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS
+  ([Clay](http://fvisser.nl/clay/)) of your site (and Pandoc for parsing the
+  source documents)
+- Use the [Shake](https://shakebuild.com/) build system
+- Remain as simple as possible to use
+- Optional Nix based workflow for easily reproducible setup
+
+Rib was designed to use *existing* tools instead of reinventing them while also
+giving the user full permission to compose them as they wish, instead being
+forced to use any particular framework.
 
 <img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png" />
 
