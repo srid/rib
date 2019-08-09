@@ -1,7 +1,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img align="left" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
+<img width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
 
 # rib
 
