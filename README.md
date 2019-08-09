@@ -1,7 +1,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img align="right" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
+<img align="right" width="50" src="https://raw.githubusercontent.com/srid/rib/master/assets/rib.svg?sanitize=true" />
 
 # rib
 
@@ -22,10 +22,10 @@ Rib prioritizes the use of *existing* tools over reinventing them, and enables
 the user to compose them as they wish instead of having to write code to fit a
 custom framework.
 
-Here is how your code will look like if you were to generate your static site
+Here is how your code may look like if you were to generate your static site
 using Rib:
 
-<img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png" />
+<img src="https://raw.githubusercontent.com/srid/rib/master/assets/rib-sample-main.png" />
 
 ## Getting Started
 
@@ -135,7 +135,5 @@ which adds to the simplicity of the entire thing.
 
 * [rib-sample](https://github.com/srid/rib-sample): Use this to get started with
   your own site.
-
-* `./doc`: Rib's own documentation site. Live at: https://rib.srid.ca/
 
 * Author's own website. Live at https://notes.srid.ca/ 
