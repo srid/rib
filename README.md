@@ -1,7 +1,5 @@
 # rib
 
-[![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
-
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
