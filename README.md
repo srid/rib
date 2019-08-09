@@ -15,12 +15,12 @@ How does it compare to Hakyll?
   ([Clay](http://fvisser.nl/clay/)) of your site 
   - Like Hakyll, Rib uses [Pandoc](https://pandoc.org/) for parsing the source
     documents
-- Remain as simple as possible to use
-- Optional Nix based workflow for easily reproducible setup
+- Remain as simple as possible to use (see screenshot below)
+- Optional Nix based workflow for easily reproducible environment
 
-Rib was designed to use *existing* tools instead of reinventing them while also
-giving the user full permission to compose them as they wish, instead being
-forced to use any particular framework.
+Rib prioritizes the use of *existing* tools over reinventing them, and enables
+the user to compose them as they wish instead of having write code to fit a
+custom framework.
 
 <img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png" />
 
