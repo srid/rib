@@ -5,7 +5,7 @@
 <!--
 Credit for this image: https://www.svgrepo.com/svg/24439/ribs
 -->
-<img align="left" width="150" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
+<img align="left" width="50" src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib.svg?sanitize=true" />
 
 **Rib** is a static site generator written in Haskell with the goal of reusing
 existing tools (`Shake`, `Lucid` and `Clay`) instead of re-inventing them.
