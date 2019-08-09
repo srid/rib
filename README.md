@@ -19,8 +19,11 @@ How does it compare to Hakyll?
 - Optional Nix based workflow for easily reproducible environment
 
 Rib prioritizes the use of *existing* tools over reinventing them, and enables
-the user to compose them as they wish instead of having write code to fit a
+the user to compose them as they wish instead of having to write code to fit a
 custom framework.
+
+Here is how your code will look like if you were to generate your static site
+using Rib:
 
 <img src="https://raw.githubusercontent.com/srid/rib/master/doc/a/static/rib-sample-main.png" />
 
