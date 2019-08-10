@@ -1,58 +1,59 @@
 cabal-version: 2.2
-
-name:           rib
-version:        0.2.0.0
-description:    A non-monolithic static site generator written in Haskell
-homepage:       https://github.com/srid/rib#readme
-bug-reports:    https://github.com/srid/rib/issues
-author:         Sridhar Ratnakumar
-maintainer:     srid@srid.ca
-copyright:      2019 Sridhar Ratnakumar
-license:        BSD-3-Clause
-build-type:     Simple
+name: rib
+version: 0.2.0.0
+license: BSD-3-Clause
+copyright: 2019 Sridhar Ratnakumar
+maintainer: srid@srid.ca
+author: Sridhar Ratnakumar
+homepage: https://github.com/srid/rib#readme
+bug-reports: https://github.com/srid/rib/issues
+description:
+    Haskell library for writing your own static site generator
+build-type: Simple
 extra-source-files:
     README.md
+    CHANGELOG.md
 
 source-repository head
-  type: git
-  location: https://github.com/srid/rib
+    type: git
+    location: https://github.com/srid/rib
 
 library
-  exposed-modules:
-      Rib.App
-    , Rib.Pandoc
-    , Rib.Server
-    , Rib.Shake
-    , Rib.Simple
-  hs-source-dirs:
-      src
-  ghc-options: -Wall -Wincomplete-uni-patterns -Wincomplete-record-updates
-  build-depends:
-      aeson
-    , async
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , clay
-    , cmdargs
-    , containers
-    , data-default
-    , fsnotify
-    , http-types
-    , lens
-    , lens-aeson
-    , lucid
-    , mtl
-    , pandoc >= 2.7
-    , pandoc-types
-    , pandoc-include-code
-    , safe
-    , shake
-    , skylighting
-    , text
-    , time
-    , wai
-    , wai-app-static
-    , wai-extra
-    , warp
-  default-language: Haskell2010
+    exposed-modules:
+        Rib.App
+        Rib.Pandoc
+        Rib.Server
+        Rib.Shake
+        Rib.Simple
+    hs-source-dirs: src
+    default-language: Haskell2010
+    ghc-options: -Wall -Wincomplete-uni-patterns
+                 -Wincomplete-record-updates
+    build-depends:
+        aeson,
+        async,
+        base >=4.7 && <5,
+        binary,
+        bytestring,
+        clay,
+        cmdargs,
+        containers,
+        data-default,
+        fsnotify,
+        http-types,
+        lens,
+        lens-aeson,
+        lucid,
+        mtl,
+        pandoc >=2.7,
+        pandoc-types,
+        pandoc-include-code,
+        safe,
+        shake,
+        skylighting,
+        text,
+        time,
+        wai,
+        wai-app-static,
+        wai-extra,
+        warp
