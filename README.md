@@ -1,4 +1,4 @@
-![Logo](https://raw.githubusercontent.com/srid/rib/hackage-tweaks/assets/ribs.png)
+![Logo](https://raw.githubusercontent.com/srid/rib/hackage-tweaks/assets/rib.png)
 
 # rib
 
