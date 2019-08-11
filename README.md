@@ -1,5 +1,4 @@
-![Logo](https://raw.githubusercontent.com/srid/rib/master/assets/rib.svg?sanitize=true
-| width=50)
+![Logo](https://raw.githubusercontent.com/srid/rib/master/assets/ribs.png)
 
 # rib
 
