@@ -1,3 +1,3 @@
 ## Credits
 
-* `rib.svg`: https://www.svgrepo.com/svg/24439/ribs
+* `rib.png`: https://www.svgrepo.com/svg/24439/ribs
