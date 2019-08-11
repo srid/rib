@@ -25,10 +25,24 @@ import System.FSNotify (watchTree, withManager)
 
 import qualified Rib.Server as Server
 
+-- | Application modes
+--
+-- The mode in which to run the Rib CLI
 data App
-  = Watch
-  | Serve { port :: Int, dontWatch :: Bool }
-  | Generate { force :: Bool }
+  = Generate
+    { force :: Bool
+      -- ^ Force generation of /all/ files
+    }
+  -- ^ Generate static files once.
+  | WatchAndGenerate
+  -- ^ Watch for changes in `ribInputDir` and run `Generate`
+  | Serve
+    { port :: Int
+      -- ^ Port to bind the server
+    , dontWatch :: Bool
+      -- ^ Unless set run `WatchAndGenerate` automatically
+    }
+  -- ^ Run a HTTP server serving `ribOutputDir`
   deriving (Data,Typeable,Show,Eq)
 
 -- | The path where static files will be generated.
@@ -56,7 +70,7 @@ run buildAction = runWith buildAction =<< cmdArgs ribCli
           , dontWatch = False &= help "Do not watch in addition to serving generated files"
           } &= help "Serve the generated site"
             &= auto
-      , Watch
+      , WatchAndGenerate
           &= help "Watch for changes and generate"
       , Generate
           { force = False &= help "Force generation of all files"
@@ -66,7 +80,7 @@ run buildAction = runWith buildAction =<< cmdArgs ribCli
 -- | Like `run` but with an explicitly passed `App` mode
 runWith :: Action () -> App -> IO ()
 runWith buildAction = \case
-  Watch -> withManager $ \mgr -> do
+  WatchAndGenerate -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runWith buildAction $ Generate True
     -- And then every time a file changes under the current directory
@@ -77,7 +91,7 @@ runWith buildAction = \case
     forever $ threadDelay maxBound
 
   Serve p dw -> concurrently_
-    (unless dw $ runWith buildAction Watch)
+    (unless dw $ runWith buildAction WatchAndGenerate)
     (Server.serve p ribOutputDir)
 
   Generate forceGen ->
