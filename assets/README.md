@@ -1,0 +1,3 @@
+## Credits
+
+* `rib.svg`: https://www.svgrepo.com/svg/24439/ribs
