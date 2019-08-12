@@ -1,9 +1,9 @@
-<!--
-Credit for this image: https://www.svgrepo.com/svg/24439/ribs
--->
-<img align="right" width="50" src="https://raw.githubusercontent.com/srid/rib/master/assets/rib.svg?sanitize=true" />
+![Logo](https://raw.githubusercontent.com/srid/rib/master/assets/rib.png)
 
 # rib
+
+[![BSD3](https://img.shields.io/badge/License-BSD-blue.svg)](https://en.wikipedia.org/wiki/BSD_License)
+[![Hackage](https://img.shields.io/hackage/v/rib.svg)](https://hackage.haskell.org/package/rib)
 
 Rib is a Haskell library for writing your own **static site generator**.
 
@@ -25,7 +25,7 @@ custom framework.
 Here is how your code may look like if you were to generate your static site
 using Rib:
 
-<img src="https://raw.githubusercontent.com/srid/rib/master/assets/rib-sample-main.png" />
+![Example](https://raw.githubusercontent.com/srid/rib/master/assets/rib-sample-main.png)
 
 ## Getting Started
 
@@ -123,7 +123,8 @@ In order to customize your site's build actions,
 [`Rib.Simple`](https://github.com/srid/rib/blob/master/src/Rib/Simple.hs) module
 to your `Main.hs`
 
-1. Make any customizations you want in *your* `buildAction` function.
+1. Make any customizations you want in *your* `buildAction` function. Refer to
+   [Hackage](http://hackage.haskell.org/package/rib) for API docs.
 
 1. Use that as the argument to the `Rib.App.run` function in your `main`
 

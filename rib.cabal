@@ -1,12 +1,14 @@
 cabal-version: 2.2
 name: rib
-version: 0.2.0.0
+version: 0.2.1.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
 maintainer: srid@srid.ca
 author: Sridhar Ratnakumar
 homepage: https://github.com/srid/rib#readme
 bug-reports: https://github.com/srid/rib/issues
+synopsis:
+    Static site generator using Shake
 description:
     Haskell library for writing your own static site generator
 build-type: Simple
