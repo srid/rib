@@ -66,6 +66,10 @@ run your site as follows:
 nix-shell --run 'ghcid -T main'
 ```
 
+(Note even though the author recommends it Nix is strictly not required; you may
+simply run `ghcid -T main` instead of the above command if you do not wish to
+use Nix.)
+
 Running this command gives you a local HTTP server at http://localhost:8080/
 (serving the generated files) that automatically reloads when either the content
 (`a/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other
