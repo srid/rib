@@ -11,6 +11,7 @@ synopsis:
     Static site generator using Shake
 description:
     Haskell library for writing your own static site generator
+category: Web
 build-type: Simple
 extra-source-files:
     README.md
