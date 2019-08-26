@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 
 import Development.Shake (Action)
 import Lucid (Html)
-import Text.Pandoc (Pandoc, readMarkdown, readRST, readOrg)
+import Text.Pandoc (Pandoc, readLaTeX, readMarkdown, readOrg, readRST)
 
 import Rib.Pandoc (getMeta)
 import Rib.Shake
@@ -46,4 +46,5 @@ buildAction renderPage = do
       [ ("*.md", readMarkdown)
       , ("*.rst", readRST)
       , ("*.org", readOrg)
+      , ("*.tex", readLaTeX)
       ]
