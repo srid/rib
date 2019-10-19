@@ -6,8 +6,6 @@
 
 -- | Combinators for working with Shake.
 --
--- The functions in this module work with `ribInputDir` and `ribOutputDir`.
---
 -- See the source of `Rib.Simple.buildAction` for example usage.
 module Rib.Shake
   (
@@ -19,6 +17,7 @@ module Rib.Shake
   , readPandocMulti
   -- * Misc
   , buildStaticFiles
+  , Dirs(..)
   )
 where
 
@@ -39,20 +38,35 @@ import Development.Shake.FilePath
 import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
+import System.Directory (createDirectoryIfMissing)
 import Text.Pandoc (Pandoc (Pandoc), PandocIO, ReaderOptions)
 
-import Rib.App (ribInputDir, ribOutputDir)
 import qualified Rib.Pandoc
 
--- FIXME: Auto create ./b directory
+newtype Dirs = Dirs (FilePath, FilePath)
 
+getDirs :: Action (FilePath, FilePath)
+getDirs = getShakeExtra >>= \case
+  Just (Dirs d) -> return d
+  Nothing -> fail "Input output directories are not initialized"
+
+ribInputDir :: Action FilePath
+ribInputDir = fst <$> getDirs
+
+ribOutputDir :: Action FilePath
+ribOutputDir = do
+  output <- snd <$> getDirs
+  liftIO $ createDirectoryIfMissing True output
+  return output
 
 -- | Shake action to copy static files as is
 buildStaticFiles :: [FilePattern] -> Action [FilePath]
 buildStaticFiles staticFilePatterns = do
-  files <- getDirectoryFiles ribInputDir staticFilePatterns
+  input <- ribInputDir
+  output <- ribOutputDir
+  files <- getDirectoryFiles input staticFilePatterns
   void $ forP files $ \f ->
-    copyFileChanged (ribInputDir </> f) (ribOutputDir </> f)
+    copyFileChanged (input </> f) (output </> f)
   pure files
 
 -- | Convert the given pattern of source files into their HTML.
@@ -77,7 +91,8 @@ readPandocMulti
      -- ^ Tuple of pattern of files to work on and document format.
   -> Action [(FilePath, Pandoc)]
 readPandocMulti (pat, r) = do
-  fs <- getDirectoryFiles ribInputDir [pat]
+  input <- ribInputDir
+  fs <- getDirectoryFiles input [pat]
   forP fs $ \f ->
     jsonCacheAction f $ (f, ) <$> readPandoc r f
 
@@ -91,7 +106,8 @@ readPandoc
   -> FilePath
   -> Action Pandoc
 readPandoc r f = do
-  let inp = ribInputDir </> f
+  input <- ribInputDir
+  let inp = input </> f
   need [inp]
   content <- T.decodeUtf8 <$> liftIO (BS.readFile inp)
   doc <- liftIO $ Rib.Pandoc.parse r content
@@ -113,7 +129,8 @@ readPandoc r f = do
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()
 buildHtml f html = do
-  let out = ribOutputDir </> f
+  output <- ribOutputDir
+  let out = output </> f
   writeHtml out html
 
 writeHtml :: MonadIO m => FilePath -> Html () -> m ()
