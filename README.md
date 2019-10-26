@@ -42,15 +42,15 @@ $ git clone https://github.com/srid/rib-sample.git mysite
 ...
 $ cd mysite
 $ ls -F
-a/  b/  default.nix  Main.hs  README.md  rib-sample.cabal
+a/  default.nix  Main.hs  README.md  rib-sample.cabal
 ```
 
 The three key items here are:
 
 1. `Main.hs`: Haskell source containing the DSL of the HTML/CSS of your site.
 1. `a/`: The source content (eg: Markdown sources and static files)
-1. `b/`: The target directory, initially empty, will contain _generated_ content
-   (i.e., the HTML files, and copied over static content)
+1. `b/`: The target directory, excluded from the git repository, will contain
+   _generated_ content (i.e., the HTML files, and copied over static content)
    
 The template repository comes with a few sample posts under `a/`, and a basic
 HTML layout and CSS style defined in `Main.hs`. 
