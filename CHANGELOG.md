@@ -1,7 +1,8 @@
 # Change Log for rib
 
-## 0.3.1.0 (UNRELEASED)
+## 0.4.0.0 (UNRELEASED)
 
+- `Rib.App`: The `run` funtion now takes two more arguments, specifying the input and output directory, which are no longer hardcoded.
 - `Rib.Simple`: add LaTeX to default list of readers
 
 ## 0.3.0.0
