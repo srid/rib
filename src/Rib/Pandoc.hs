@@ -5,13 +5,15 @@
 
 -- | Helpers for working with Pandoc documents
 module Rib.Pandoc
-  (
+  ( module Text.Pandoc.Readers
   -- * Parsing
-    parse
+  , parse
   , parsePure
   -- * Converting to HTML
   , render
   , renderInlines
+  , render'
+  , renderInlines'
   -- * Metadata
   , getMeta
   , setMeta
@@ -31,9 +33,10 @@ import qualified Data.Text as T
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
+import Text.Pandoc.Readers
 import Text.Pandoc.Readers.Markdown (yamlToMeta)
 import Text.Pandoc.Shared (stringify)
-import Text.Pandoc.Walk (walkM, query)
+import Text.Pandoc.Walk (query, walkM)
 
 
 class IsMetaValue a where
@@ -109,6 +112,7 @@ parseMeta = either (error . show) pure <=< runIO . yamlToMeta settings
   where
     settings = def { readerExtensions = exts }
 
+-- | Like `render` but returns the raw HTML string, or the rendering error.
 render' :: Pandoc -> Either PandocError Text
 render' = runPure . writeHtml5String settings
   where
@@ -118,6 +122,7 @@ render' = runPure . writeHtml5String settings
 render :: Pandoc -> Html ()
 render = either (error . show) toHtmlRaw . render'
 
+-- | Like `renderInlines` but returns the raw HTML string, or the rendering error.
 renderInlines' :: [Inline] -> Either PandocError Text
 renderInlines' = render' . Pandoc mempty . pure . Plain
 
