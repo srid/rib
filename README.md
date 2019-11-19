@@ -141,4 +141,4 @@ which adds to the simplicity of the entire thing.
 * [rib-sample](https://github.com/srid/rib-sample): Use this to get started with
   your own site.
 
-* Author's own website. Live at https://notes.srid.ca/ 
+* Author's own website. Live at https://www.srid.ca/ 
