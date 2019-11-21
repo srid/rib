@@ -24,7 +24,8 @@ source-repository head
 library
     exposed-modules:
         Rib.App
-        Rib.Pandoc
+        Rib.Reader
+        Rib.Reader.Pandoc
         Rib.Server
         Rib.Shake
         Rib.Simple

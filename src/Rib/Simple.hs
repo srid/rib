@@ -9,21 +9,20 @@ module Rib.Simple where
 
 import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 
 import Development.Shake (Action)
 import Lucid (Html)
-import Text.Pandoc (Pandoc, readLaTeX, readMarkdown, readOrg, readRST)
 
-import Rib.Pandoc (getMeta)
+-- import Rib.Reader.Pandoc (getMeta)
 import Rib.Shake
+import Rib.Reader
 
 -- | Type of page to be generated
-data Page
-  = Page_Index [(FilePath, Pandoc)]
+data Page doc
+  = Page_Index [(FilePath, doc)]
   -- ^ Index page linking to a list of posts
-  | Page_Post (FilePath, Pandoc)
+  | Page_Post (FilePath, doc)
   -- ^ Individual post page
   deriving (Generic, Show, FromJSON, ToJSON)
 
@@ -32,19 +31,16 @@ data Page
 -- - Copies @static/@ as is.
 -- - Builds @*.md@, @*.rst@ and @*.org@ as HTML
 -- - Builds an @index.html@ of all pages unless `draft` metadata is set to `True`.
-buildAction :: (Page -> Html ()) -> Action ()
+buildAction
+  :: forall doc.
+     (FromJSON doc, ToJSON doc, RibReader doc)
+  => (Page doc -> Html ())
+  -> Action ()
 buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]
-  posts <- concat <$> forM pats
-    (flip buildHtmlMulti $ renderPage . Page_Post)
-  let publicPosts = filter (not . isDraft . snd) posts
+  posts <- buildHtmlMulti "*.md" $ renderPage . Page_Post
+  -- let publicPosts = filter (not . isDraft . snd) posts
   buildHtml "index.html" $
-    renderPage $ Page_Index publicPosts
-  where
-    isDraft = fromMaybe False . getMeta @Bool "draft"
-    pats =
-      [ ("*.md", readMarkdown)
-      , ("*.rst", readRST)
-      , ("*.org", readOrg)
-      , ("*.tex", readLaTeX)
-      ]
+    renderPage $ Page_Index posts
+  -- where
+  --   isDraft = fromMaybe False . getMeta @Bool "draft"

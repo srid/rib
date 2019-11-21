@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Helpers for working with Pandoc documents
-module Rib.Pandoc
+module Rib.Reader.Pandoc
   ( module Text.Pandoc.Readers
   -- * Parsing
   , parse
@@ -21,6 +21,8 @@ module Rib.Pandoc
   -- * Extracting information
   , getH1
   , getFirstImg
+  -- * Re-exports
+  , Pandoc
   )
 where
 
@@ -61,6 +63,7 @@ instance {-# Overlappable #-} IsMetaValue a => IsMetaValue [a] where
 -- NOTE: This requires UndecidableInstances, but is there a better way?
 instance {-# Overlappable #-} Read a => IsMetaValue a where
   parseMetaValue = read . T.unpack . parseMetaValue @Text
+
 
 -- | Get the metadata value for the given key in a Pandoc document.
 --
