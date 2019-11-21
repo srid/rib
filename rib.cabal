@@ -1,6 +1,6 @@
 cabal-version: 2.2
 name: rib
-version: 0.4.1.0
+version: 0.5.0.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
 maintainer: srid@srid.ca

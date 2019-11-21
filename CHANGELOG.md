@@ -1,5 +1,7 @@
 # Change Log for rib
 
+## 0.5.0.0 (UNRELEASED)
+
 ## 0.4.1.0
 
 - `Rib.Pandoc`: 
