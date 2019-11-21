@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -21,6 +22,7 @@ module Rib.Pandoc
   -- * Extracting information
   , getH1
   , getFirstImg
+  , getToC
   )
 where
 
@@ -37,6 +39,7 @@ import Text.Pandoc.Readers
 import Text.Pandoc.Readers.Markdown (yamlToMeta)
 import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Walk (query, walkM)
+import Text.Pandoc.Writers.Shared (toTableOfContents)
 
 
 class IsMetaValue a where
@@ -51,7 +54,7 @@ instance IsMetaValue (Html ()) where
   parseMetaValue = renderInlines . parseMetaValue @[Inline]
 
 instance IsMetaValue Text where
-  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
+  parseMetaValue = stringify . parseMetaValue @[Inline]
 
 instance {-# Overlappable #-} IsMetaValue a => IsMetaValue [a] where
   parseMetaValue = \case
@@ -74,15 +77,15 @@ instance {-# Overlappable #-} Read a => IsMetaValue a where
 -- - `Text`: parse a raw value (Inline with one Str value)
 -- - @[a]@: parse a list of values
 -- - @Read a => a@: parse a raw value and then read it.
-getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
+getMeta :: IsMetaValue a => Text -> Pandoc -> Maybe a
 getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
 
 -- | Add, or set, a metadata data key to the given Haskell value
-setMeta :: Show a => String -> a -> Pandoc -> Pandoc
+setMeta :: Show a => Text -> a -> Pandoc -> Pandoc
 setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
   where
     meta' = Map.insert k v' meta
-    v' = MetaInlines [Str $ show v]
+    v' = MetaInlines [Str $ T.pack $ show v]
 
 -- | Pure version of `parse`
 parsePure :: (ReaderOptions -> Text -> PandocPure Pandoc) -> Text -> Pandoc
@@ -144,8 +147,14 @@ getFirstImg
   -> Maybe Text
   -- ^ Relative URL path to the image
 getFirstImg (Pandoc _ bs) = flip query bs $ \case
-  Image _ _ (url, _) -> Just $ T.pack url
+  Image _ _ (url, _) -> Just url
   _ -> Nothing
+
+-- | Get the document table of contents
+getToC :: Pandoc -> Html ()
+getToC (Pandoc _ bs) = render $ Pandoc mempty [toc]
+  where
+    toc = toTableOfContents def bs
 
 exts :: Extensions
 exts = mconcat

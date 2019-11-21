@@ -49,9 +49,8 @@ library
         lens,
         lens-aeson >=1.0.2 && <1.1,
         lucid >=2.9.11 && <2.10,
-        pandoc-types >=1.17.5 && <1.18,
+        pandoc-types,
         safe >=0.3.17 && <0.4,
-        skylighting,
         pandoc-include-code >=1.4.0 && <1.5,
         shake,
         wai >=3.2.2 && <3.3,
@@ -59,5 +58,5 @@ library
         wai-extra,
         warp,
         base >=4.7 && <5,
-        pandoc >=2.7 && <3,
+        pandoc >=2.8 && <3,
         directory >= 1.0 && <2.0
