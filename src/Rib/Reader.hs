@@ -8,19 +8,18 @@ module Rib.Reader
   )
 where
 
-import Control.Monad.IO.Class
 import Data.Text (Text)
 
 import Text.Pandoc (Pandoc)
 import Text.Pandoc.Readers (readMarkdown)
-import Development.Shake (Action)
-import Development.Shake.FilePath (FilePath)
 
 import qualified Rib.Reader.Pandoc as Pandoc
 
 
 class RibReader a where
-  readDoc :: Text -> Action a
+  readDoc :: Text -> a
+  readDocIO :: Text -> IO a
 
 instance RibReader Pandoc where
-  readDoc s = liftIO $ Pandoc.parse readMarkdown s
+  readDoc = Pandoc.parsePure readMarkdown
+  readDocIO = Pandoc.parse readMarkdown

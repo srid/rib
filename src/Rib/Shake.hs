@@ -14,8 +14,7 @@ module Rib.Shake
     buildHtmlMulti
   , buildHtml
   -- * Read helpers
-  , readPandoc
-  , readPandocMulti
+  , readDocMulti
   -- * Misc
   , buildStaticFiles
   , Dirs(..)
@@ -29,7 +28,6 @@ import qualified Data.Aeson as Aeson
 import Data.Binary
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import Data.Text (Text)
 import qualified Data.Text.Encoding as T
 import Data.Typeable
 
@@ -39,7 +37,6 @@ import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
 import System.Directory (createDirectoryIfMissing)
-import Text.Pandoc (Pandoc (Pandoc), PandocIO, ReaderOptions)
 
 import Rib.Reader
 
@@ -75,38 +72,29 @@ buildHtmlMulti
   => FilePattern
   -- ^ Source file patterns
   -> ((FilePath, doc) -> Html ())
-  -- ^ How to render the given Pandoc document to HTML
+  -- ^ How to render the given document to HTML
   -> Action [(FilePath, doc)]
-  -- ^ List of relative path to generated HTML and the associated Pandoc document
+  -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
-  xs <- readPandocMulti pat
+  xs <- readDocMulti pat
   void $ forP xs $ \x ->
     buildHtml (fst x -<.> "html") (r x)
   pure xs
 
--- | Like `readPandoc` but operates on multiple files
-readPandocMulti
+-- | Like `readDoc'` but operates on multiple files
+readDocMulti
   :: forall doc. (RibReader doc, FromJSON doc, ToJSON doc)
   => FilePattern
      -- ^ Source file patterns
   -> Action [(FilePath, doc)]
-readPandocMulti pat = do
+readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]
-  forP fs $ \f ->
-    jsonCacheAction @(FilePath, doc) f $ fmap (f, ) $ readPandoc f
-
--- | Read and parse a Pandoc source document
---
--- If an associated metadata file exists (same filename, with @.yaml@ as
--- extension), use it to specify the metadata of the document.
-readPandoc :: forall doc. (RibReader doc) => FilePath -> Action doc
-readPandoc f = do
-  input <- ribInputDir
-  let inp = input </> f
-  need [inp]
-  content <- T.decodeUtf8 <$> liftIO (BS.readFile inp)
-  readDoc content
+  forP ((input </>) <$> fs) $ \f -> do
+    need [f]
+    jsonCacheAction @(FilePath, doc) f $ fmap (f, ) . liftIO . readDocFromFile $ f
+  where
+    readDocFromFile = readDocIO . T.decodeUtf8 <=< BS.readFile
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()
@@ -119,7 +107,9 @@ writeHtml :: MonadIO m => FilePath -> Html () -> m ()
 writeHtml f = liftIO . BSL.writeFile f . Lucid.renderBS
 
 -- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
-jsonCacheAction :: forall a b k. (FromJSON b, Typeable k, Binary k, Show k, ToJSON a) => k -> Action a -> Action b
+jsonCacheAction
+  :: forall a b k. (FromJSON b, Typeable k, Binary k, Show k, ToJSON a)
+  => k -> Action a -> Action b
 jsonCacheAction k =
     fmap (either error id . Aeson.eitherDecode)
   . cacheAction k
