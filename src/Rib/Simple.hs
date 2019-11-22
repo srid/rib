@@ -8,7 +8,6 @@
 module Rib.Simple where
 
 import Control.Monad
-import Data.Aeson (FromJSON)
 import GHC.Generics (Generic)
 
 import Development.Shake (Action)
@@ -19,10 +18,10 @@ import Rib.Shake
 import Rib.Reader
 
 -- | Type of page to be generated
-data Page doc meta
-  = Page_Index [Document doc meta]
+data Page doc
+  = Page_Index [Document doc]
   -- ^ Index page linking to a list of posts
-  | Page_Post (Document doc meta)
+  | Page_Post (Document doc)
   -- ^ Individual post page
   deriving (Generic, Show)
 
@@ -32,9 +31,9 @@ data Page doc meta
 -- - Builds @*.md@, @*.rst@ and @*.org@ as HTML
 -- - Builds an @index.html@ of all pages unless `draft` metadata is set to `True`.
 buildAction
-  :: forall doc meta.
-     (RibReader doc meta, FromJSON meta)
-  => (Page doc meta -> Html ())
+  :: forall doc.
+     (RibReader doc)
+  => (Page doc -> Html ())
   -> Action ()
 buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]

@@ -23,8 +23,6 @@ where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Aeson (FromJSON)
--- import qualified Data.Aeson as Aeson
 -- import Data.Binary
 import qualified Data.ByteString.Lazy as BSL
 -- import Data.Typeable
@@ -62,17 +60,17 @@ buildStaticFiles staticFilePatterns = do
   files <- getDirectoryFiles input staticFilePatterns
   void $ forP files $ \f ->
     copyFileChanged (input </> f) (output </> f)
+  -- TODO: pure ()
   pure files
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
-  :: forall doc meta.
-     (RibReader doc meta, FromJSON meta)
+  :: forall doc. RibReader doc
   => FilePattern
   -- ^ Source file patterns
-  -> (Document doc meta -> Html ())
+  -> (Document doc -> Html ())
   -- ^ How to render the given document to HTML
-  -> Action [Document doc meta]
+  -> Action [Document doc]
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
@@ -82,18 +80,16 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti
-  :: forall doc meta. (RibReader doc meta, FromJSON meta)
+  :: forall doc. RibReader doc
   => FilePattern
      -- ^ Source file patterns
-  -> Action [Document doc meta]
+  -> Action [Document doc]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]
   forP fs $ \f -> do
     need [input </> f]
     liftIO . readDocIO f $ input </> f
-  where
-    -- readDocFromFile = readDocIO . T.decodeUtf8 <=< BS.readFile
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

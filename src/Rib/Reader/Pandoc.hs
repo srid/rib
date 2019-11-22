@@ -39,7 +39,7 @@ import Text.Pandoc.Walk (query, walkM)
 
 import Rib.Reader
 
-instance FromJSON meta => RibReader Pandoc meta where
+instance RibReader Pandoc where
   readDoc f = uncurry (Document f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f
@@ -47,10 +47,9 @@ instance FromJSON meta => RibReader Pandoc meta where
     pure $ Document k doc (getMetadata doc)
   renderDoc = render . _document_doc
 
-getMetadata :: FromJSON a => Pandoc -> Maybe a
-getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of
-  Success v -> Just v
-  _ -> Nothing
+-- TODO: Should this return Nothing when metadata is empty?
+getMetadata :: Pandoc -> Maybe Value
+getMetadata (Pandoc meta _) = Just $ flattenMeta meta
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
