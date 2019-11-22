@@ -8,6 +8,8 @@ module Rib.Reader.MMark
   )
 where
 
+import qualified Data.Text as T
+
 import Text.MMark (MMark)
 import qualified Text.MMark as MMark
 import qualified Text.Megaparsec   as M
@@ -19,9 +21,8 @@ import Rib.Reader
 
 instance Markup MMark where
   readDoc f s = case MMark.parse f s of
-    -- TODO: Don't error here!
-    Left e -> error $ M.errorBundlePretty e
-    Right v -> Document f v $ MMark.projectYaml v
+    Left e -> Left $ T.pack $ M.errorBundlePretty e
+    Right v -> Right $ Document f v $ MMark.projectYaml v
 
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f

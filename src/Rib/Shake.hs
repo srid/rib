@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 -- | Combinators for working with Shake.
 --
@@ -25,6 +25,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 -- import Data.Binary
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Text as T
 -- import Data.Typeable
 
 import Development.Shake
@@ -89,7 +90,9 @@ readDocMulti pat = do
   fs <- getDirectoryFiles input [pat]
   forP fs $ \f -> do
     need [input </> f]
-    liftIO . readDocIO f $ input </> f
+    result <- liftIO $
+      readDocIO f $ input </> f
+    pure $ either (error . T.unpack) id result
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

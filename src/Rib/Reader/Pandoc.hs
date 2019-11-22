@@ -23,8 +23,6 @@ module Rib.Reader.Pandoc
   )
 where
 
-import Control.Arrow ((&&&))
-import Control.Monad
 import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -40,12 +38,15 @@ import Text.Pandoc.Walk (query, walkM)
 import Rib.Reader
 
 instance Markup Pandoc where
-  readDoc f = uncurry (Document f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
+  -- TODO: don't hardcode readMarkdown
+  readDoc k = fmap (mkDoc k) . parsePure readMarkdown
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f
-    doc <- parse readMarkdown content
-    pure $ Document k doc (getMetadata doc)
+    fmap (mkDoc k) <$> parse readMarkdown content
   renderDoc = render . _document_val
+
+mkDoc :: FilePath -> Pandoc -> Document Pandoc
+mkDoc f v = Document f v $ getMetadata v
 
 -- TODO: Should this return Nothing when metadata is empty?
 getMetadata :: Pandoc -> Maybe Value
@@ -69,9 +70,12 @@ flattenMeta (Meta meta) = toJSON $ fmap go meta
     writer = writePlain def
 
 -- | Pure version of `parse`
-parsePure :: (ReaderOptions -> Text -> PandocPure Pandoc) -> Text -> Pandoc
+parsePure
+  :: (ReaderOptions -> Text -> PandocPure Pandoc)
+  -> Text
+  -> Either Text Pandoc
 parsePure r =
-  either (error . show) id . runPure . r settings
+  either (Left . T.pack . show) Right . runPure . r settings
   where
     settings = def { readerExtensions = exts }
 
@@ -83,9 +87,10 @@ parse
   -- ^ Document format. Example: `Text.Pandoc.Readers.readMarkdown`
   -> Text
   -- ^ Source text to parse
-  -> IO Pandoc
-parse r =
-  either (error . show) (walkM includeSources) <=< runIO . r settings
+  -> IO (Either Text Pandoc)
+parse r s = do
+  v <- walkM includeSources =<< runIO (r settings s)
+  pure $ either (Left . T.pack . show) Right v
   where
     settings = def { readerExtensions = exts }
     includeSources = includeCode $ Just $ Format "html5"
