@@ -65,12 +65,12 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
-  :: forall doc. RibReader doc
+  :: forall t. Markup t
   => FilePattern
   -- ^ Source file patterns
-  -> (Article doc -> Html ())
+  -> (Article t -> Html ())
   -- ^ How to render the given document to HTML
-  -> Action [Article doc]
+  -> Action [Article t]
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
@@ -80,10 +80,10 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti
-  :: forall doc. RibReader doc
+  :: forall t. Markup t
   => FilePattern
      -- ^ Source file patterns
-  -> Action [Article doc]
+  -> Action [Article t]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]

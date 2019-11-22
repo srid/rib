@@ -17,7 +17,7 @@ import qualified Data.ByteString as BS
 import Rib.Reader
 
 
-instance RibReader MMark where
+instance Markup MMark where
   readDoc f s = case MMark.parse f s of
     -- TODO: Don't error here!
     Left e -> error $ M.errorBundlePretty e

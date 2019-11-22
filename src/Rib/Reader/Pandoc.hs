@@ -39,7 +39,7 @@ import Text.Pandoc.Walk (query, walkM)
 
 import Rib.Reader
 
-instance RibReader Pandoc where
+instance Markup Pandoc where
   readDoc f = uncurry (Article f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f
