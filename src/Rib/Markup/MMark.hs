@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Rib.Markup.MMark
@@ -27,6 +28,7 @@ import qualified Text.Megaparsec as M
 import Text.MMark (MMark)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
+import qualified Text.MMark.Extension.Common as Ext
 import Text.URI (URI)
 
 import Rib.Markup
@@ -36,7 +38,10 @@ instance Markup MMark where
 
   parseDoc f s = case MMark.parse f s of
     Left e -> Left e
-    Right v -> Right $ Document f v $ MMark.projectYaml v
+    Right doc ->
+      let doc' = MMark.useExtensions exts $ useTocExt doc
+          meta = MMark.projectYaml doc
+      in Right $ Document f doc' meta
 
   readDoc (Arg k) (Arg f) = do
     content <- T.decodeUtf8 <$> BS.readFile f
@@ -60,3 +65,21 @@ getFirstImg = flip MMark.runScanner $ Fold f Nothing id
       Ext.Naked xs -> NE.toList xs
       Ext.Paragraph xs -> NE.toList xs
       _ -> []
+
+exts :: [MMark.Extension]
+exts =
+  [ Ext.fontAwesome
+  , Ext.footnotes
+  , Ext.kbd
+  , Ext.linkTarget
+  , Ext.mathJax (Just '$')
+  , Ext.obfuscateEmail "protected-email"
+  , Ext.punctuationPrettifier
+  , Ext.ghcSyntaxHighlighter
+  , Ext.skylighting
+  ]
+
+useTocExt :: MMark -> MMark
+useTocExt doc = MMark.useExtension (Ext.toc "toc" toc) doc
+  where
+    toc = MMark.runScanner doc $ Ext.tocScanner (\x -> x > 1 && x < 5)

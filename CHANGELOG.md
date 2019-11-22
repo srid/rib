@@ -11,6 +11,7 @@ This release comes with major API refactor. Key changes:
 - Remove the following:
   - JSON cache
   - `Rib.Simple`
+- Support for Table of Contents via MMark
 
 ## 0.4.1.0
 
