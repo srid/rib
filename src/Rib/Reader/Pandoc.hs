@@ -36,7 +36,7 @@ import Text.Pandoc.Walk (query, walkM)
 import Rib.Reader
 
 instance RibReader Pandoc where
-  readDoc = parsePure readMarkdown
+  readDoc = parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
   readDocIO = parse readMarkdown
   renderDoc = render
   getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of

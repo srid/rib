@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Rib.Reader.MMark where
+module Rib.Reader.MMark
+  ( MMark
+  )
+where
 
 import Data.Aeson (fromJSON, Result(..))
 import Text.MMark (MMark)
