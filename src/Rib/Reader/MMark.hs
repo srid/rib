@@ -21,10 +21,10 @@ instance Markup MMark where
   readDoc f s = case MMark.parse f s of
     -- TODO: Don't error here!
     Left e -> error $ M.errorBundlePretty e
-    Right v -> Article f v $ MMark.projectYaml v
+    Right v -> Document f v $ MMark.projectYaml v
 
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f
     pure $ readDoc k content
 
-  renderDoc = MMark.render . _article_doc
+  renderDoc = MMark.render . _document_val

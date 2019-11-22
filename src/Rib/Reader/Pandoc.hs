@@ -40,12 +40,12 @@ import Text.Pandoc.Walk (query, walkM)
 import Rib.Reader
 
 instance Markup Pandoc where
-  readDoc f = uncurry (Article f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
+  readDoc f = uncurry (Document f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
   readDocIO k f = do
     content <- T.decodeUtf8 <$> BS.readFile f
     doc <- parse readMarkdown content
-    pure $ Article k doc (getMetadata doc)
-  renderDoc = render . _article_doc
+    pure $ Document k doc (getMetadata doc)
+  renderDoc = render . _document_val
 
 -- TODO: Should this return Nothing when metadata is empty?
 getMetadata :: Pandoc -> Maybe Value
@@ -80,7 +80,7 @@ parsePure r =
 -- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
 parse
   :: (ReaderOptions -> Text -> PandocIO Pandoc)
-  -- ^ Article format. Example: `Text.Pandoc.Readers.readMarkdown`
+  -- ^ Document format. Example: `Text.Pandoc.Readers.readMarkdown`
   -> Text
   -- ^ Source text to parse
   -> IO Pandoc

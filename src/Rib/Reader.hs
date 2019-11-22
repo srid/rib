@@ -5,8 +5,8 @@
 
 module Rib.Reader
   ( Markup(..)
-  , Article(..)
-  , getArticleMeta
+  , Document(..)
+  , getDocumentMeta
   )
 where
 
@@ -16,19 +16,19 @@ import Data.Text (Text)
 
 import Lucid (Html)
 
--- | An article that is read from the source directory.
+-- | A Markup document that is read from the source directory.
 --
 -- The type variable `t` indicates the type of parser to use.
-data Article t = Article
-  { _article_path :: FilePath
-  , _article_doc :: t
+data Document t = Document
+  { _document_path :: FilePath
+  , _document_val :: t
   -- TODO: If meta=Void works with aeson, we should remove the Maybe.
-  , _article_meta :: Maybe Value
+  , _document_meta :: Maybe Value
   }
   deriving (Generic, Show)
 
-getArticleMeta :: FromJSON meta => Article t -> meta
-getArticleMeta (Article fp _ mmeta) = case mmeta of
+getDocumentMeta :: FromJSON meta => Document t -> meta
+getDocumentMeta (Document fp _ mmeta) = case mmeta of
   Nothing -> error $ "No metadata in document: " <> fp
   Just meta -> case fromJSON meta of
     Error e -> error e
@@ -37,12 +37,12 @@ getArticleMeta (Article fp _ mmeta) = case mmeta of
 
 -- TODO: Consider `Markup (doc, format)` for other Pandoc readers?
 class Markup t where
-  -- TODO: Should this be `Either Text (Article doc)` to handle errors?
+  -- TODO: Should this be `Either Text (Document doc)` to handle errors?
   -- TODO: Take FilePath (for showing in parser error)
   -- So just represent: (path, doc)
   -- TODO: rename to parseDoc
   -- TODO: This should take metadata as argument.
-  readDoc :: FilePath -> Text -> Article t
+  readDoc :: FilePath -> Text -> Document t
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
-  readDocIO :: FilePath -> FilePath -> IO (Article t)
-  renderDoc :: Article t -> Html ()
+  readDocIO :: FilePath -> FilePath -> IO (Document t)
+  renderDoc :: Document t -> Html ()
