@@ -74,43 +74,6 @@ instance Markup Pandoc where
 
   showMarkupError = T.pack . show
 
--- | Detect the Pandoc reader to use based on file extension
-detectReader
-  :: (MonadError String m, PandocMonad m1)
-  => FilePath
-  -> m (ReaderOptions -> Text -> m1 Pandoc)
-detectReader k = case Map.lookup ext formats of
-  Nothing -> throwError ext
-  Just r -> pure r
-  where
-    ext = takeExtension k
-    formats = Map.fromList
-      [ (".md", readMarkdown)
-      ]
-
-mkDoc :: FilePath -> Pandoc -> Document Pandoc
-mkDoc f v = Document f v $ getMetadata v
-
-getMetadata :: Pandoc -> Maybe Value
-getMetadata (Pandoc meta _) = flattenMeta meta
-
--- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
---
--- Renders Pandoc text objects into plain strings along the way.
-flattenMeta :: Meta -> Maybe Value
-flattenMeta (Meta meta) = if null meta then Nothing else Just (toJSON $ fmap go meta)
-  where
-    go :: MetaValue -> Value
-    go (MetaMap m) = toJSON $ fmap go m
-    go (MetaList m) = toJSONList $ fmap go m
-    go (MetaBool m) = toJSON m
-    go (MetaString m) = toJSON m
-    go (MetaInlines m) = toJSON (runPure' . writer $ Pandoc mempty [Plain m])
-    go (MetaBlocks m) = toJSON (runPure' . writer $ Pandoc mempty m)
-    runPure' :: PandocPure a -> a
-    runPure' = either (error . show) id . runPure
-    writer = writePlain def
-
 -- | Pure version of `parse`
 parsePure
   :: MonadError PandocError m
@@ -185,3 +148,46 @@ exts = mconcat
     ]
   , githubMarkdownExtensions
   ]
+
+-- Internal code
+--
+
+-- | Detect the Pandoc reader to use based on file extension
+detectReader
+  :: (MonadError String m, PandocMonad m1)
+  => FilePath
+  -> m (ReaderOptions -> Text -> m1 Pandoc)
+detectReader k = case Map.lookup ext formats of
+  Nothing -> throwError ext
+  Just r -> pure r
+  where
+    ext = takeExtension k
+    formats = Map.fromList
+      [ (".md", readMarkdown)
+      , (".rst", readRST)
+      , (".org", readOrg)
+      , (".tex", readLaTeX)
+      ]
+
+mkDoc :: FilePath -> Pandoc -> Document Pandoc
+mkDoc f v = Document f v $ getMetadata v
+
+getMetadata :: Pandoc -> Maybe Value
+getMetadata (Pandoc meta _) = flattenMeta meta
+
+-- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
+--
+-- Renders Pandoc text objects into plain strings along the way.
+flattenMeta :: Meta -> Maybe Value
+flattenMeta (Meta meta) = if null meta then Nothing else Just (toJSON $ fmap go meta)
+  where
+    go :: MetaValue -> Value
+    go (MetaMap m) = toJSON $ fmap go m
+    go (MetaList m) = toJSONList $ fmap go m
+    go (MetaBool m) = toJSON m
+    go (MetaString m) = toJSON m
+    go (MetaInlines m) = toJSON (runPure' . writer $ Pandoc mempty [Plain m])
+    go (MetaBlocks m) = toJSON (runPure' . writer $ Pandoc mempty m)
+    runPure' :: PandocPure a -> a
+    runPure' = either (error . show) id . runPure
+    writer = writePlain def
