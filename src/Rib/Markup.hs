@@ -34,11 +34,6 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
     Error e -> error e
     Success v -> v
 
--- TODO: Rename this module, and consider fixing orphan warnings
--- One idea is to have `import Rib` import them all.
-
-
--- TODO: Consider `Markup (doc, format)` for other Pandoc readers?
 class Markup t where
   type MarkupError t :: *
   -- TODO: rename to parseDoc
