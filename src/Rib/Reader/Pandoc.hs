@@ -14,10 +14,6 @@ module Rib.Reader.Pandoc
   , renderInlines
   , render'
   , renderInlines'
-  -- * Metadata
-  , getMeta
-  , setMeta
-  , parseMeta
   -- * Extracting information
   , getH1
   , getFirstImg
@@ -27,8 +23,7 @@ module Rib.Reader.Pandoc
 where
 
 import Control.Monad
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.Map as Map
+import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -36,8 +31,6 @@ import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Readers
-import Text.Pandoc.Readers.Markdown (yamlToMeta)
-import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Walk (query, walkM)
 
 import Rib.Reader
@@ -46,54 +39,26 @@ instance RibReader Pandoc where
   readDoc = parsePure readMarkdown
   readDocIO = parse readMarkdown
   renderDoc = render
-  getMetadata _ = Nothing -- TODO
+  getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of
+    Success v -> Just v
+    _ -> Nothing
 
-
-class IsMetaValue a where
-  parseMetaValue :: MetaValue -> a
-
-instance IsMetaValue [Inline] where
-  parseMetaValue = \case
-    MetaInlines inlines -> inlines
-    _ -> error "Not a MetaInline"
-
-instance IsMetaValue (Html ()) where
-  parseMetaValue = renderInlines . parseMetaValue @[Inline]
-
-instance IsMetaValue Text where
-  parseMetaValue = T.pack . stringify . parseMetaValue @[Inline]
-
-instance {-# Overlappable #-} IsMetaValue a => IsMetaValue [a] where
-  parseMetaValue = \case
-    MetaList vals -> parseMetaValue <$> vals
-    _ -> error "Not a MetaList"
-
--- NOTE: This requires UndecidableInstances, but is there a better way?
-instance {-# Overlappable #-} Read a => IsMetaValue a where
-  parseMetaValue = read . T.unpack . parseMetaValue @Text
-
-
--- | Get the metadata value for the given key in a Pandoc document.
+-- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
--- It is recommended to call this function with type application specifying the
--- type of `a`.
---
--- `MetaValue` is parsed in accordance with the `IsMetaValue` class constraint.
--- Available instances:
---
--- - `Html`: parse value as a Pandoc document and convert to Lucid Html
--- - `Text`: parse a raw value (Inline with one Str value)
--- - @[a]@: parse a list of values
--- - @Read a => a@: parse a raw value and then read it.
-getMeta :: IsMetaValue a => String -> Pandoc -> Maybe a
-getMeta k (Pandoc meta _) = parseMetaValue <$> lookupMeta k meta
-
--- | Add, or set, a metadata data key to the given Haskell value
-setMeta :: Show a => String -> a -> Pandoc -> Pandoc
-setMeta k v (Pandoc (Meta meta) bs) = Pandoc (Meta meta') bs
+-- Renders Pandoc text objects into plain strings along the way.
+flattenMeta :: Meta -> Value
+flattenMeta (Meta meta) = toJSON $ fmap go meta
   where
-    meta' = Map.insert k v' meta
-    v' = MetaInlines [Str $ show v]
+    go :: MetaValue -> Value
+    go (MetaMap m) = toJSON $ fmap go m
+    go (MetaList m) = toJSONList $ fmap go m
+    go (MetaBool m) = toJSON m
+    go (MetaString m) = toJSON m
+    go (MetaInlines m) = toJSON (runPure' . writer $ Pandoc mempty [Plain m])
+    go (MetaBlocks m) = toJSON (runPure' . writer $ Pandoc mempty m)
+    runPure' :: PandocPure a -> a
+    runPure' = either (error . show) id . runPure
+    writer = writePlain def
 
 -- | Pure version of `parse`
 parsePure :: (ReaderOptions -> Text -> PandocPure Pandoc) -> Text -> Pandoc
@@ -116,12 +81,6 @@ parse r =
   where
     settings = def { readerExtensions = exts }
     includeSources = includeCode $ Just $ Format "html5"
-
--- | Parse the metadata source as a Pandoc Meta value
-parseMeta :: ByteString -> IO Meta
-parseMeta = either (error . show) pure <=< runIO . yamlToMeta settings
-  where
-    settings = def { readerExtensions = exts }
 
 -- | Like `render` but returns the raw HTML string, or the rendering error.
 render' :: Pandoc -> Either PandocError Text
