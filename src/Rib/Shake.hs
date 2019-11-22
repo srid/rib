@@ -23,7 +23,7 @@ where
 
 import Control.Monad
 import Control.Monad.IO.Class
--- import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 -- import qualified Data.Aeson as Aeson
 -- import Data.Binary
 import qualified Data.ByteString as BS
@@ -68,12 +68,13 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
-  :: forall doc. (RibReader doc)
+  :: forall doc meta.
+     (RibReader doc meta, FromJSON meta)
   => FilePattern
   -- ^ Source file patterns
-  -> ((FilePath, doc) -> Html ())
+  -> ((FilePath, (doc, Maybe meta)) -> Html ())
   -- ^ How to render the given document to HTML
-  -> Action [(FilePath, doc)]
+  -> Action [(FilePath, (doc, Maybe meta))]
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
@@ -83,10 +84,10 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti
-  :: forall doc. (RibReader doc)
+  :: forall doc meta. (RibReader doc meta, FromJSON meta)
   => FilePattern
      -- ^ Source file patterns
-  -> Action [(FilePath, doc)]
+  -> Action [(FilePath, (doc, Maybe meta))]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]

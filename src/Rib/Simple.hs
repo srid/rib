@@ -19,10 +19,10 @@ import Rib.Shake
 import Rib.Reader
 
 -- | Type of page to be generated
-data Page doc
-  = Page_Index [(FilePath, doc)]
+data Page doc meta
+  = Page_Index [(FilePath, (doc, Maybe meta))]
   -- ^ Index page linking to a list of posts
-  | Page_Post (FilePath, doc)
+  | Page_Post (FilePath, (doc, Maybe meta))
   -- ^ Individual post page
   deriving (Generic, Show, FromJSON, ToJSON)
 
@@ -32,9 +32,9 @@ data Page doc
 -- - Builds @*.md@, @*.rst@ and @*.org@ as HTML
 -- - Builds an @index.html@ of all pages unless `draft` metadata is set to `True`.
 buildAction
-  :: forall doc.
-     (RibReader doc)
-  => (Page doc -> Html ())
+  :: forall doc meta.
+     (RibReader doc meta, FromJSON meta)
+  => (Page doc meta -> Html ())
   -> Action ()
 buildAction renderPage = do
   void $ buildStaticFiles ["static/**"]

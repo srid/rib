@@ -1,4 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -13,11 +15,13 @@ import Data.Text (Text)
 import Lucid (Html)
 
 
-class RibReader a where
+class FromJSON meta => RibReader doc meta where
   -- TODO: Should this be `Either Text a` to handle errors?
-  readDoc :: Text -> a
-  readDocIO :: Text -> IO a
-  renderDoc :: a -> Html ()
-  getMetadata :: FromJSON b => a -> Maybe b
+  -- TODO: Take FilePath (for showing in parser error)
+  -- So just represent: (path, doc, meta)
+  readDoc :: Text -> (doc, Maybe meta)
+  readDocIO :: Text -> IO (doc, Maybe meta)
+  renderDoc :: (doc, Maybe meta) -> Html ()
+  -- getMetadata :: FromJSON meta => doc -> Maybe meta
 
   readDocIO = pure . readDoc

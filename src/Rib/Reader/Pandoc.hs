@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -22,6 +23,7 @@ module Rib.Reader.Pandoc
   )
 where
 
+import Control.Arrow ((&&&))
 import Control.Monad
 import Data.Aeson
 import Data.Text (Text)
@@ -35,13 +37,14 @@ import Text.Pandoc.Walk (query, walkM)
 
 import Rib.Reader
 
-instance RibReader Pandoc where
-  readDoc = parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
-  readDocIO = parse readMarkdown
-  renderDoc = render
-  getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of
-    Success v -> Just v
-    _ -> Nothing
+instance FromJSON meta => RibReader Pandoc meta where
+  readDoc = (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
+  readDocIO = fmap (id &&& getMetadata) . parse readMarkdown
+  renderDoc = render . fst
+
+getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of
+  Success v -> Just v
+  _ -> Nothing
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
