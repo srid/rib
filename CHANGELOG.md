@@ -7,8 +7,10 @@ This release comes with major API refactor. Key changes:
 - Support for both Pandoc and MMark parsers
 - Add `Rib.Markup.Markup` type class to polymorphically select the parser
 - Add top-level `Rib` import namespace to ease of use
-- Drop support for JSON cache
 - Replace complex metadata handling using straightforward aeson `Value` parsing
+- Remove the following:
+  - JSON cache
+  - `Rib.Simple`
 
 ## 0.4.1.0
 
@@ -18,7 +20,6 @@ This release comes with major API refactor. Key changes:
 - `Rib.App`: The `run` funtion now takes two more arguments, specifying the input and output directory, which are no longer hardcoded.
 - `Rib.Simple`: add LaTeX to default list of readers
 - `Rib.Server`: Remove ".html" detection magic from URLs
-- Remove `Rib.Simple`
 
 ## 0.3.0.0
 

@@ -54,15 +54,13 @@ ribOutputDir = do
   return output
 
 -- | Shake action to copy static files as is
-buildStaticFiles :: [FilePattern] -> Action [FilePath]
+buildStaticFiles :: [FilePattern] -> Action ()
 buildStaticFiles staticFilePatterns = do
   input <- ribInputDir
   output <- ribOutputDir
   files <- getDirectoryFiles input staticFilePatterns
   void $ forP files $ \f ->
     copyFileChanged (input </> f) (output </> f)
-  -- TODO: pure ()
-  pure files
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti

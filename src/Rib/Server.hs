@@ -29,7 +29,6 @@ staticSiteServerSettings root = settings
   where
     settings = defaultFileServerSettings root
 
--- TODO: take Document
 -- | Return the URL for the given @.html@ file under serve directory
 --
 -- File path must be relative to the serve directory.
