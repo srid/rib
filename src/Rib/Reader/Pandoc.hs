@@ -1,4 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
@@ -23,12 +26,16 @@ module Rib.Reader.Pandoc
   )
 where
 
+import Control.Monad.Except
 import Data.Aeson
+import Data.Bifunctor (first)
 import Data.Text (Text)
+import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.ByteString as BS
 
+import Development.Shake.FilePath
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
@@ -38,12 +45,26 @@ import Text.Pandoc.Walk (query, walkM)
 import Rib.Reader
 
 instance Markup Pandoc where
-  -- TODO: don't hardcode readMarkdown
-  readDoc k = fmap (mkDoc k) . parsePure readMarkdown
-  readDocIO k f = do
-    content <- T.decodeUtf8 <$> BS.readFile f
-    fmap (mkDoc k) <$> parse readMarkdown content
+  readDoc k s = runExcept $ do
+    r <- detectReader k
+    doc <- parsePure r s
+    pure $ mkDoc k doc
+  readDocIO k f = runExceptT $ do
+    content <- liftIO $ T.decodeUtf8 <$> BS.readFile f
+    mkDoc k <$> parse readMarkdown content
   renderDoc = render . _document_val
+
+detectReader
+  :: (MonadError Text m, PandocMonad m1)
+  => FilePath
+  -> m (ReaderOptions -> Text -> m1 Pandoc)
+detectReader k = case Map.lookup (takeExtension k) formats of
+  Nothing -> throwError $ "Unsupported extension: " <> T.pack k
+  Just r -> pure r
+  where
+    formats = Map.fromList
+      [ (".md", readMarkdown)
+      ]
 
 mkDoc :: FilePath -> Pandoc -> Document Pandoc
 mkDoc f v = Document f v $ getMetadata v
@@ -71,11 +92,12 @@ flattenMeta (Meta meta) = toJSON $ fmap go meta
 
 -- | Pure version of `parse`
 parsePure
-  :: (ReaderOptions -> Text -> PandocPure Pandoc)
+  :: MonadError Text m
+  => (ReaderOptions -> Text -> PandocPure Pandoc)
   -> Text
-  -> Either Text Pandoc
+  -> m Pandoc
 parsePure r =
-  either (Left . T.pack . show) Right . runPure . r settings
+  either (throwError . T.pack . show) pure . runPure . r settings
   where
     settings = def { readerExtensions = exts }
 
@@ -83,14 +105,15 @@ parsePure r =
 --
 -- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
 parse
-  :: (ReaderOptions -> Text -> PandocIO Pandoc)
+  :: (MonadIO m, MonadError Text m)
+  => (ReaderOptions -> Text -> PandocIO Pandoc)
   -- ^ Document format. Example: `Text.Pandoc.Readers.readMarkdown`
   -> Text
   -- ^ Source text to parse
-  -> IO (Either Text Pandoc)
+  -> m Pandoc
 parse r s = do
-  v <- walkM includeSources =<< runIO (r settings s)
-  pure $ either (Left . T.pack . show) Right v
+  v' <- liftEither . first (T.pack . show) =<< liftIO (runIO $ r settings s)
+  liftIO $ walkM includeSources v'
   where
     settings = def { readerExtensions = exts }
     includeSources = includeCode $ Just $ Format "html5"

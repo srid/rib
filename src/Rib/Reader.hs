@@ -41,6 +41,7 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
 class Markup t where
   -- TODO: Should this be `Either Text (Document doc)` to handle errors?
   -- TODO: rename to parseDoc
+  -- TODO: Instead of 'Either Text' consider 'Either MarkupError' (using type familly)
   readDoc :: FilePath -> Text -> Either Text (Document t)
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
   readDocIO :: FilePath -> FilePath -> IO (Either Text (Document t))
