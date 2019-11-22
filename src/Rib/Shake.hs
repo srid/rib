@@ -92,7 +92,7 @@ readDocMulti pat = do
     need [input </> f]
     result <- liftIO $
       readDocIO f $ input </> f
-    pure $ either (error . T.unpack) id result
+    pure $ either (error . T.unpack . showMarkupError @t) id result
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

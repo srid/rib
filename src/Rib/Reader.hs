@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Rib.Reader
   ( Markup(..)
@@ -41,8 +42,9 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
 class Markup t where
   -- TODO: Should this be `Either Text (Document doc)` to handle errors?
   -- TODO: rename to parseDoc
-  -- TODO: Instead of 'Either Text' consider 'Either MarkupError' (using type familly)
-  readDoc :: FilePath -> Text -> Either Text (Document t)
+  type MarkupError t :: *
+  readDoc :: FilePath -> Text -> Either (MarkupError t) (Document t)
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
-  readDocIO :: FilePath -> FilePath -> IO (Either Text (Document t))
+  readDocIO :: FilePath -> FilePath -> IO (Either (MarkupError t) (Document t))
   renderDoc :: Document t -> Html ()
+  showMarkupError :: MarkupError t -> Text
