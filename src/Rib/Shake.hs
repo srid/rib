@@ -23,17 +23,17 @@ where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Aeson as Aeson
-import Data.Binary
+-- import Data.Aeson (FromJSON, ToJSON)
+-- import qualified Data.Aeson as Aeson
+-- import Data.Binary
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Encoding as T
-import Data.Typeable
+-- import Data.Typeable
 
 import Development.Shake
 import Development.Shake.FilePath
-import Development.Shake.Forward (cacheAction)
+-- import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
 import System.Directory (createDirectoryIfMissing)
@@ -68,7 +68,7 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
-  :: forall doc. (RibReader doc, FromJSON doc, ToJSON doc)
+  :: forall doc. (RibReader doc)
   => FilePattern
   -- ^ Source file patterns
   -> ((FilePath, doc) -> Html ())
@@ -83,16 +83,16 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti
-  :: forall doc. (RibReader doc, FromJSON doc, ToJSON doc)
+  :: forall doc. (RibReader doc)
   => FilePattern
      -- ^ Source file patterns
   -> Action [(FilePath, doc)]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]
-  forP ((input </>) <$> fs) $ \f -> do
-    need [f]
-    jsonCacheAction @(FilePath, doc) f $ fmap (f, ) . liftIO . readDocFromFile $ f
+  forP fs $ \f -> do
+    need [input </> f]
+    fmap (f, ) . liftIO . readDocFromFile $ input </> f
   where
     readDocFromFile = readDocIO . T.decodeUtf8 <=< BS.readFile
 
@@ -100,17 +100,16 @@ readDocMulti pat = do
 buildHtml :: FilePath -> Html () -> Action ()
 buildHtml f html = do
   output <- ribOutputDir
-  let out = output </> f
-  writeHtml out html
+  writeHtml (output </> f) html
 
 writeHtml :: MonadIO m => FilePath -> Html () -> m ()
 writeHtml f = liftIO . BSL.writeFile f . Lucid.renderBS
 
 -- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
-jsonCacheAction
-  :: forall a b k. (FromJSON b, Typeable k, Binary k, Show k, ToJSON a)
-  => k -> Action a -> Action b
-jsonCacheAction k =
-    fmap (either error id . Aeson.eitherDecode)
-  . cacheAction k
-  . fmap Aeson.encode
+-- jsonCacheAction
+--   :: forall a b k. (FromJSON b, Typeable k, Binary k, Show k, ToJSON a)
+--   => k -> Action a -> Action b
+-- jsonCacheAction k =
+--     fmap (either error id . Aeson.eitherDecode)
+--   . cacheAction k
+--   . fmap Aeson.encode

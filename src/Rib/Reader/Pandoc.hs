@@ -40,6 +40,14 @@ import Text.Pandoc.Readers.Markdown (yamlToMeta)
 import Text.Pandoc.Shared (stringify)
 import Text.Pandoc.Walk (query, walkM)
 
+import Rib.Reader
+
+instance RibReader Pandoc where
+  readDoc = parsePure readMarkdown
+  readDocIO = parse readMarkdown
+  renderDoc = render
+  getMetadata _ = Nothing -- TODO
+
 
 class IsMetaValue a where
   parseMetaValue :: MetaValue -> a

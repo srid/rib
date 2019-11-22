@@ -4,22 +4,20 @@
 
 module Rib.Reader
   ( RibReader(..)
-
   )
 where
 
+import Data.Aeson
 import Data.Text (Text)
 
-import Text.Pandoc (Pandoc)
-import Text.Pandoc.Readers (readMarkdown)
-
-import qualified Rib.Reader.Pandoc as Pandoc
+import Lucid (Html)
 
 
 class RibReader a where
+  -- TODO: Should this be `Either Text a` to handle errors?
   readDoc :: Text -> a
   readDocIO :: Text -> IO a
+  renderDoc :: a -> Html ()
+  getMetadata :: FromJSON b => a -> Maybe b
 
-instance RibReader Pandoc where
-  readDoc = Pandoc.parsePure readMarkdown
-  readDocIO = Pandoc.parse readMarkdown
+  readDocIO = pure . readDoc

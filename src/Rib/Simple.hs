@@ -33,7 +33,7 @@ data Page doc
 -- - Builds an @index.html@ of all pages unless `draft` metadata is set to `True`.
 buildAction
   :: forall doc.
-     (FromJSON doc, ToJSON doc, RibReader doc)
+     (RibReader doc)
   => (Page doc -> Html ())
   -> Action ()
 buildAction renderPage = do
