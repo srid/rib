@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- | Combinators for working with Shake.
@@ -23,14 +23,12 @@ where
 
 import Control.Monad
 import Control.Monad.IO.Class
--- import Data.Binary
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
--- import Data.Typeable
+import Named
 
 import Development.Shake
 import Development.Shake.FilePath
--- import Development.Shake.Forward (cacheAction)
 import Lucid (Html)
 import qualified Lucid
 import System.Directory (createDirectoryIfMissing)
@@ -89,7 +87,9 @@ readDocMulti pat = do
   forP fs $ \f -> do
     need [input </> f]
     result <- liftIO $
-      readDocIO f $ input </> f
+      readDocIO
+        ! #relpath f
+        ! #path (input </> f)
     pure $ either (error . T.unpack . showMarkupError @t) id result
 
 -- | Build a single HTML file with the given value
@@ -100,12 +100,3 @@ buildHtml f html = do
 
 writeHtml :: MonadIO m => FilePath -> Html () -> m ()
 writeHtml f = liftIO . BSL.writeFile f . Lucid.renderBS
-
--- | Like `Development.Shake.cacheAction` but uses JSON instance instead of Typeable / Binary on `b`.
--- jsonCacheAction
---   :: forall a b k. (FromJSON b, Typeable k, Binary k, Show k, ToJSON a)
---   => k -> Action a -> Action b
--- jsonCacheAction k =
---     fmap (either error id . Aeson.eitherDecode)
---   . cacheAction k
---   . fmap Aeson.encode

@@ -54,6 +54,7 @@ library
         mmark,
         mmark-ext,
         megaparsec,
+        named,
         pandoc-types >=1.17.5 && <1.18,
         safe >=0.3.17 && <0.4,
         skylighting,

@@ -8,11 +8,12 @@ module Rib.Markup.MMark
   )
 where
 
+import qualified Data.ByteString as BS
 import Data.Text (Text)
 import qualified Data.Text as T
-
-import qualified Data.ByteString as BS
 import qualified Data.Text.Encoding as T
+import Named
+
 import qualified Text.Megaparsec as M
 import Text.MMark (MMark)
 import qualified Text.MMark as MMark
@@ -26,7 +27,7 @@ instance Markup MMark where
     Left e -> Left e
     Right v -> Right $ Document f v $ MMark.projectYaml v
 
-  readDocIO k f = do
+  readDocIO (Arg k) (Arg f) = do
     content <- T.decodeUtf8 <$> BS.readFile f
     pure $ readDoc k content
 

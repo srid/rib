@@ -1,4 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,6 +16,7 @@ where
 import Data.Aeson
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Named
 
 import Lucid (Html)
 
@@ -40,7 +43,6 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
 class Markup t where
   type MarkupError t :: *
   readDoc :: FilePath -> Text -> Either (MarkupError t) (Document t)
-  -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
-  readDocIO :: FilePath -> FilePath -> IO (Either (MarkupError t) (Document t))
+  readDocIO :: "relpath" :! FilePath -> "path" :! FilePath -> IO (Either (MarkupError t) (Document t))
   renderDoc :: Document t -> Html ()
   showMarkupError :: MarkupError t -> Text

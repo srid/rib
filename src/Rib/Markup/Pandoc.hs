@@ -34,6 +34,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import Named
 
 import Development.Shake.FilePath
 import Lucid (Html, toHtmlRaw)
@@ -61,7 +62,7 @@ instance Markup Pandoc where
     doc <- withExcept RibPandocError_PandocError $
       parsePure r s
     pure $ mkDoc k doc
-  readDocIO k f = runExceptT $ do
+  readDocIO (Arg k) (Arg f) = runExceptT $ do
     r <- withExceptT RibPandocError_UnsupportedExtension $
       detectReader k
     content <- liftIO $ T.decodeUtf8 <$> BS.readFile f

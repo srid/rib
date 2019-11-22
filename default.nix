@@ -30,6 +30,7 @@ haskellPackages.developPackage {
     };
     mmark = fetchGH "mmark-md/mmark" "8f5534d";
     mmark-ext = fetchGH "mmark-md/mmark-ext" "4d1c40e";
+    named = fetchGH "monadfix/named" "e684a00";
     rib = ./.;
   } // source-overrides;
 
