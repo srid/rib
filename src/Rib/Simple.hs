@@ -1,8 +1,6 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 -- | Sensible defaults for writing the most simple static site
 module Rib.Simple where
@@ -13,9 +11,8 @@ import GHC.Generics (Generic)
 import Development.Shake (Action)
 import Lucid (Html)
 
--- import Rib.Reader.Pandoc (getMeta)
 import Rib.Shake
-import Rib.Reader
+import Rib.Markup
 
 -- | Type of page to be generated
 data Page t

@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Helpers for working with Pandoc documents
-module Rib.Reader.Pandoc
+module Rib.Markup.Pandoc
   ( module Text.Pandoc.Readers
   -- * Parsing
   , parse
@@ -42,7 +42,7 @@ import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
 
-import Rib.Reader
+import Rib.Markup
 
 data RibPandocError
   = RibPandocError_PandocError PandocError

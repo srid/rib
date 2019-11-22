@@ -23,10 +23,11 @@ source-repository head
 
 library
     exposed-modules:
+        Rib
         Rib.App
-        Rib.Reader
-        Rib.Reader.Pandoc
-        Rib.Reader.MMark
+        Rib.Markup
+        Rib.Markup.Pandoc
+        Rib.Markup.MMark
         Rib.Server
         Rib.Shake
         Rib.Simple

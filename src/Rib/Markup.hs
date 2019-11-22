@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Rib.Reader
+module Rib.Markup
   ( Markup(..)
   , Document(..)
   , getDocumentMeta
@@ -40,9 +40,8 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
 
 -- TODO: Consider `Markup (doc, format)` for other Pandoc readers?
 class Markup t where
-  -- TODO: Should this be `Either Text (Document doc)` to handle errors?
-  -- TODO: rename to parseDoc
   type MarkupError t :: *
+  -- TODO: rename to parseDoc
   readDoc :: FilePath -> Text -> Either (MarkupError t) (Document t)
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
   readDocIO :: FilePath -> FilePath -> IO (Either (MarkupError t) (Document t))

@@ -35,7 +35,7 @@ import Lucid (Html)
 import qualified Lucid
 import System.Directory (createDirectoryIfMissing)
 
-import Rib.Reader
+import Rib.Markup
 
 newtype Dirs = Dirs (FilePath, FilePath)
 

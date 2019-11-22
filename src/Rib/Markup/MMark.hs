@@ -4,7 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Rib.Reader.MMark
+module Rib.Markup.MMark
   ( MMark
   )
 where
@@ -18,7 +18,7 @@ import qualified Text.Megaparsec as M
 import qualified Data.Text.Encoding as T
 import qualified Data.ByteString as BS
 
-import Rib.Reader
+import Rib.Markup
 
 
 instance Markup MMark where
