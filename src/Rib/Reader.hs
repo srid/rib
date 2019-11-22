@@ -5,7 +5,7 @@
 
 module Rib.Reader
   ( RibReader(..)
-  , Document(..)
+  , Article(..)
   )
 where
 
@@ -15,18 +15,12 @@ import Data.Text (Text)
 
 import Lucid (Html)
 
--- TODO: Fix naming.
---
--- Page, Post, Document ... oh my!
--- So:
--- Reserve "document" for underlying pandoc/mmark doc types.
--- Call this type, "Article"
--- And the output type, "Page" (Page_Index & Page_Article)
-data Document doc = Document
-  { _document_path :: FilePath
-  , _document_doc :: doc
+-- | An article that is read from the source directory.
+data Article doc = Article
+  { _article_path :: FilePath
+  , _article_doc :: doc
   -- TODO: If meta=Void works with aeson, we should remove the Maybe.
-  , _document_metadata :: Maybe Value
+  , _article_meta :: Maybe Value
   }
   deriving (Generic, Show)
 
@@ -39,7 +33,7 @@ class RibReader doc where
   -- So just represent: (path, doc, meta)
   -- TODO: rename to parseDoc
   -- TODO: This should take metadata as argument.
-  readDoc :: FilePath -> Text -> Document doc
+  readDoc :: FilePath -> Text -> Article doc
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
-  readDocIO :: FilePath -> FilePath -> IO (Document doc)
-  renderDoc :: Document doc -> Html ()
+  readDocIO :: FilePath -> FilePath -> IO (Article doc)
+  renderDoc :: Article doc -> Html ()

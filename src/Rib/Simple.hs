@@ -19,9 +19,9 @@ import Rib.Reader
 
 -- | Type of page to be generated
 data Page doc
-  = Page_Index [Document doc]
+  = Page_Index [Article doc]
   -- ^ Index page linking to a list of posts
-  | Page_Post (Document doc)
+  | Page_Post (Article doc)
   -- ^ Individual post page
   deriving (Generic, Show)
 

@@ -68,14 +68,14 @@ buildHtmlMulti
   :: forall doc. RibReader doc
   => FilePattern
   -- ^ Source file patterns
-  -> (Document doc -> Html ())
+  -> (Article doc -> Html ())
   -- ^ How to render the given document to HTML
-  -> Action [Document doc]
+  -> Action [Article doc]
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x ->
-    buildHtml (_document_path x -<.> "html") (r x)
+    buildHtml (_article_path x -<.> "html") (r x)
   pure xs
 
 -- | Like `readDoc'` but operates on multiple files
@@ -83,7 +83,7 @@ readDocMulti
   :: forall doc. RibReader doc
   => FilePattern
      -- ^ Source file patterns
-  -> Action [Document doc]
+  -> Action [Article doc]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]
