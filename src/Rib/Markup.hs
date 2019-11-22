@@ -22,8 +22,11 @@ import Lucid (Html)
 -- The type variable `t` indicates the type of parser to use.
 data Document t = Document
   { _document_path :: FilePath
+  -- ^ Path to the document, always relative to the source directory.
   , _document_val :: t
   , _document_meta :: Maybe Value
+  -- ^ Metadata associated with the document as an aeson Value. If no metadata
+  -- is provided this will be Nothing.
   }
   deriving (Generic, Show)
 

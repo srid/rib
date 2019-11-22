@@ -85,15 +85,14 @@ detectReader k = case Map.lookup ext formats of
 mkDoc :: FilePath -> Pandoc -> Document Pandoc
 mkDoc f v = Document f v $ getMetadata v
 
--- TODO: Should this return Nothing when metadata is empty?
 getMetadata :: Pandoc -> Maybe Value
-getMetadata (Pandoc meta _) = Just $ flattenMeta meta
+getMetadata (Pandoc meta _) = flattenMeta meta
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
 -- Renders Pandoc text objects into plain strings along the way.
-flattenMeta :: Meta -> Value
-flattenMeta (Meta meta) = toJSON $ fmap go meta
+flattenMeta :: Meta -> Maybe Value
+flattenMeta (Meta meta) = if null meta then Nothing else Just (toJSON $ fmap go meta)
   where
     go :: MetaValue -> Value
     go (MetaMap m) = toJSON $ fmap go m
@@ -161,6 +160,7 @@ getH1 (Pandoc _ bs) = fmap renderInlines $ flip query bs $ \case
   _ -> Nothing
 
 -- | Get the first image in the document if one exists
+-- FIXME: This returns all images.
 getFirstImg
   :: Pandoc
   -> Maybe Text
