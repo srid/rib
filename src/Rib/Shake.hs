@@ -23,12 +23,10 @@ where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON)
 -- import qualified Data.Aeson as Aeson
 -- import Data.Binary
-import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.Text.Encoding as T
 -- import Data.Typeable
 
 import Development.Shake
@@ -72,14 +70,14 @@ buildHtmlMulti
      (RibReader doc meta, FromJSON meta)
   => FilePattern
   -- ^ Source file patterns
-  -> ((FilePath, (doc, Maybe meta)) -> Html ())
+  -> (Document doc meta -> Html ())
   -- ^ How to render the given document to HTML
-  -> Action [(FilePath, (doc, Maybe meta))]
+  -> Action [Document doc meta]
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x ->
-    buildHtml (fst x -<.> "html") (r x)
+    buildHtml (_document_path x -<.> "html") (r x)
   pure xs
 
 -- | Like `readDoc'` but operates on multiple files
@@ -87,15 +85,15 @@ readDocMulti
   :: forall doc meta. (RibReader doc meta, FromJSON meta)
   => FilePattern
      -- ^ Source file patterns
-  -> Action [(FilePath, (doc, Maybe meta))]
+  -> Action [Document doc meta]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles input [pat]
   forP fs $ \f -> do
     need [input </> f]
-    fmap (f, ) . liftIO . readDocFromFile $ input </> f
+    liftIO . readDocIO f $ input </> f
   where
-    readDocFromFile = readDocIO . T.decodeUtf8 <=< BS.readFile
+    -- readDocFromFile = readDocIO . T.decodeUtf8 <=< BS.readFile
 
 -- | Build a single HTML file with the given value
 buildHtml :: FilePath -> Html () -> Action ()

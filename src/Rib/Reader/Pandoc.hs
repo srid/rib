@@ -28,6 +28,8 @@ import Control.Monad
 import Data.Aeson
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
+import qualified Data.ByteString as BS
 
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
@@ -38,10 +40,14 @@ import Text.Pandoc.Walk (query, walkM)
 import Rib.Reader
 
 instance FromJSON meta => RibReader Pandoc meta where
-  readDoc = (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
-  readDocIO = fmap (id &&& getMetadata) . parse readMarkdown
-  renderDoc = render . fst
+  readDoc f = uncurry (Document f) . (id &&& getMetadata) . parsePure readMarkdown  -- TODO: don't hardcode readMarkdown
+  readDocIO k f = do
+    content <- T.decodeUtf8 <$> BS.readFile f
+    doc <- parse readMarkdown content
+    pure $ Document k doc (getMetadata doc)
+  renderDoc = render . _document_doc
 
+getMetadata :: FromJSON a => Pandoc -> Maybe a
 getMetadata (Pandoc meta _) = case fromJSON (flattenMeta meta) of
   Success v -> Just v
   _ -> Nothing

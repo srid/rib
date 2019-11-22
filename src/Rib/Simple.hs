@@ -8,7 +8,7 @@
 module Rib.Simple where
 
 import Control.Monad
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON)
 import GHC.Generics (Generic)
 
 import Development.Shake (Action)
@@ -20,11 +20,11 @@ import Rib.Reader
 
 -- | Type of page to be generated
 data Page doc meta
-  = Page_Index [(FilePath, (doc, Maybe meta))]
+  = Page_Index [Document doc meta]
   -- ^ Index page linking to a list of posts
-  | Page_Post (FilePath, (doc, Maybe meta))
+  | Page_Post (Document doc meta)
   -- ^ Individual post page
-  deriving (Generic, Show, FromJSON, ToJSON)
+  deriving (Generic, Show)
 
 -- | Shake build action for the most simple static site
 --
