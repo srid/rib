@@ -11,8 +11,8 @@ module Rib
 where
 
 import Rib.App
-import Rib.Shake
-import Rib.Server
 import Rib.Markup
 import Rib.Markup.MMark (MMark)
 import Rib.Markup.Pandoc (Pandoc)
+import Rib.Server
+import Rib.Shake

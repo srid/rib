@@ -1,8 +1,8 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Rib.Markup
   ( Markup(..)
@@ -12,8 +12,8 @@ module Rib.Markup
 where
 
 import Data.Aeson
-import GHC.Generics (Generic)
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Lucid (Html)
 

@@ -18,6 +18,7 @@ This release comes with major API refactor. Key changes:
 - `Rib.App`: The `run` funtion now takes two more arguments, specifying the input and output directory, which are no longer hardcoded.
 - `Rib.Simple`: add LaTeX to default list of readers
 - `Rib.Server`: Remove ".html" detection magic from URLs
+- Remove `Rib.Simple`
 
 ## 0.3.0.0
 

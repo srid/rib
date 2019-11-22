@@ -18,7 +18,7 @@ import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssL
 import qualified Network.Wai.Handler.Warp as Warp
 import WaiAppStatic.Types (StaticSettings)
 
-import Rib.Markup (Document(..))
+import Rib.Markup (Document (..))
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings

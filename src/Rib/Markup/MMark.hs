@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}  -- for `Markup MMark` instance
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Rib.Markup.MMark
   ( MMark
@@ -11,11 +11,11 @@ where
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import qualified Data.ByteString as BS
+import qualified Data.Text.Encoding as T
+import qualified Text.Megaparsec as M
 import Text.MMark (MMark)
 import qualified Text.MMark as MMark
-import qualified Text.Megaparsec as M
-import qualified Data.Text.Encoding as T
-import qualified Data.ByteString as BS
 
 import Rib.Markup
 

@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}  -- for `Markup Pandoc` instance
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 -- | Helpers for working with Pandoc documents
@@ -29,11 +29,11 @@ where
 
 import Control.Monad.Except
 import Data.Aeson
-import Data.Text (Text)
+import qualified Data.ByteString as BS
 import qualified Data.Map as Map
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import qualified Data.ByteString as BS
 
 import Development.Shake.FilePath
 import Lucid (Html, toHtmlRaw)
