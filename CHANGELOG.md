@@ -28,4 +28,3 @@ This release comes with major API refactor. Key changes:
 ## 0.2.0.0
 
 - Initial release.
-

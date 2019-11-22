@@ -38,7 +38,7 @@ data Document t = Document
 
 getDocumentMeta :: FromJSON meta => Document t -> meta
 getDocumentMeta (Document fp _ mmeta) = case mmeta of
-  Nothing -> error $ "No metadata in document: " <> fp
+  Nothing -> error $ "No metadata in document: " <> fp -- TODO: handle errors gracefully
   Just meta -> case fromJSON meta of
     Error e -> error e
     Success v -> v
