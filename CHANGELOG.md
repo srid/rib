@@ -1,5 +1,17 @@
 # Change Log for rib
 
+## 0.5.0.0 (UNRELEASED)
+
+This release comes with major API refactor. Key changes:
+
+- Support for both Pandoc and MMark parsers
+- Add `Rib.Markup.Markup` type class to polymorphically select the parser
+- Add top-level `Rib` import namespace to ease of use
+- Replace complex metadata handling using straightforward aeson `Value` parsing
+- Remove the following:
+  - JSON cache
+  - `Rib.Simple`
+
 ## 0.4.1.0
 
 - `Rib.Pandoc`: 

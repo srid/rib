@@ -10,6 +10,7 @@ let
     if compiler == "default"
       then pkgs.haskellPackages
       else pkgs.haskell.packages.${compiler};
+  fetchGH = fq: rev: builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 in
 haskellPackages.developPackage {
   root = root;
@@ -27,6 +28,9 @@ haskellPackages.developPackage {
       rev = "7e4d9d967ff3e3855a7eae48408c43b3400ae6f4";
       sha256 = "0wvml63hkhgmmkdd2ml5a3g7cb69hxwdsjmdhdzjbqbrwkmc20rd";
     };
+    mmark = fetchGH "mmark-md/mmark" "8f5534d";
+    mmark-ext = fetchGH "mmark-md/mmark-ext" "4d1c40e";
+    named = fetchGH "monadfix/named" "e684a00";
     rib = ./.;
   } // source-overrides;
 
