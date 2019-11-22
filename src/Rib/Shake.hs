@@ -87,7 +87,7 @@ readDocMulti pat = do
   forP fs $ \f -> do
     need [input </> f]
     result <- liftIO $
-      readDocIO
+      readDoc
         ! #relpath f
         ! #path (input </> f)
     pure $ either (error . T.unpack . showMarkupError @t) id result

@@ -7,7 +7,10 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Rib.Markup
-  ( Markup(..)
+  (
+  -- * Type class
+    Markup(..)
+  -- * Document type
   , Document(..)
   , getDocumentMeta
   )
@@ -20,9 +23,9 @@ import Named
 
 import Lucid (Html)
 
--- | A Markup document that is read from the source directory.
+-- | A document written in a lightweight markup language (LML)
 --
--- The type variable `t` indicates the type of parser to use.
+-- The type variable `t` indicates the type of Markup parser to use.
 data Document t = Document
   { _document_path :: FilePath
   -- ^ Path to the document, always relative to the source directory.
@@ -40,9 +43,32 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
     Error e -> error e
     Success v -> v
 
+-- | Markup class abstracts over the different markup libraries
+--
+-- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.
 class Markup t where
+
+  -- | Type representing parse errors
   type MarkupError t :: *
-  readDoc :: FilePath -> Text -> Either (MarkupError t) (Document t)
-  readDocIO :: "relpath" :! FilePath -> "path" :! FilePath -> IO (Either (MarkupError t) (Document t))
+
+  -- | Parse the given markup text
+  parseDoc
+    :: FilePath
+    -- ^ File path, used to identify the document only.
+    -> Text
+    -- ^ Markup text to parse
+    -> Either (MarkupError t) (Document t)
+
+  -- | Like `parseDoc` but take the actual filepath instead of text.
+  readDoc
+    :: "relpath" :! FilePath
+    -- ^ File path, used to identify the document only.
+    -> "path" :! FilePath
+    -- ^ Actual path to the file to parse.
+    -> IO (Either (MarkupError t) (Document t))
+
+  -- | Render the document as Lucid HTML
   renderDoc :: Document t -> Html ()
+
+  -- | Convert `MarkupError` to string
   showMarkupError :: MarkupError t -> Text

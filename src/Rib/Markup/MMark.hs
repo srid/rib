@@ -23,13 +23,14 @@ import Rib.Markup
 
 instance Markup MMark where
   type MarkupError MMark = M.ParseErrorBundle Text MMark.MMarkErr
-  readDoc f s = case MMark.parse f s of
+
+  parseDoc f s = case MMark.parse f s of
     Left e -> Left e
     Right v -> Right $ Document f v $ MMark.projectYaml v
 
-  readDocIO (Arg k) (Arg f) = do
+  readDoc (Arg k) (Arg f) = do
     content <- T.decodeUtf8 <$> BS.readFile f
-    pure $ readDoc k content
+    pure $ parseDoc k content
 
   renderDoc = MMark.render . _document_val
 

@@ -56,20 +56,25 @@ instance Show RibPandocError where
 
 instance Markup Pandoc where
   type MarkupError Pandoc = RibPandocError
-  readDoc k s = runExcept $ do
+
+  parseDoc k s = runExcept $ do
     r <- withExcept RibPandocError_UnsupportedExtension $
       detectReader k
-    doc <- withExcept RibPandocError_PandocError $
+    fmap (mkDoc k) $ withExcept RibPandocError_PandocError $
       parsePure r s
-    pure $ mkDoc k doc
-  readDocIO (Arg k) (Arg f) = runExceptT $ do
+
+  readDoc (Arg k) (Arg f) = runExceptT $ do
     r <- withExceptT RibPandocError_UnsupportedExtension $
       detectReader k
     content <- liftIO $ T.decodeUtf8 <$> BS.readFile f
-    mkDoc k <$> withExceptT RibPandocError_PandocError (parse r content)
+    fmap (mkDoc k) $ withExceptT RibPandocError_PandocError $
+      parse r content
+
   renderDoc = render . _document_val
+
   showMarkupError = T.pack . show
 
+-- | Detect the Pandoc reader to use based on file extension
 detectReader
   :: (MonadError String m, PandocMonad m1)
   => FilePath
