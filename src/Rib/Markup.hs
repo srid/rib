@@ -36,7 +36,6 @@ getDocumentMeta (Document fp _ mmeta) = case mmeta of
 
 class Markup t where
   type MarkupError t :: *
-  -- TODO: rename to parseDoc
   readDoc :: FilePath -> Text -> Either (MarkupError t) (Document t)
   -- TODO: Use index arguments (whatever its name is) to distinguish between the two FilePaths
   readDocIO :: FilePath -> FilePath -> IO (Either (MarkupError t) (Document t))

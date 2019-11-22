@@ -1,11 +1,10 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Serve generated static files with HTTP
 module Rib.Server
   (
     serve
-  , getHTMLFileUrl
+  , getDocumentUrl
   )
 where
 
@@ -18,6 +17,8 @@ import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import WaiAppStatic.Types (StaticSettings)
+
+import Rib.Markup (Document(..))
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings
@@ -35,11 +36,11 @@ staticSiteServerSettings root = settings
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-getHTMLFileUrl
-  :: FilePath
+getDocumentUrl
+  :: Document t
   -- ^ Relative path to a page (extension is ignored)
   -> Text
-getHTMLFileUrl path = T.pack $ "/" ++  (path -<.> ".html")
+getDocumentUrl (Document path _ _) = T.pack $ "/" ++  (path -<.> ".html")
 
 -- | Run a HTTP server to serve a directory of static files
 --
