@@ -1,8 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeApplications #-}
 
 -- | Combinators for working with Shake.
@@ -25,45 +26,51 @@ import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
+import Data.Typeable
 import Named
+import Path
+import Path.IO
 
 import Development.Shake
-import Development.Shake.FilePath
+-- import Development.Shake.FilePath
 import Lucid (Html)
 import qualified Lucid
-import System.Directory (createDirectoryIfMissing)
 
 import Rib.Markup
 
-newtype Dirs = Dirs (FilePath, FilePath)
+data Dirs b = Dirs (Path b Dir, Path b Dir)
+  deriving Typeable
 
-getDirs :: Action (FilePath, FilePath)
+getDirs :: Typeable b => Action (Path b Dir, Path b Dir)
 getDirs = getShakeExtra >>= \case
   Just (Dirs d) -> return d
   Nothing -> fail "Input output directories are not initialized"
 
-ribInputDir :: Action FilePath
+ribInputDir :: Typeable b => Action (Path b Dir)
 ribInputDir = fst <$> getDirs
 
-ribOutputDir :: Action FilePath
+ribOutputDir :: Typeable b => Action (Path b Dir)
 ribOutputDir = do
   output <- snd <$> getDirs
-  liftIO $ createDirectoryIfMissing True output
+  liftIO $ createDirIfMissing True output
   return output
 
 -- | Shake action to copy static files as is
-buildStaticFiles :: [FilePattern] -> Action ()
+buildStaticFiles :: [Path Rel File] -> Action ()
 buildStaticFiles staticFilePatterns = do
-  input <- ribInputDir
-  output <- ribOutputDir
-  files <- getDirectoryFiles input staticFilePatterns
+  input <- ribInputDir @Rel
+  output <- ribOutputDir @Rel
+  files <- getDirectoryFiles' input staticFilePatterns
   void $ forP files $ \f ->
-    copyFileChanged (input </> f) (output </> f)
+    copyFileChanged' (input </> f) (output </> f)
+  where
+    copyFileChanged' old new =
+      copyFileChanged (toFilePath old) (toFilePath new)
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti
   :: forall t. Markup t
-  => FilePattern
+  => Path Rel File
   -- ^ Source file patterns
   -> (Document t -> Html ())
   -- ^ How to render the given document to HTML
@@ -71,21 +78,22 @@ buildHtmlMulti
   -- ^ List of relative path to generated HTML and the associated document
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
-  void $ forP xs $ \x ->
-    buildHtml (_document_path x -<.> "html") (r x)
+  void $ forP xs $ \x -> do
+    outfile <- liftIO $ _document_path x -<.> "html"
+    buildHtml outfile (r x)
   pure xs
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti
   :: forall t. Markup t
-  => FilePattern
+  => Path Rel File
      -- ^ Source file patterns
   -> Action [Document t]
 readDocMulti pat = do
-  input <- ribInputDir
-  fs <- getDirectoryFiles input [pat]
+  input <- ribInputDir @Rel
+  fs <- getDirectoryFiles' input [pat]
   forP fs $ \f -> do
-    need [input </> f]
+    need $ toFilePath <$> [input </> f]
     result <- liftIO $
       readDoc
         ! #relpath f
@@ -93,10 +101,15 @@ readDocMulti pat = do
     pure $ either (error . T.unpack . showMarkupError @t) id result
 
 -- | Build a single HTML file with the given value
-buildHtml :: FilePath -> Html () -> Action ()
+buildHtml :: Path Rel File -> Html () -> Action ()
 buildHtml f html = do
-  output <- ribOutputDir
+  output <- ribOutputDir @Rel
   writeHtml (output </> f) html
 
-writeHtml :: MonadIO m => FilePath -> Html () -> m ()
-writeHtml f = liftIO . BSL.writeFile f . Lucid.renderBS
+writeHtml :: MonadIO m => Path b File -> Html () -> m ()
+writeHtml f = liftIO . BSL.writeFile (toFilePath f) . Lucid.renderBS
+
+-- | Like `getDirectoryFiles` but work with `Path`
+getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
+getDirectoryFiles' dir pat =
+  traverse (liftIO . parseRelFile) =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)
