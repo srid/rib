@@ -4,6 +4,7 @@
 
 [![BSD3](https://img.shields.io/badge/License-BSD-blue.svg)](https://en.wikipedia.org/wiki/BSD_License)
 [![Hackage](https://img.shields.io/hackage/v/rib.svg)](https://hackage.haskell.org/package/rib)
+[![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 
 Rib is a Haskell library for writing your own **static site generator**.
 
