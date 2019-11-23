@@ -3,31 +3,28 @@
 
 -- | Serve generated static files with HTTP
 module Rib.Server
-  (
-    serve
-  , getDocumentUrl
+  ( serve,
+    getDocumentUrl,
   )
 where
 
-import Prelude hiding (init, last)
-
 import Data.Text (Text)
 import qualified Data.Text as T
-import Path hiding ((-<.>))
-
 import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
-import WaiAppStatic.Types (StaticSettings)
-
+import Path hiding ((-<.>))
 import Rib.Markup (Document (..))
+import WaiAppStatic.Types (StaticSettings)
+import Prelude hiding (init, last)
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings
-staticSiteServerSettings root = settings
-  { ssLookupFile = ssLookupFile settings
-  , ssListing = Nothing  -- Disable directory listings
-  }
+staticSiteServerSettings root =
+  settings
+    { ssLookupFile = ssLookupFile settings,
+      ssListing = Nothing -- Disable directory listings
+    }
   where
     settings = defaultFileServerSettings root
 
@@ -37,21 +34,21 @@ staticSiteServerSettings root = settings
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-getDocumentUrl
-  :: Document t
-  -- ^ Relative path to a page (extension is ignored)
-  -> Text
+getDocumentUrl ::
+  -- | Relative path to a page (extension is ignored)
+  Document t ->
+  Text
 getDocumentUrl (Document f _ _) = T.pack $ toFilePath ([absdir|/|] </> f) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
 --
 -- Allow URLs of the form @//foo//bar@ to serve @${path}//foo//bar.html@
-serve
-  :: Int
-  -- ^ Port number to bind to
-  -> FilePath
-  -- ^ Directory to serve.
-  -> IO ()
+serve ::
+  -- | Port number to bind to
+  Int ->
+  -- | Directory to serve.
+  FilePath ->
+  IO ()
 serve port path = do
   putStrLn $ "[Rib] Serving at http://localhost:" <> show port
   Warp.run port $ staticApp $ staticSiteServerSettings path

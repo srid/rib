@@ -1,12 +1,11 @@
 -- |
-
 module Rib
-  ( module Rib.App
-  , module Rib.Shake
-  , module Rib.Server
-  , module Rib.Markup
-  , MMark
-  , Pandoc
+  ( module Rib.App,
+    module Rib.Shake,
+    module Rib.Server,
+    module Rib.Markup,
+    MMark,
+    Pandoc,
   )
 where
 

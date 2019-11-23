@@ -1,16 +1,18 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}  -- for `Markup MMark` instance
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
+-- for `Markup MMark` instance
 
 module Rib.Markup.MMark
-  (
-  -- * Extracting information
-    getFirstImg
-  -- * Re-exports
-  , MMark
+  ( -- * Extracting information
+    getFirstImg,
+
+    -- * Re-exports
+    MMark,
   )
 where
 
@@ -24,17 +26,16 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Named
 import Path
-
-import qualified Text.Megaparsec as M
+import Rib.Markup
 import Text.MMark (MMark)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
 import qualified Text.MMark.Extension.Common as Ext
+import qualified Text.Megaparsec as M
 import Text.URI (URI)
 
-import Rib.Markup
-
 instance Markup MMark where
+
   type MarkupError MMark = M.ParseErrorBundle Text MMark.MMarkErr
 
   parseDoc f s = case MMark.parse (toFilePath f) s of
@@ -42,7 +43,7 @@ instance Markup MMark where
     Right doc ->
       let doc' = MMark.useExtensions exts $ useTocExt doc
           meta = MMark.projectYaml doc
-      in Right $ Document f doc' meta
+       in Right $ Document f doc' meta
 
   readDoc (Arg k) (Arg f) = do
     content <- T.decodeUtf8 <$> BS.readFile (toFilePath f)
@@ -51,7 +52,6 @@ instance Markup MMark where
   renderDoc = MMark.render . _document_val
 
   showMarkupError = T.pack . M.errorBundlePretty
-
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI
@@ -69,15 +69,15 @@ getFirstImg = flip MMark.runScanner $ Fold f Nothing id
 
 exts :: [MMark.Extension]
 exts =
-  [ Ext.fontAwesome
-  , Ext.footnotes
-  , Ext.kbd
-  , Ext.linkTarget
-  , Ext.mathJax (Just '$')
-  , Ext.obfuscateEmail "protected-email"
-  , Ext.punctuationPrettifier
-  , Ext.ghcSyntaxHighlighter
-  , Ext.skylighting
+  [ Ext.fontAwesome,
+    Ext.footnotes,
+    Ext.kbd,
+    Ext.linkTarget,
+    Ext.mathJax (Just '$'),
+    Ext.obfuscateEmail "protected-email",
+    Ext.punctuationPrettifier,
+    Ext.ghcSyntaxHighlighter,
+    Ext.skylighting
   ]
 
 useTocExt :: MMark -> MMark
