@@ -7,12 +7,12 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Rib.Markup
-  (
-  -- * Type class
-    Markup(..)
-  -- * Document type
-  , Document(..)
-  , getDocumentMeta
+  ( -- * Type class
+    Markup (..),
+
+    -- * Document type
+    Document (..),
+    getDocumentMeta,
   )
 where
 
@@ -26,14 +26,15 @@ import Path
 -- | A document written in a lightweight markup language (LML)
 --
 -- The type variable `t` indicates the type of Markup parser to use.
-data Document t = Document
-  { _document_path :: Path Rel File
-  -- ^ Path to the document; relative to the source directory.
-  , _document_val :: t
-  , _document_meta :: Maybe Value
-  -- ^ Metadata associated with the document as an aeson Value. If no metadata
-  -- is provided this will be Nothing.
-  }
+data Document t
+  = Document
+      { -- | Path to the document; relative to the source directory.
+        _document_path :: Path Rel File,
+        _document_val :: t,
+        -- | Metadata associated with the document as an aeson Value. If no metadata
+        -- is provided this will be Nothing.
+        _document_meta :: Maybe Value
+      }
   deriving (Generic, Show)
 
 getDocumentMeta :: FromJSON meta => Document t -> meta
@@ -52,20 +53,20 @@ class Markup t where
   type MarkupError t :: *
 
   -- | Parse the given markup text
-  parseDoc
-    :: Path Rel File
-    -- ^ File path, used to identify the document only.
-    -> Text
-    -- ^ Markup text to parse
-    -> Either (MarkupError t) (Document t)
+  parseDoc ::
+    -- | File path, used to identify the document only.
+    Path Rel File ->
+    -- | Markup text to parse
+    Text ->
+    Either (MarkupError t) (Document t)
 
   -- | Like `parseDoc` but take the actual filepath instead of text.
-  readDoc
-    :: "relpath" :! Path Rel File
-    -- ^ File path, used to identify the document only.
-    -> "path" :! Path b File
-    -- ^ Actual path to the file to parse.
-    -> IO (Either (MarkupError t) (Document t))
+  readDoc ::
+    -- | File path, used to identify the document only.
+    "relpath" :! Path Rel File ->
+    -- | Actual path to the file to parse.
+    "path" :! Path b File ->
+    IO (Either (MarkupError t) (Document t))
 
   -- | Render the document as Lucid HTML
   renderDoc :: Document t -> Html ()

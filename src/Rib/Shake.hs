@@ -10,15 +10,16 @@
 --
 -- See the source of `Rib.Simple.buildAction` for example usage.
 module Rib.Shake
-  (
-  -- * Basic helpers
-    buildHtmlMulti
-  , buildHtml
-  -- * Read helpers
-  , readDocMulti
-  -- * Misc
-  , buildStaticFiles
-  , Dirs(..)
+  ( -- * Basic helpers
+    buildHtmlMulti,
+    buildHtml,
+
+    -- * Read helpers
+    readDocMulti,
+
+    -- * Misc
+    buildStaticFiles,
+    Dirs (..),
   )
 where
 
@@ -27,19 +28,16 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import Data.Typeable
+import Development.Shake
+import Lucid (Html)
+import qualified Lucid
 import Named
 import Path
 import Path.IO
-
-import Development.Shake
--- import Development.Shake.FilePath
-import Lucid (Html)
-import qualified Lucid
-
 import Rib.Markup
 
 data Dirs b = Dirs (Path b Dir, Path b Dir)
-  deriving Typeable
+  deriving (Typeable)
 
 getDirs :: Typeable b => Action (Path b Dir, Path b Dir)
 getDirs = getShakeExtra >>= \case
@@ -68,14 +66,15 @@ buildStaticFiles staticFilePatterns = do
       copyFileChanged (toFilePath old) (toFilePath new)
 
 -- | Convert the given pattern of source files into their HTML.
-buildHtmlMulti
-  :: forall t. Markup t
-  => Path Rel File
-  -- ^ Source file patterns
-  -> (Document t -> Html ())
-  -- ^ How to render the given document to HTML
-  -> Action [Document t]
-  -- ^ List of relative path to generated HTML and the associated document
+buildHtmlMulti ::
+  forall t.
+  Markup t =>
+  -- | Source file patterns
+  Path Rel File ->
+  -- | How to render the given document to HTML
+  (Document t -> Html ()) ->
+  -- | List of relative path to generated HTML and the associated document
+  Action [Document t]
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
@@ -84,20 +83,22 @@ buildHtmlMulti pat r = do
   pure xs
 
 -- | Like `readDoc'` but operates on multiple files
-readDocMulti
-  :: forall t. Markup t
-  => Path Rel File
-     -- ^ Source file patterns
-  -> Action [Document t]
+readDocMulti ::
+  forall t.
+  Markup t =>
+  -- | Source file patterns
+  Path Rel File ->
+  Action [Document t]
 readDocMulti pat = do
   input <- ribInputDir @Rel
   fs <- getDirectoryFiles' input [pat]
   forP fs $ \f -> do
     need $ toFilePath <$> [input </> f]
-    result <- liftIO $
-      readDoc
-        ! #relpath f
-        ! #path (input </> f)
+    result <-
+      liftIO $
+        readDoc
+          ! #relpath f
+          ! #path (input </> f)
     pure $ either (error . T.unpack . showMarkupError @t) id result
 
 -- | Build a single HTML file with the given value
