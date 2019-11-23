@@ -13,6 +13,10 @@ This release comes with major API refactor. Key changes:
   - `Rib.Simple`
 - Support for Table of Contents via MMark
 
+Other changes:
+
+- Use type-safe path types using the [path](http://hackage.haskell.org/package/path) library.
+
 ## 0.4.1.0
 
 - `Rib.Pandoc`: 

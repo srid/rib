@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 -- | Serve generated static files with HTTP
 module Rib.Server
@@ -12,6 +13,7 @@ import Prelude hiding (init, last)
 
 import Data.Text (Text)
 import qualified Data.Text as T
+import Path hiding ((-<.>))
 
 import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
@@ -39,7 +41,7 @@ getDocumentUrl
   :: Document t
   -- ^ Relative path to a page (extension is ignored)
   -> Text
-getDocumentUrl (Document path _ _) = T.pack $ "/" ++  (path -<.> ".html")
+getDocumentUrl (Document f _ _) = T.pack $ toFilePath ([absdir|/|] </> f) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
 --

@@ -15,6 +15,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad
 import Data.Bool (bool)
+import Path
 
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
@@ -47,12 +48,13 @@ data App
 
 -- | Run Rib using arguments passed in the command line.
 run
-  :: FilePath
+  :: Typeable b
+  => Path b Dir
   -- ^ Directory from which source content will be read.
   --
   -- NOTE: This should ideally *not* be `"."` as our use of watchTree (of
   -- `runWith`) can interfere with Shake's file scaning.
-  -> FilePath
+  -> Path b Dir
   -- ^ The path where static files will be generated.  Rib's server uses this
   -- directory when serving files.
   -> Action ()
@@ -74,21 +76,21 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
       ]
 
 -- | Like `run` but with an explicitly passed `App` mode
-runWith :: FilePath -> FilePath -> Action () -> App -> IO ()
+runWith :: Typeable b => Path b Dir -> Path b Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
     runWith src dst buildAction $ Generate True
     -- And then every time a file changes under the current directory
-    putStrLn $ "[Rib] Watching " <> src
-    void $ watchTree mgr src (const True) $ const $
+    putStrLn $ "[Rib] Watching " <> toFilePath src
+    void $ watchTree mgr (toFilePath src) (const True) $ const $
       runWith src dst buildAction $ Generate False
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
 
   Serve p dw -> concurrently_
     (unless dw $ runWith src dst buildAction WatchAndGenerate)
-    (Server.serve p dst)
+    (Server.serve p $ toFilePath dst)
 
   Generate forceGen ->
     let opts = shakeOptions

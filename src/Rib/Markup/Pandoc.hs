@@ -35,8 +35,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Named
+import Path
 
-import Development.Shake.FilePath
 import Lucid (Html, toHtmlRaw)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
@@ -66,7 +66,7 @@ instance Markup Pandoc where
   readDoc (Arg k) (Arg f) = runExceptT $ do
     r <- withExceptT RibPandocError_UnsupportedExtension $
       detectReader k
-    content <- liftIO $ T.decodeUtf8 <$> BS.readFile f
+    content <- liftIO $ T.decodeUtf8 <$> BS.readFile (toFilePath f)
     fmap (mkDoc k) $ withExceptT RibPandocError_PandocError $
       parse r content
 
@@ -155,13 +155,13 @@ exts = mconcat
 -- | Detect the Pandoc reader to use based on file extension
 detectReader
   :: (MonadError String m, PandocMonad m1)
-  => FilePath
+  => Path Rel File
   -> m (ReaderOptions -> Text -> m1 Pandoc)
 detectReader k = case Map.lookup ext formats of
   Nothing -> throwError ext
   Just r -> pure r
   where
-    ext = takeExtension k
+    ext = fileExtension k
     formats = Map.fromList
       [ (".md", readMarkdown)
       , (".rst", readRST)
@@ -169,7 +169,7 @@ detectReader k = case Map.lookup ext formats of
       , (".tex", readLaTeX)
       ]
 
-mkDoc :: FilePath -> Pandoc -> Document Pandoc
+mkDoc :: Path Rel File -> Pandoc -> Document Pandoc
 mkDoc f v = Document f v $ getMetadata v
 
 getMetadata :: Pandoc -> Maybe Value
