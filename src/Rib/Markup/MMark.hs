@@ -16,13 +16,9 @@ module Rib.Markup.MMark
   )
 where
 
-import Control.Applicative ((<|>))
 import Control.Foldl hiding (head)
 import qualified Data.ByteString as BS
 import qualified Data.List.NonEmpty as NE
-import Data.Maybe (listToMaybe, mapMaybe)
-import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Named
 import Path
@@ -51,7 +47,7 @@ instance Markup MMark where
 
   renderDoc = MMark.render . _document_val
 
-  showMarkupError = T.pack . M.errorBundlePretty
+  showMarkupError = toText . M.errorBundlePretty
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

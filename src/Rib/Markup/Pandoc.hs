@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -37,8 +38,6 @@ import Control.Monad.Except
 import Data.Aeson
 import qualified Data.ByteString as BS
 import qualified Data.Map as Map
-import Data.Text (Text)
-import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Lucid (Html, toHtmlRaw)
 import Named
@@ -48,6 +47,7 @@ import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
+import qualified Text.Show
 
 data RibPandocError
   = RibPandocError_PandocError PandocError
@@ -79,7 +79,7 @@ instance Markup Pandoc where
 
   renderDoc = render . _document_val
 
-  showMarkupError = T.pack . show
+  showMarkupError = toText @String . show
 
 -- | Pure version of `parse`
 parsePure ::
@@ -142,7 +142,7 @@ getFirstImg ::
   -- | Relative URL path to the image
   Maybe Text
 getFirstImg (Pandoc _ bs) = flip query bs $ \case
-  Image _ _ (url, _) -> Just $ T.pack url
+  Image _ _ (url, _) -> Just $ toText url
   _ -> Nothing
 
 exts :: Extensions

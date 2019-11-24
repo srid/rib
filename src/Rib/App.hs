@@ -14,8 +14,6 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad
-import Data.Bool (bool)
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
@@ -30,8 +28,8 @@ import System.FSNotify (watchTree, withManager)
 data App
   = -- | Generate static files once.
     Generate
-      { -- | Force generation of /all/ files
-        force :: Bool
+      { -- | Force a full generation of /all/ files even if they were not modified
+        full :: Bool
       }
   | -- | Watch for changes in the input directory and run `Generate`
     WatchAndGenerate
@@ -71,7 +69,7 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
           WatchAndGenerate
             &= help "Watch for changes and generate",
           Generate
-            { force = False &= help "Force generation of all files"
+            { full = False &= help "Force a full generation of all files"
             }
             &= help "Generate the site"
         ]
@@ -93,11 +91,11 @@ runWith src dst buildAction = \case
     concurrently_
       (unless dw $ runWith src dst buildAction WatchAndGenerate)
       (Server.serve p $ toFilePath dst)
-  Generate forceGen ->
+  Generate fullGen ->
     let opts =
           shakeOptions
             { shakeVerbosity = Chatty,
-              shakeRebuild = bool [] [(RebuildNow, "**")] forceGen,
+              shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
               shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
             }
      in shakeForward opts buildAction

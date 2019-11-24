@@ -17,8 +17,6 @@ module Rib.Markup
 where
 
 import Data.Aeson
-import Data.Text (Text)
-import GHC.Generics (Generic)
 import Lucid (Html)
 import Named
 import Path
@@ -39,9 +37,9 @@ data Document t
 
 getDocumentMeta :: FromJSON meta => Document t -> meta
 getDocumentMeta (Document fp _ mmeta) = case mmeta of
-  Nothing -> error $ "No metadata in document: " <> show fp -- TODO: handle errors gracefully
+  Nothing -> error $ toText $ "No metadata in document: " <> toFilePath fp -- TODO: handle errors gracefully
   Just meta -> case fromJSON meta of
-    Error e -> error e
+    Error e -> error $ toText e
     Success v -> v
 
 -- | Markup class abstracts over the different markup libraries

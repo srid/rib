@@ -27,7 +27,6 @@ Here is how your code may look like if you were to generate your static site
 using Rib:
 
 ``` haskell
--- Main.hs
 -- First we shall define two datatypes to represent our pages. One, the page
 -- itself. Second, the metadata associated with each document.
 

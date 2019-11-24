@@ -8,15 +8,13 @@ module Rib.Server
   )
 where
 
-import Data.Text (Text)
-import qualified Data.Text as T
 import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import Path hiding ((-<.>))
 import Rib.Markup (Document (..))
 import WaiAppStatic.Types (StaticSettings)
-import Prelude hiding (init, last)
+import Prelude
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings
@@ -38,7 +36,7 @@ getDocumentUrl ::
   -- | Relative path to a page (extension is ignored)
   Document t ->
   Text
-getDocumentUrl (Document f _ _) = T.pack $ toFilePath ([absdir|/|] </> f) -<.> ".html"
+getDocumentUrl (Document f _ _) = toText $ toFilePath ([absdir|/|] </> f) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
 --

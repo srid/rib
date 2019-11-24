@@ -31,11 +31,13 @@ haskellPackages.developPackage {
     mmark = fetchGH "mmark-md/mmark" "8f5534d";
     mmark-ext = fetchGH "mmark-md/mmark-ext" "4d1c40e";
     named = fetchGH "monadfix/named" "e684a00";
+    relude = fetchGH "kowainik/relude" "bfb5f60";
     rib = ./.;
   } // source-overrides;
 
   overrides = self: super: with pkgs.haskell.lib; {
     clay = dontCheck super.clay;
+    relude = dontCheck super.relude;
   };
 
   modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {

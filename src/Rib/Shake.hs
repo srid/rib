@@ -23,11 +23,7 @@ module Rib.Shake
   )
 where
 
-import Control.Monad
-import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as BSL
-import qualified Data.Text as T
-import Data.Typeable
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -99,7 +95,7 @@ readDocMulti pat = do
         readDoc
           ! #relpath f
           ! #path (input </> f)
-    pure $ either (error . T.unpack . showMarkupError @t) id result
+    pure $ either (error . showMarkupError @t) id result
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
