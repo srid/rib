@@ -16,6 +16,7 @@ This release comes with major API refactor. Key changes:
 Other changes:
 
 - Use type-safe path types using the [path](http://hackage.haskell.org/package/path) library.
+- Fix #40: Gracefully handle rendering/ parsing errors, without dying.
 
 ## 0.4.1.0
 

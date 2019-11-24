@@ -15,6 +15,7 @@ where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Exception (catch)
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
@@ -82,9 +83,9 @@ runWith src dst buildAction = \case
     runWith src dst buildAction $ Generate True
     -- And then every time a file changes under the current directory
     putStrLn $ "[Rib] Watching " <> toFilePath src
-    void $ watchTree mgr (toFilePath src) (const True) $ const
-      $ runWith src dst buildAction
-      $ Generate False
+    void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
+      runWith src dst buildAction (Generate False)
+        `catch` \(e :: SomeException) -> putStrLn $ show e
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
   Serve p dw ->
