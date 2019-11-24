@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | CLI interface for Rib.
 --
@@ -44,6 +45,7 @@ data App
 
 -- | Run Rib using arguments passed in the command line.
 run ::
+  forall b.
   Typeable b =>
   -- | Directory from which source content will be read.
   --
@@ -75,7 +77,7 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
         ]
 
 -- | Like `run` but with an explicitly passed `App` mode
-runWith :: Typeable b => Path b Dir -> Path b Dir -> Action () -> App -> IO ()
+runWith :: forall b. Typeable b => Path b Dir -> Path b Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.

@@ -73,7 +73,7 @@ buildHtmlMulti ::
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ _document_path x -<.> "html"
+    outfile <- liftIO $ replaceExtension ".html" $ _document_path x
     buildHtml outfile (r x)
   pure xs
 
@@ -101,9 +101,9 @@ buildHtml :: Path Rel File -> Html () -> Action ()
 buildHtml f html = do
   output <- ribOutputDir @Rel
   writeHtml (output </> f) html
-
-writeHtml :: MonadIO m => Path b File -> Html () -> m ()
-writeHtml f = writeFileLText (toFilePath f) . Lucid.renderText
+  where
+    writeHtml :: MonadIO m => Path b File -> Html () -> m ()
+    writeHtml p = writeFileLText (toFilePath p) . Lucid.renderText
 
 -- | Like `getDirectoryFiles` but work with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]

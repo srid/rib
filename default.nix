@@ -30,11 +30,17 @@ haskellPackages.developPackage {
       githubRepo "monadfix/named" "e684a00";
     pandoc-include-code =
       githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
+    path =
+      githubRepo "commercialhaskell/path" "1d8bdf0";
+    path-io =
+      githubRepo "mrkkrp/path-io" "84ce6a2";
     relude =
       githubRepo "kowainik/relude" "bfb5f60";
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
     clay = dontCheck super.clay;
+    path = dontCheck super.path;
+    path-io = doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
     relude = dontCheck super.relude;
   };
   modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {

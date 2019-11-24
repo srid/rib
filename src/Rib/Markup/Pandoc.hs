@@ -34,6 +34,7 @@ module Rib.Markup.Pandoc
   )
 where
 
+import Control.Monad.Catch
 import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
@@ -53,8 +54,10 @@ data RibPandocError
 
 instance Show RibPandocError where
   show = \case
-    RibPandocError_PandocError e -> show e
-    RibPandocError_UnsupportedExtension ext -> "Unsupported extension: " <> ext
+    RibPandocError_PandocError e ->
+      show e
+    RibPandocError_UnsupportedExtension ext ->
+      "Unsupported extension: " <> ext
 
 instance Markup Pandoc where
 
@@ -62,18 +65,22 @@ instance Markup Pandoc where
 
   parseDoc k s = runExcept $ do
     r <-
-      withExcept RibPandocError_UnsupportedExtension $
-        detectReader k
-    fmap (mkDoc k) $ withExcept RibPandocError_PandocError $
-      parsePure r s
+      withExcept RibPandocError_UnsupportedExtension
+        $ liftEither
+        $ first show
+        $ detectReader k
+    withExcept RibPandocError_PandocError $
+      mkDoc k
+        <$> parsePure r s
 
   readDoc (Arg k) (Arg f) = runExceptT $ do
+    content <- readFileText $ toFilePath f
     r <-
       withExceptT RibPandocError_UnsupportedExtension $
         detectReader k
-    content <- readFileText (toFilePath f)
-    fmap (mkDoc k) $ withExceptT RibPandocError_PandocError $
-      parse r content
+    withExceptT RibPandocError_PandocError $
+      mkDoc k
+        <$> parse r content
 
   renderDoc = render . _document_val
 
@@ -86,7 +93,7 @@ parsePure ::
   Text ->
   m Pandoc
 parsePure r =
-  either throwError pure . runPure . r settings
+  liftEither . runPure . r settings
   where
     settings = def {readerExtensions = exts}
 
@@ -156,19 +163,26 @@ exts =
     ]
 
 -- Internal code
---
+
+
+data UnknownException
+  = UnknownException String
+  deriving (Show, Eq, Typeable)
+
+instance Exception UnknownException
 
 -- | Detect the Pandoc reader to use based on file extension
 detectReader ::
   forall m m1.
-  (MonadError String m, PandocMonad m1) =>
+  (MonadThrow m, PandocMonad m1) =>
   Path Rel File ->
   m (ReaderOptions -> Text -> m1 Pandoc)
-detectReader k = case formats !? ext of
-  Nothing -> throwError ext
-  Just r -> pure r
+detectReader f = do
+  ext <- fileExtension f
+  case formats !? ext of
+    Nothing -> throwM $ UnknownException ext
+    Just r -> pure r
   where
-    ext = fileExtension k
     formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
     formats =
       fromList
