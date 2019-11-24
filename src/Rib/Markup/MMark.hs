@@ -2,13 +2,18 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- Suppressing orphans warning for `Markup MMark` instance
 
 module Rib.Markup.MMark
-  ( -- * Extracting information
+  ( -- * Manual rendering
+    renderMarkdown,
+
+    -- * Extracting information
     getFirstImg,
 
     -- * Re-exports
@@ -17,6 +22,7 @@ module Rib.Markup.MMark
 where
 
 import Control.Foldl (Fold (..))
+import Lucid (Html)
 import Named
 import Path
 import Rib.Markup
@@ -45,6 +51,13 @@ instance Markup MMark where
   renderDoc = MMark.render . _document_val
 
   showMarkupError = toText . M.errorBundlePretty
+
+-- | Parse and render the markup directly to HTML
+renderMarkdown :: Text -> Html ()
+renderMarkdown =
+  renderDoc
+    . either (error . showMarkupError @MMark) id
+    . parseDoc @MMark [relfile|<memory>.md|]
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

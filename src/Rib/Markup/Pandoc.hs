@@ -15,15 +15,8 @@
 module Rib.Markup.Pandoc
   ( module Text.Pandoc.Readers,
 
-    -- * Parsing
-    parse,
-    parsePure,
-
-    -- * Converting to HTML
-    render,
-    renderInlines,
-    render',
-    renderInlines',
+    -- * Manual rendering
+    renderPandoc,
 
     -- * Extracting information
     getH1,
@@ -85,6 +78,13 @@ instance Markup Pandoc where
   renderDoc = render . _document_val
 
   showMarkupError = toText @String . show
+
+-- | Parse and render the markup directly to HTML
+renderPandoc :: Path Rel File -> Text -> Html ()
+renderPandoc f =
+  renderDoc
+    . either (error . showMarkupError @Pandoc) id
+    . parseDoc @Pandoc f
 
 -- | Pure version of `parse`
 parsePure ::
@@ -163,7 +163,6 @@ exts =
     ]
 
 -- Internal code
-
 
 data UnknownException
   = UnknownException String
