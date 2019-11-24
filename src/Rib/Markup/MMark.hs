@@ -16,10 +16,7 @@ module Rib.Markup.MMark
   )
 where
 
-import Control.Foldl hiding (head)
-import qualified Data.ByteString as BS
-import qualified Data.List.NonEmpty as NE
-import qualified Data.Text.Encoding as T
+import Control.Foldl (Fold (..))
 import Named
 import Path
 import Rib.Markup
@@ -42,7 +39,7 @@ instance Markup MMark where
        in Right $ Document f doc' meta
 
   readDoc (Arg k) (Arg f) = do
-    content <- T.decodeUtf8 <$> BS.readFile (toFilePath f)
+    content <- readFileText (toFilePath f)
     pure $ parseDoc k content
 
   renderDoc = MMark.render . _document_val
@@ -59,8 +56,8 @@ getFirstImg = flip MMark.runScanner $ Fold f Nothing id
       _ -> Nothing
     inlinesContainingImg :: Ext.Bni -> [Ext.Inline]
     inlinesContainingImg = \case
-      Ext.Naked xs -> NE.toList xs
-      Ext.Paragraph xs -> NE.toList xs
+      Ext.Naked xs -> toList xs
+      Ext.Paragraph xs -> toList xs
       _ -> []
 
 exts :: [MMark.Extension]

@@ -23,7 +23,6 @@ module Rib.Shake
   )
 where
 
-import qualified Data.ByteString.Lazy as BSL
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -104,7 +103,7 @@ buildHtml f html = do
   writeHtml (output </> f) html
 
 writeHtml :: MonadIO m => Path b File -> Html () -> m ()
-writeHtml f = liftIO . BSL.writeFile (toFilePath f) . Lucid.renderBS
+writeHtml f = writeFileLText (toFilePath f) . Lucid.renderText
 
 -- | Like `getDirectoryFiles` but work with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]

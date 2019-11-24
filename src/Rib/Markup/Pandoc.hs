@@ -36,12 +36,10 @@ where
 
 import Control.Monad.Except
 import Data.Aeson
-import qualified Data.ByteString as BS
-import qualified Data.Map as Map
-import qualified Data.Text.Encoding as T
 import Lucid (Html, toHtmlRaw)
 import Named
 import Path
+import Relude.Extra.Map ((!?))
 import Rib.Markup
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
@@ -73,7 +71,7 @@ instance Markup Pandoc where
     r <-
       withExceptT RibPandocError_UnsupportedExtension $
         detectReader k
-    content <- liftIO $ T.decodeUtf8 <$> BS.readFile (toFilePath f)
+    content <- readFileText (toFilePath f)
     fmap (mkDoc k) $ withExceptT RibPandocError_PandocError $
       parse r content
 
@@ -162,16 +160,18 @@ exts =
 
 -- | Detect the Pandoc reader to use based on file extension
 detectReader ::
+  forall m m1.
   (MonadError String m, PandocMonad m1) =>
   Path Rel File ->
   m (ReaderOptions -> Text -> m1 Pandoc)
-detectReader k = case Map.lookup ext formats of
+detectReader k = case formats !? ext of
   Nothing -> throwError ext
   Just r -> pure r
   where
     ext = fileExtension k
+    formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
     formats =
-      Map.fromList
+      fromList
         [ (".md", readMarkdown),
           (".rst", readRST),
           (".org", readOrg),
@@ -188,7 +188,7 @@ getMetadata (Pandoc meta _) = flattenMeta meta
 --
 -- Renders Pandoc text objects into plain strings along the way.
 flattenMeta :: Meta -> Maybe Value
-flattenMeta (Meta meta) = if null meta then Nothing else Just (toJSON $ fmap go meta)
+flattenMeta (Meta meta) = toJSON . fmap go <$> guarded null meta
   where
     go :: MetaValue -> Value
     go (MetaMap m) = toJSON $ fmap go m
