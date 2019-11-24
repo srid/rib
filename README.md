@@ -15,8 +15,8 @@ How does it compare to Hakyll?
   ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS
   ([Clay](http://fvisser.nl/clay/)) of your site 
   - Like Hakyll, Rib uses [Pandoc](https://pandoc.org/) for parsing the source
-    documents
-- Remain as simple as possible to use (see screenshot below)
+    documents. It also supports [MMark](https://github.com/mmark-md/mmark) if you need a lightweight alternative.
+- Remain as simple as possible to use (see example below)
 - Optional Nix based workflow for easily reproducible environment
 
 Rib prioritizes the use of *existing* tools over reinventing them, and enables
@@ -87,21 +87,13 @@ installed.
 1. [`ghcid`](https://github.com/ndmitchell/ghcid) will compile your `Main.hs`
    and run its `main` function.
 
-1. `Main.hs:main` in turn calls the Shake build action (via `Rib.App.run`)
-   defined in `Rib.Simple.buildAction` passing it your function `renderPage`.
-
-There is quite a bit going on in that step 3! Let's break it down:
+1. `Main.hs:main` in turn calls `Rib.App.run` which takes as argument your custom Shake action that will build the static site.
 
 1. `Rib.App.run`: this parses the CLI arguments and runs the rib CLI "app" which
    can be run in one of a few modes --- generating static files, watching the
    `a/` directory for changes, starting HTTP server for the `b/` directory. By
    default---without any explicit arguments---this will run the Shake build
    action passed as argument on every file change and spin up a HTTP server.
-   
-1. `Rib.Simple.buildAction`: The `run` function takes a Shake build action to
-   run on file change. `Rib.Simple` provides a very simple build action for
-   generating the most simple static site --- a list of posts with static assets
-   --- which the sample repository uses.
    
 Run that command, and visit http://localhost:8080 to view your site.
 
@@ -116,24 +108,9 @@ restart the server.
 
 Great, by now you should have your static site generator ready and running! What
 more can you do? Surely you may have specific needs; and this usually translates
-to running custom Shake actions during the build.
+to running custom Shake actions during the build. Rib provides helper functions in `Rib.Shake` to make this easier. 
 
-Rib provides helper functions in `Rib.Shake` and `Rib.Pandoc` to make this
-easier. Indeed the `Rib.Simple.buildAction` function which the sample project
-readily uses makes use of these functions.
-
-In order to customize your site's build actions,
-
-1. Copy the source for `buildAction` from the
-[`Rib.Simple`](https://github.com/srid/rib/blob/master/src/Rib/Simple.hs) module
-to your `Main.hs`
-
-1. Make any customizations you want in *your* `buildAction` function. Refer to
-   [Hackage](http://hackage.haskell.org/package/rib) for API docs.
-
-1. Use that as the argument to the `Rib.App.run` function in your `main`
-
-Notice how Rib's builtin `buildAction` is 
+Rib recommends writing your Shake actions in the style of being 
 [forward-defined](http://hackage.haskell.org/package/shake-0.18.3/docs/Development-Shake-Forward.html)
 which adds to the simplicity of the entire thing.
 
