@@ -103,7 +103,8 @@ buildHtml f html = do
   writeHtml (output </> f) html
   where
     writeHtml :: MonadIO m => Path b File -> Html () -> m ()
-    writeHtml p = writeFileLText (toFilePath p) . Lucid.renderText
+    writeHtml p htmlVal =
+      writeFileLText (toFilePath p) $! Lucid.renderText htmlVal
 
 -- | Like `getDirectoryFiles` but work with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
