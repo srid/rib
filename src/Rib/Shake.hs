@@ -31,18 +31,18 @@ import Path
 import Path.IO
 import Rib.Markup
 
-data Dirs b = Dirs (Path b Dir, Path b Dir)
+data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
 
-getDirs :: Typeable b => Action (Path b Dir, Path b Dir)
+getDirs :: Action (Path Rel Dir, Path Rel Dir)
 getDirs = getShakeExtra >>= \case
   Just (Dirs d) -> return d
   Nothing -> fail "Input output directories are not initialized"
 
-ribInputDir :: Typeable b => Action (Path b Dir)
+ribInputDir :: Action (Path Rel Dir)
 ribInputDir = fst <$> getDirs
 
-ribOutputDir :: Typeable b => Action (Path b Dir)
+ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
   output <- snd <$> getDirs
   liftIO $ createDirIfMissing True output
@@ -51,8 +51,8 @@ ribOutputDir = do
 -- | Shake action to copy static files as is
 buildStaticFiles :: [Path Rel File] -> Action ()
 buildStaticFiles staticFilePatterns = do
-  input <- ribInputDir @Rel
-  output <- ribOutputDir @Rel
+  input <- ribInputDir
+  output <- ribOutputDir
   files <- getDirectoryFiles' input staticFilePatterns
   void $ forP files $ \f ->
     copyFileChanged' (input </> f) (output </> f)
@@ -85,7 +85,7 @@ readDocMulti ::
   Path Rel File ->
   Action [Document t]
 readDocMulti pat = do
-  input <- ribInputDir @Rel
+  input <- ribInputDir
   fs <- getDirectoryFiles' input [pat]
   forP fs $ \f -> do
     need $ toFilePath <$> [input </> f]
@@ -99,7 +99,7 @@ readDocMulti pat = do
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
 buildHtml f html = do
-  output <- ribOutputDir @Rel
+  output <- ribOutputDir
   writeHtml (output </> f) html
   where
     writeHtml :: MonadIO m => Path b File -> Html () -> m ()

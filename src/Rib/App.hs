@@ -45,16 +45,14 @@ data App
 
 -- | Run Rib using arguments passed in the command line.
 run ::
-  forall b.
-  Typeable b =>
   -- | Directory from which source content will be read.
   --
   -- NOTE: This should ideally *not* be `"."` as our use of watchTree (of
   -- `runWith`) can interfere with Shake's file scaning.
-  Path b Dir ->
+  Path Rel Dir ->
   -- | The path where static files will be generated.  Rib's server uses this
   -- directory when serving files.
-  Path b Dir ->
+  Path Rel Dir ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
@@ -77,7 +75,7 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
         ]
 
 -- | Like `run` but with an explicitly passed `App` mode
-runWith :: forall b. Typeable b => Path b Dir -> Path b Dir -> Action () -> App -> IO ()
+runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
