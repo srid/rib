@@ -1,4 +1,5 @@
-{ pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/002b853782e.tar.gz") {}
+# Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
+{ pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/58fb23f72ad.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
 , name ? "rib"
@@ -10,37 +11,34 @@ let
     if compiler == "default"
       then pkgs.haskellPackages
       else pkgs.haskell.packages.${compiler};
-  fetchGH = fq: rev: builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
+  githubRepo = fq: rev:
+    builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 in
 haskellPackages.developPackage {
   root = root;
   name = name;
   source-overrides = {
-    clay = pkgs.fetchFromGitHub {
-      owner = "sebastiaanvisser";
-      repo = "clay";
-      rev = "54dc9eaf0abd180ef9e35d97313062d99a02ee75";
-      sha256 = "0y38hyd2gvr7lrbxkrjwg4h0077a54m7gxlvm9s4kk0995z1ncax";
-    };
-    pandoc-include-code = pkgs.fetchFromGitHub {
-      owner = "owickstrom";
-      repo = "pandoc-include-code";
-      rev = "7e4d9d967ff3e3855a7eae48408c43b3400ae6f4";
-      sha256 = "0wvml63hkhgmmkdd2ml5a3g7cb69hxwdsjmdhdzjbqbrwkmc20rd";
-    };
-    mmark = fetchGH "mmark-md/mmark" "8f5534d";
-    mmark-ext = fetchGH "mmark-md/mmark-ext" "4d1c40e";
-    named = fetchGH "monadfix/named" "e684a00";
-    relude = fetchGH "kowainik/relude" "bfb5f60";
     rib = ./.;
+    # Override haskell packages here:
+    clay =
+      githubRepo "sebastiaanvisser/clay" "54dc9ea";
+    mmark =
+      githubRepo "mmark-md/mmark" "8f5534d";
+    mmark-ext =
+      githubRepo "mmark-md/mmark-ext" "4d1c40e";
+    named =
+      githubRepo "monadfix/named" "e684a00";
+    pandoc-include-code =
+      githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
+    relude =
+      githubRepo "kowainik/relude" "bfb5f60";
   } // source-overrides;
-
   overrides = self: super: with pkgs.haskell.lib; {
     clay = dontCheck super.clay;
     relude = dontCheck super.relude;
   };
-
   modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {
-    buildTools = with haskellPackages; (attrs.buildTools or []) ++ [cabal-install ghcid] ;
+    buildTools = with haskellPackages;
+      (attrs.buildTools or []) ++ [cabal-install ghcid] ;
   });
 }

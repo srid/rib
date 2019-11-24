@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
--- for `Markup MMark` instance
+-- Suppressing orphans warning for `Markup MMark` instance
 
 module Rib.Markup.MMark
   ( -- * Extracting information

@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
--- for `Markup Pandoc` instance
+-- Suppressing orphans warning for `Markup Pandoc` instance
 
 -- | Helpers for working with Pandoc documents
 module Rib.Markup.Pandoc
