@@ -178,14 +178,15 @@ detectReader f = do
   liftEither $ maybeToRight (UnknownExtension ext) $
     formats !? ext
   where
-    -- TODO: This should compute using `Text.Pandoc.Readers.readers`
     formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
     formats =
+      -- TODO: Expand this list, cf. `Text.Pandoc.Readers.readers`
       fromList
         [ (".md", readMarkdown),
           (".rst", readRST),
           (".org", readOrg),
-          (".tex", readLaTeX)
+          (".tex", readLaTeX),
+          (".ipynb", readIpynb)
         ]
     -- Re-constrain code constrained by MonadThrow to be constrained by
     -- MonadError instead.
