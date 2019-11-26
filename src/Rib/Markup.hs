@@ -40,13 +40,6 @@ data Document repr
       }
   deriving (Generic, Show)
 
-getDocumentMeta :: FromJSON meta => Document repr -> meta
-getDocumentMeta (Document fp _ _ mmeta) = case mmeta of
-  Nothing -> error $ toText $ "No metadata in document: " <> toFilePath fp -- TODO: handle errors gracefully
-  Just meta -> case fromJSON meta of
-    Error e -> error $ toText e
-    Success v -> v
-
 -- | Class for denoting Markup representations.
 --
 -- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.

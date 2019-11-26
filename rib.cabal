@@ -25,13 +25,13 @@ library
     exposed-modules:
         Rib
         Rib.App
-        Rib.Markup
         Rib.Markup.MMark
         Rib.Markup.Pandoc
         Rib.Server
         Rib.Shake
     other-modules:
         Prelude
+        Rib.Markup
     hs-source-dirs: src
     default-language: Haskell2010
     ghc-options:
