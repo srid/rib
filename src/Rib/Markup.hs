@@ -13,7 +13,6 @@ module Rib.Markup
 
     -- * Document type
     Document (..),
-    getDocumentMeta,
   )
 where
 

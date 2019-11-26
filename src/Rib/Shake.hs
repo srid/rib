@@ -62,14 +62,14 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall t.
-  Markup t =>
+  forall repr.
+  Markup repr =>
   -- | Source file patterns
   Path Rel File ->
   -- | How to render the given document to HTML
-  (Document t -> Html ()) ->
+  (Document repr -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Document t]
+  Action [Document repr]
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
@@ -79,11 +79,11 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall t.
-  Markup t =>
+  forall repr.
+  Markup repr =>
   -- | Source file patterns
   Path Rel File ->
-  Action [Document t]
+  Action [Document repr]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input [pat]
@@ -96,9 +96,7 @@ readDocMulti pat = do
           ! #path (input </> f)
     case result of
       Left e ->
-        -- FIXME: There is one more place, getDocumentMeta, which throws error
-        -- (and thus not handled here)
-        let es = toString (showMarkupError @t e)
+        let es = toString (showMarkupError @repr e)
          in fail $ "Error converting " <> toFilePath f <> " to HTML: " <> es
       Right v -> pure v
 
