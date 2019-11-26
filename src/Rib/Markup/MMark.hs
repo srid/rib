@@ -22,6 +22,7 @@ module Rib.Markup.MMark
 where
 
 import Control.Foldl (Fold (..))
+import Control.Monad.Except
 import Lucid (Html)
 import Named
 import Path
@@ -39,25 +40,23 @@ instance Markup MMark where
 
   parseDoc f s = case MMark.parse (toFilePath f) s of
     Left e -> Left e
-    Right doc ->
-      let doc' = MMark.useExtensions exts $ useTocExt doc
-          meta = MMark.projectYaml doc
-       in Right $ Document f doc' meta
+    Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
   readDoc (Arg k) (Arg f) = do
     content <- readFileText (toFilePath f)
     pure $ parseDoc k content
 
-  renderDoc = MMark.render . _document_val
+  extractMeta = MMark.projectYaml
+
+  renderDoc = Right . MMark.render
 
   showMarkupError = toText . M.errorBundlePretty
 
 -- | Parse and render the markup directly to HTML
 renderMarkdown :: Text -> Html ()
-renderMarkdown =
-  renderDoc
-    . either (error . showMarkupError @MMark) id
-    . parseDoc @MMark [relfile|<memory>.md|]
+renderMarkdown s = either (error . showMarkupError @MMark) id $ runExcept $ do
+  doc <- liftEither $ parseDoc @MMark [relfile|<memory>.md|] s
+  liftEither $ renderDoc doc
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

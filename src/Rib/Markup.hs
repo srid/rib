@@ -10,10 +10,6 @@
 module Rib.Markup
   ( -- * Type class
     Markup (..),
-
-    -- * Document type
-    Document (..),
-    getDocumentMeta,
   )
 where
 
@@ -21,28 +17,6 @@ import Data.Aeson
 import Lucid (Html)
 import Named
 import Path
-
--- | A document written in a lightweight markup language (LML)
---
--- The type variable `repr` indicates the representation type of the Markup
--- parser to be used.
-data Document repr
-  = Document
-      { -- | Path to the document; relative to the source directory.
-        _document_path :: Path Rel File,
-        _document_val :: repr,
-        -- | Metadata associated with the document as an aeson Value. If no metadata
-        -- is provided this will be Nothing.
-        _document_meta :: Maybe Value
-      }
-  deriving (Generic, Show)
-
-getDocumentMeta :: FromJSON meta => Document repr -> meta
-getDocumentMeta (Document fp _ mmeta) = case mmeta of
-  Nothing -> error $ toText $ "No metadata in document: " <> toFilePath fp -- TODO: handle errors gracefully
-  Just meta -> case fromJSON meta of
-    Error e -> error $ toText e
-    Success v -> v
 
 -- | Class for denoting Markup representations.
 --
@@ -59,18 +33,25 @@ class Markup repr where
     Path Rel File ->
     -- | Markup text to parse
     Text ->
-    Either (MarkupError repr) (Document repr)
+    Either (MarkupError repr) repr
 
-  -- | Like `reproc` but take the actual filepath instead of text.
+  -- | Like `parseDoc` but take the actual filepath instead of text.
   readDoc ::
+    forall b.
     -- | File path, used to identify the document only.
     "relpath" :! Path Rel File ->
     -- | Actual path to the file to parse.
     "path" :! Path b File ->
-    IO (Either (MarkupError repr) (Document repr))
+    IO (Either (MarkupError repr) repr)
+
+  extractMeta ::
+    repr ->
+    Maybe Value
 
   -- | Render the document as Lucid HTML
-  renderDoc :: Document repr -> Html ()
+  renderDoc ::
+    repr ->
+    Either (MarkupError repr) (Html ())
 
   -- | Convert `MarkupError` to string
   showMarkupError :: MarkupError repr -> Text

@@ -2,12 +2,13 @@
 
 ## 0.5.0.0 (UNRELEASED)
 
-This release comes with major API refactor. Key changes:
+This release comes with a major API refactor. Key changes:
 
-- Support for both Pandoc and MMark parsers
-- Add `Rib.Markup.Markup` type class to polymorphically select the parser
-- Add top-level `Rib` import namespace to ease of use
-- Replace complex metadata handling using straightforward aeson `Value` parsing
+- Added MMark support, as an alternative to Pandoc
+- Allows using arbitrary records to load metadata
+  - This replaces the previous complex metadata API
+- Added `Document` type that uses the custom metadata record
+- Add top-level `Rib` import namespace for ease of use
 - Remove the following:
   - JSON cache
   - `Rib.Simple`
@@ -17,6 +18,7 @@ Other changes:
 
 - Use type-safe path types using the [path](http://hackage.haskell.org/package/path) library.
 - Fix #40: Gracefully handle rendering/ parsing errors, without dying.
+- Misc error reporting improvements
 
 ## 0.4.1.0
 

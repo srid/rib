@@ -61,8 +61,7 @@ instance Markup Pandoc where
         $ liftEither
         $ detectReader k
     withExcept RibPandocError_PandocError $
-      mkDoc k
-        <$> parsePure r s
+      parsePure r s
 
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
@@ -70,19 +69,23 @@ instance Markup Pandoc where
       withExceptT RibPandocError_UnknownFormat $
         detectReader k
     withExceptT RibPandocError_PandocError $
-      mkDoc k
-        <$> parse r content
+      parse r content
 
-  renderDoc = render . _document_val
+  extractMeta (Pandoc meta _) = flattenMeta meta
+
+  renderDoc =
+    fmap toHtmlRaw
+      . first RibPandocError_PandocError
+      . liftEither
+      . render'
 
   showMarkupError = toText @String . show
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()
-renderPandoc f =
-  renderDoc
-    . either (error . showMarkupError @Pandoc) id
-    . parseDoc @Pandoc f
+renderPandoc f s = either (error . show) id $ runExcept $ do
+  doc <- liftEither $ parseDoc @Pandoc f s
+  liftEither $ renderDoc doc
 
 -- | Pure version of `parse`
 parsePure ::
@@ -100,7 +103,7 @@ parsePure r =
 -- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
 parse ::
   (MonadIO m, MonadError PandocError m) =>
-  -- | Document format. Example: `Text.Pandoc.Readers.readMarkdown`
+  -- | Markup format. Example: `Text.Pandoc.Readers.readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
   -- | Source text to parse
   Text ->
@@ -112,18 +115,14 @@ parse r s = do
     settings = def {readerExtensions = exts}
     includeSources = includeCode $ Just $ Format "html5"
 
--- | Like `render` but returns the raw HTML string, or the rendering error.
-render' :: Pandoc -> Either PandocError Text
-render' = runPure . writeHtml5String settings
+-- | Render a Pandoc document as HTML
+render' :: Pandoc -> Either PandocError (Html ())
+render' = fmap toHtmlRaw . runPure . writeHtml5String settings
   where
     settings = def {writerExtensions = exts}
 
--- | Render a Pandoc document as Lucid HTML
-render :: Pandoc -> Html ()
-render = either (error . show) toHtmlRaw . render'
-
 -- | Like `renderInlines` but returns the raw HTML string, or the rendering error.
-renderInlines' :: [Inline] -> Either PandocError Text
+renderInlines' :: [Inline] -> Either PandocError (Html ())
 renderInlines' = render' . Pandoc mempty . pure . Plain
 
 -- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
@@ -191,12 +190,6 @@ detectReader f = do
     -- Re-constrain code constrained by MonadThrow to be constrained by
     -- MonadError instead.
     catchInMonadError ef = either (throwError . ef) pure
-
-mkDoc :: Path Rel File -> Pandoc -> Document Pandoc
-mkDoc f v = Document f v $ getMetadata v
-
-getMetadata :: Pandoc -> Maybe Value
-getMetadata (Pandoc meta _) = flattenMeta meta
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
