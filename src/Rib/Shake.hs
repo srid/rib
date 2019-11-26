@@ -94,7 +94,13 @@ readDocMulti pat = do
         readDoc
           ! #relpath f
           ! #path (input </> f)
-    pure $ either (error . showMarkupError @t) id result
+    case result of
+      Left e ->
+        -- FIXME: There is one more place, getDocumentMeta, which throws error
+        -- (and thus not handled here)
+        let es = toString (showMarkupError @t e)
+         in fail $ "Error converting " <> toFilePath f <> " to HTML: " <> es
+      Right v -> pure v
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
