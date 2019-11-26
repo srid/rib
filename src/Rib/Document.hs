@@ -1,4 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -8,6 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Rib.Document
   ( -- * Document type
@@ -59,31 +59,33 @@ instance Markup repr => Show (DocumentError repr) where
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
-  forall b repr meta.
-  (Markup repr, FromJSON meta) =>
+  forall m b repr meta.
+  (MonadError (DocumentError repr) m, MonadIO m, Markup repr, FromJSON meta) =>
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
-  IO (Either (DocumentError repr) (Document repr meta))
-mkDocumentFrom (Arg k) (Arg f) = runExceptT $ do
-  -- HACK: this looks bad
-  v :: repr <-
+  m (Document repr meta)
+mkDocumentFrom k@(arg #relpath -> k') f = do
+  v <-
     liftEither
-      =<< ( lift $ fmap (first DocumentError_MarkupError) $
-              readDoc @repr @b
-                ! #relpath k
-                ! #path f
-          )
-  h <- withExceptT DocumentError_MarkupError $ liftEither $ renderDoc v
+      . first DocumentError_MarkupError
+        =<< liftIO (readDoc k f)
+  html <-
+    liftEither
+      $ first DocumentError_MarkupError
+      $ renderDoc v
   let metaValueM = extractMeta v
-  metaValue <- maybeToEither DocumentError_MetadataMissing metaValueM
+  metaValue <-
+    maybeToEither
+      DocumentError_MetadataMissing
+      metaValueM
   meta <-
-    withExceptT DocumentError_MetadataBadJSON
-      $ liftEither
+    liftEither
+      $ first DocumentError_MetadataBadJSON
       $ resultToEither
       $ fromJSON metaValue
-  pure $ Document k v h metaValueM meta
+  pure $ Document k' v html metaValueM meta
   where
     maybeToEither e = \case
       Nothing -> throwError e

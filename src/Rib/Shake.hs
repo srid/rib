@@ -91,11 +91,11 @@ readDocMulti pat = do
   fs <- getDirectoryFiles' input [pat]
   forP fs $ \f -> do
     need $ toFilePath <$> [input </> f]
-    result <-
-      liftIO $
-        mkDocumentFrom
-          ! #relpath f
-          ! #path (input </> f)
+    result <- runExceptT $
+      mkDocumentFrom
+        ! #relpath f
+        ! #path (input </> f)
+    -- TODO: Make error reporting nice, without Shake's stack trace ugliness.
     case result of
       Left e ->
         fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e

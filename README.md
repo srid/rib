@@ -31,15 +31,19 @@ using Rib:
 -- itself. Second, the metadata associated with each document.
 
 -- | A generated page is either an index of documents, or an individual document.
-data Page doc
-  = Page_Index [Document doc]
-  | Page_Doc (Document doc)
+--
+-- The `Document` type takes two type variables:
+-- 1. The first type variable specifies the parser to use: MMark or Pandoc
+-- 2. The second type variable should be your metadata record
+data Page
+  = Page_Index [Document MMark DocMeta]
+  | Page_Doc (Document MMark DocMeta)
 
 -- | Type representing the metadata in our Markdown documents
 --
 -- Note that if a field is not optional (i.e., not Maybe) it must be present.
-data Meta
-  = Meta
+data DocMeta
+  = DocMeta
       { title :: Text,
         description :: Maybe Text
       }
@@ -60,51 +64,46 @@ main = Rib.run [reldir|a|] [reldir|b|] $ do
   -- Copy over the static files
   Rib.buildStaticFiles [[relfile|static/**|]]
   -- Build individual markdown files, generating .html for each.
-  --
-  -- NOTE: We use TypeApplications to specify the type of the `doc` type
-  -- variable, as used in the `Markup doc` constraint in the functions below.
-  -- There are currently two possible values: `MMark` (if you choose to use the
-  -- `mmark` parser) and `Pandoc` (if using pandoc).
-  posts <- Rib.buildHtmlMulti @MMark [relfile|*.md|] (renderPage . Page_Doc)
+  posts <- Rib.buildHtmlMulti [relfile|*.md|] (renderPage . Page_Doc)
   -- Build an index.html linking to the aforementioned files.
   Rib.buildHtml [relfile|index.html|]
     $ renderPage
     $ Page_Index posts
   where
     -- Define your site HTML here
-    renderPage :: Markup doc => Page doc -> Html ()
+    renderPage :: Page -> Html ()
     renderPage page = with html_ [lang_ "en"] $ do
       head_ $ do
         meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
         title_ $ case page of
           Page_Index _ -> "My website!"
-          Page_Doc doc -> toHtml $ title $ Rib.getDocumentMeta doc
+          Page_Doc doc -> toHtml $ title $ Rib._document_meta doc
         style_ [type_ "text/css"] $ Clay.render pageStyle
       body_
         $ with div_ [id_ "thesite"]
         $ do
-          -- Main content
           with a_ [href_ "/"] "Back to Home"
           hr_ []
           case page of
             Page_Index docs ->
-              div_ $ forM_ docs $ \doc -> li_ $ do
-                let meta = Rib.getDocumentMeta doc
+              div_ $ forM_ docs $ \doc -> with li_ [class_ "links"] $ do
+                let meta = Rib._document_meta doc
                 b_ $ with a_ [href_ (Rib.getDocumentUrl doc)] $ toHtml $ title meta
-                case description meta of
-                  Just s -> em_ $ small_ $ toHtml s
-                  Nothing -> mempty
+                maybe mempty Rib.renderMarkdown $
+                  description meta
             Page_Doc doc ->
               with article_ [class_ "post"] $ do
-                h1_ $ toHtml $ title $ Rib.getDocumentMeta doc
-                Rib.renderDoc doc
+                h1_ $ toHtml $ title $ Rib._document_meta doc
+                Rib._document_html doc
     -- Define your site CSS here
     pageStyle :: Css
-    pageStyle = div # "#thesite" ? do
-      marginLeft $ pct 20
-      marginTop $ em 4
-      "h1" ? do
-        fontSize $ em 2.3
+    pageStyle = "div#thesite" ? do
+      margin (em 4) (pc 20) (em 1) (pc 20)
+      "li.links" ? do
+        listStyleType none
+        marginTop $ em 1
+        "b" ? fontSize (em 1.2)
+        "p" ? sym margin (px 0)
 ```
 
 (View full [`Main.hs`](https://github.com/srid/rib-sample/blob/master/Main.hs) at rib-sample)
