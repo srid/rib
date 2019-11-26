@@ -30,7 +30,10 @@ data Document repr
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
+        -- | Parsed representation of the document.
         _document_val :: repr,
+        -- | HTML rendering of the parsed representation.
+        _document_html :: Html (),
         -- | Metadata associated with the document as an aeson Value. If no metadata
         -- is provided this will be Nothing.
         _document_meta :: Maybe Value
@@ -38,7 +41,7 @@ data Document repr
   deriving (Generic, Show)
 
 getDocumentMeta :: FromJSON meta => Document repr -> meta
-getDocumentMeta (Document fp _ mmeta) = case mmeta of
+getDocumentMeta (Document fp _ _ mmeta) = case mmeta of
   Nothing -> error $ toText $ "No metadata in document: " <> toFilePath fp -- TODO: handle errors gracefully
   Just meta -> case fromJSON meta of
     Error e -> error $ toText e
@@ -61,7 +64,7 @@ class Markup repr where
     Text ->
     Either (MarkupError repr) (Document repr)
 
-  -- | Like `reproc` but take the actual filepath instead of text.
+  -- | Like `parseDoc` but take the actual filepath instead of text.
   readDoc ::
     -- | File path, used to identify the document only.
     "relpath" :! Path Rel File ->
@@ -70,7 +73,9 @@ class Markup repr where
     IO (Either (MarkupError repr) (Document repr))
 
   -- | Render the document as Lucid HTML
-  renderDoc :: Document repr -> Html ()
+  renderDoc ::
+    Document repr ->
+    Either (MarkupError repr) (Html ())
 
   -- | Convert `MarkupError` to string
   showMarkupError :: MarkupError repr -> Text

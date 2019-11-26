@@ -36,7 +36,7 @@ getDocumentUrl ::
   -- | Relative path to a page (extension is ignored)
   Document t ->
   Text
-getDocumentUrl (Document f _ _) = toText $ toFilePath ([absdir|/|] </> f) -<.> ".html"
+getDocumentUrl (Document f _ _ _) = toText $ toFilePath ([absdir|/|] </> f) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
 --
