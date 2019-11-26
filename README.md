@@ -23,6 +23,24 @@ Rib prioritizes the use of *existing* tools over reinventing them, and enables
 the user to compose them as they wish instead of having to write code to fit a
 custom framework.
 
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [rib](#rib)
+    - [Quick Preview](#quick-preview)
+    - [Getting Started](#getting-started)
+    - [Concepts](#concepts)
+        - [Directory structure](#directory-structure)
+        - [Run the site](#run-the-site)
+        - [How Rib works](#how-rib-works)
+        - [Editing workflow](#editing-workflow)
+        - [What's next?](#whats-next)
+    - [Examples](#examples)
+
+<!-- markdown-toc end -->
+
+## Quick Preview
+
 Here is how your code may look like if you were to generate your static site
 using Rib:
 
@@ -113,6 +131,8 @@ main = Rib.run [reldir|a|] [reldir|b|] $ do
 The easiest way to get started with [Rib](/) is to [use the
 template](https://help.github.com/en/articles/creating-a-repository-from-a-template)
 repository, [**rib-sample**](https://github.com/srid/rib-sample), from Github.
+
+## Concepts
 
 ### Directory structure
 
