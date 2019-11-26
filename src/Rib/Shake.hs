@@ -29,7 +29,8 @@ import qualified Lucid
 import Named
 import Path
 import Path.IO
-import Rib.Markup
+import Rib.Document
+import Rib.Markup (Markup (showMarkupError))
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)

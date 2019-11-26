@@ -12,7 +12,7 @@ module Rib
 where
 
 import Rib.App
-import Rib.Markup (Document(..))
+import Rib.Document
 import Rib.Markup.MMark (MMark, renderMarkdown)
 import Rib.Markup.Pandoc (Pandoc, renderPandoc)
 import Rib.Server

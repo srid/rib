@@ -12,9 +12,9 @@ import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import Path hiding ((-<.>))
-import Rib.Markup (Document (..))
-import WaiAppStatic.Types (StaticSettings)
 import Prelude
+import Rib.Document (Document (_document_path))
+import WaiAppStatic.Types (StaticSettings)
 
 -- | WAI Settings suited for serving statically generated websites.
 staticSiteServerSettings :: FilePath -> StaticSettings
@@ -36,7 +36,7 @@ getDocumentUrl ::
   -- | Relative path to a page (extension is ignored)
   Document t ->
   Text
-getDocumentUrl (Document f _ _ _) = toText $ toFilePath ([absdir|/|] </> f) -<.> ".html"
+getDocumentUrl doc = toText $ toFilePath ([absdir|/|] </> (_document_path doc)) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
 --

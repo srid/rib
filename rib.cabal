@@ -25,6 +25,7 @@ library
     exposed-modules:
         Rib
         Rib.App
+        Rib.Document
         Rib.Markup.MMark
         Rib.Markup.Pandoc
         Rib.Server
