@@ -62,7 +62,7 @@ instance Markup Pandoc where
         $ detectReader k
     withExcept RibPandocError_PandocError $
       mkDoc k
-        <$> parsePure r s
+        =<< parsePure r s
 
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
@@ -71,7 +71,7 @@ instance Markup Pandoc where
         detectReader k
     withExceptT RibPandocError_PandocError $
       mkDoc k
-        <$> parse r content
+        =<< parse r content
 
   showMarkupError = toText @String . show
 
@@ -188,13 +188,10 @@ detectReader f = do
     -- MonadError instead.
     catchInMonadError ef = either (throwError . ef) pure
 
-mkDoc :: Path Rel File -> Pandoc -> Document Pandoc
-mkDoc f v = Document f v h $ getMetadata v
-  where
-    h =
-      either (error . showMarkupError @Pandoc) id
-        $ first RibPandocError_PandocError
-        $ render' v
+mkDoc :: MonadError PandocError m => Path Rel File -> Pandoc -> m (Document Pandoc)
+mkDoc f v = do
+  h <- liftEither $ render' v
+  pure $ Document f v h $ getMetadata v
 
 getMetadata :: Pandoc -> Maybe Value
 getMetadata (Pandoc meta _) = flattenMeta meta
