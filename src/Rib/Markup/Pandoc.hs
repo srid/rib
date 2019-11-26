@@ -27,7 +27,6 @@ module Rib.Markup.Pandoc
   )
 where
 
-import Control.Monad.Catch
 import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
@@ -43,14 +42,14 @@ import qualified Text.Show
 
 data RibPandocError
   = RibPandocError_PandocError PandocError
-  | RibPandocError_UnsupportedExtension String
+  | RibPandocError_UnknownFormat UnknownExtension
 
 instance Show RibPandocError where
   show = \case
     RibPandocError_PandocError e ->
       show e
-    RibPandocError_UnsupportedExtension ext ->
-      "Unsupported extension: " <> ext
+    RibPandocError_UnknownFormat s ->
+      "Unsupported extension: " <> show s
 
 instance Markup Pandoc where
 
@@ -58,9 +57,8 @@ instance Markup Pandoc where
 
   parseDoc k s = runExcept $ do
     r <-
-      withExcept RibPandocError_UnsupportedExtension
+      withExcept RibPandocError_UnknownFormat
         $ liftEither
-        $ first show
         $ detectReader k
     withExcept RibPandocError_PandocError $
       mkDoc k
@@ -69,7 +67,7 @@ instance Markup Pandoc where
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
     r <-
-      withExceptT RibPandocError_UnsupportedExtension $
+      withExceptT RibPandocError_UnknownFormat $
         detectReader k
     withExceptT RibPandocError_PandocError $
       mkDoc k
@@ -163,23 +161,22 @@ exts =
 
 -- Internal code
 
-data UnknownException
-  = UnknownException String
-  deriving (Show, Eq, Typeable)
-
-instance Exception UnknownException
+data UnknownExtension
+  = UnknownExtension String
+  deriving (Show, Eq)
 
 -- | Detect the Pandoc reader to use based on file extension
 detectReader ::
   forall m m1.
-  (MonadThrow m, PandocMonad m1) =>
+  (MonadError UnknownExtension m, PandocMonad m1) =>
   Path Rel File ->
   m (ReaderOptions -> Text -> m1 Pandoc)
 detectReader f = do
-  ext <- fileExtension f
-  case formats !? ext of
-    Nothing -> throwM $ UnknownException ext
-    Just r -> pure r
+  ext <-
+    catchInMonadError (UnknownExtension . show) $
+      fileExtension f
+  liftEither $ maybeToRight (UnknownExtension ext) $
+    formats !? ext
   where
     -- TODO: This should compute using `Text.Pandoc.Readers.readers`
     formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
@@ -190,6 +187,9 @@ detectReader f = do
           (".org", readOrg),
           (".tex", readLaTeX)
         ]
+    -- Re-constrain code constrained by MonadThrow to be constrained by
+    -- MonadError instead.
+    catchInMonadError ef = either (throwError . ef) pure
 
 mkDoc :: Path Rel File -> Pandoc -> Document Pandoc
 mkDoc f v = Document f v $ getMetadata v
