@@ -23,6 +23,7 @@ module Rib.Shake
   )
 where
 
+import Data.Aeson
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -30,7 +31,7 @@ import Named
 import Path
 import Path.IO
 import Rib.Document
-import Rib.Markup (Markup (showMarkupError))
+import Rib.Markup (Markup)
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -63,14 +64,14 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall repr.
-  Markup repr =>
+  forall repr meta.
+  (Markup repr, FromJSON meta) =>
   -- | Source file patterns
   Path Rel File ->
   -- | How to render the given document to HTML
-  (Document repr -> Html ()) ->
+  (Document repr meta -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Document repr]
+  Action [Document repr meta]
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
@@ -80,11 +81,11 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall repr.
-  Markup repr =>
+  forall repr meta.
+  (Markup repr, FromJSON meta) =>
   -- | Source file patterns
   Path Rel File ->
-  Action [Document repr]
+  Action [Document repr meta]
 readDocMulti pat = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input [pat]
@@ -97,8 +98,7 @@ readDocMulti pat = do
           ! #path (input </> f)
     case result of
       Left e ->
-        let es = toString (showMarkupError @repr e)
-         in fail $ "Error converting " <> toFilePath f <> " to HTML: " <> es
+        fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
       Right v -> pure v
 
 -- | Build a single HTML file with the given value

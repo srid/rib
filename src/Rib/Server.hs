@@ -12,7 +12,6 @@ import Development.Shake.FilePath ((-<.>))
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, ssLookupFile, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
 import Path hiding ((-<.>))
-import Prelude
 import Rib.Document (Document (_document_path))
 import WaiAppStatic.Types (StaticSettings)
 
@@ -32,10 +31,7 @@ staticSiteServerSettings root =
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-getDocumentUrl ::
-  -- | Relative path to a page (extension is ignored)
-  Document t ->
-  Text
+getDocumentUrl :: Document t meta -> Text
 getDocumentUrl doc = toText $ toFilePath ([absdir|/|] </> (_document_path doc)) -<.> ".html"
 
 -- | Run a HTTP server to serve a directory of static files
