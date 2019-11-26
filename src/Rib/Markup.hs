@@ -72,10 +72,5 @@ class Markup repr where
     "path" :! Path b File ->
     IO (Either (MarkupError repr) (Document repr))
 
-  -- | Render the document as Lucid HTML
-  renderDoc ::
-    Document repr ->
-    Either (MarkupError repr) (Html ())
-
   -- | Convert `MarkupError` to string
   showMarkupError :: MarkupError repr -> Text

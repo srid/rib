@@ -49,15 +49,13 @@ instance Markup MMark where
     content <- readFileText (toFilePath f)
     pure $ parseDoc k content
 
-  renderDoc = Right . MMark.render . _document_val
-
   showMarkupError = toText . M.errorBundlePretty
 
 -- | Parse and render the markup directly to HTML
 renderMarkdown :: Text -> Html ()
 renderMarkdown s = either (error . showMarkupError @MMark) id $ runExcept $ do
   doc <- liftEither $ parseDoc @MMark [relfile|<memory>.md|] s
-  liftEither $ renderDoc doc
+  pure $ MMark.render $ _document_val doc
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

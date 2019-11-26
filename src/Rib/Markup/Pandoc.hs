@@ -73,20 +73,16 @@ instance Markup Pandoc where
       mkDoc k
         <$> parse r content
 
-  renderDoc =
-    fmap toHtmlRaw
-      . first RibPandocError_PandocError
-      . liftEither
-      . render'
-      . _document_val
-
   showMarkupError = toText @String . show
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()
 renderPandoc f s = either (error . showMarkupError @Pandoc) id $ runExcept $ do
   doc <- liftEither $ parseDoc @Pandoc f s
-  liftEither $ renderDoc doc
+  liftEither
+    $ first RibPandocError_PandocError
+    $ render'
+    $ _document_val doc
 
 -- | Pure version of `parse`
 parsePure ::
