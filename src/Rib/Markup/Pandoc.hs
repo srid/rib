@@ -61,8 +61,7 @@ instance Markup Pandoc where
         $ liftEither
         $ detectReader k
     withExcept RibPandocError_PandocError $
-      mkDoc k
-        =<< parsePure r s
+      parsePure r s
 
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
@@ -70,21 +69,21 @@ instance Markup Pandoc where
       withExceptT RibPandocError_UnknownFormat $
         detectReader k
     withExceptT RibPandocError_PandocError $
-      mkDoc k
-        =<< parse r content
+      parse r content
+
+  extractMeta (Pandoc meta _) = flattenMeta meta
 
   renderDoc =
     fmap toHtmlRaw
       . first RibPandocError_PandocError
       . liftEither
       . render'
-      . _document_val
 
   showMarkupError = toText @String . show
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()
-renderPandoc f s = either (error . showMarkupError @Pandoc) id $ runExcept $ do
+renderPandoc f s = either (error . show) id $ runExcept $ do
   doc <- liftEither $ parseDoc @Pandoc f s
   liftEither $ renderDoc doc
 
@@ -104,7 +103,7 @@ parsePure r =
 -- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
 parse ::
   (MonadIO m, MonadError PandocError m) =>
-  -- | Document format. Example: `Text.Pandoc.Readers.readMarkdown`
+  -- | Markup format. Example: `Text.Pandoc.Readers.readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
   -- | Source text to parse
   Text ->
@@ -191,14 +190,6 @@ detectReader f = do
     -- Re-constrain code constrained by MonadThrow to be constrained by
     -- MonadError instead.
     catchInMonadError ef = either (throwError . ef) pure
-
-mkDoc :: MonadError PandocError m => Path Rel File -> Pandoc -> m (Document Pandoc)
-mkDoc f v = do
-  h <- liftEither $ render' v
-  pure $ Document f v h $ getMetadata v
-
-getMetadata :: Pandoc -> Maybe Value
-getMetadata (Pandoc meta _) = flattenMeta meta
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --

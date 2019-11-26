@@ -91,7 +91,7 @@ readDocMulti pat = do
     need $ toFilePath <$> [input </> f]
     result <-
       liftIO $
-        readDoc
+        mkDocumentFrom
           ! #relpath f
           ! #path (input </> f)
     case result of

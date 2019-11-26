@@ -40,16 +40,15 @@ instance Markup MMark where
 
   parseDoc f s = case MMark.parse (toFilePath f) s of
     Left e -> Left e
-    Right doc ->
-      let doc' = MMark.useExtensions exts $ useTocExt doc
-          meta = MMark.projectYaml doc
-       in Right $ Document f doc' (MMark.render doc') meta
+    Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
   readDoc (Arg k) (Arg f) = do
     content <- readFileText (toFilePath f)
     pure $ parseDoc k content
 
-  renderDoc = Right . MMark.render . _document_val
+  extractMeta = MMark.projectYaml
+
+  renderDoc = Right . MMark.render
 
   showMarkupError = toText . M.errorBundlePretty
 
