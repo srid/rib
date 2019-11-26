@@ -24,32 +24,34 @@ import Path
 
 -- | A document written in a lightweight markup language (LML)
 --
--- The type variable `t` indicates the type of Markup parser to use.
-data Document t
+-- The type variable `repr` indicates the representation type of the Markup
+-- parser to be used.
+data Document repr
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
-        _document_val :: t,
+        _document_val :: repr,
         -- | Metadata associated with the document as an aeson Value. If no metadata
         -- is provided this will be Nothing.
         _document_meta :: Maybe Value
       }
   deriving (Generic, Show)
 
-getDocumentMeta :: FromJSON meta => Document t -> meta
+getDocumentMeta :: FromJSON meta => Document repr -> meta
 getDocumentMeta (Document fp _ mmeta) = case mmeta of
   Nothing -> error $ toText $ "No metadata in document: " <> toFilePath fp -- TODO: handle errors gracefully
   Just meta -> case fromJSON meta of
     Error e -> error $ toText e
     Success v -> v
 
--- | Markup class abstracts over the different markup libraries
+-- | Class for denoting Markup representations.
 --
 -- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.
-class Markup t where
+class Markup repr where
 
-  -- | Type representing parse errors
-  type MarkupError t :: *
+  -- | Type representing errors associated with parsing to, and rendering from,
+  -- this representation.
+  type MarkupError repr :: *
 
   -- | Parse the given markup text
   parseDoc ::
@@ -57,18 +59,18 @@ class Markup t where
     Path Rel File ->
     -- | Markup text to parse
     Text ->
-    Either (MarkupError t) (Document t)
+    Either (MarkupError repr) (Document repr)
 
-  -- | Like `parseDoc` but take the actual filepath instead of text.
+  -- | Like `reproc` but take the actual filepath instead of text.
   readDoc ::
     -- | File path, used to identify the document only.
     "relpath" :! Path Rel File ->
     -- | Actual path to the file to parse.
     "path" :! Path b File ->
-    IO (Either (MarkupError t) (Document t))
+    IO (Either (MarkupError repr) (Document repr))
 
   -- | Render the document as Lucid HTML
-  renderDoc :: Document t -> Html ()
+  renderDoc :: Document repr -> Html ()
 
   -- | Convert `MarkupError` to string
-  showMarkupError :: MarkupError t -> Text
+  showMarkupError :: MarkupError repr -> Text
