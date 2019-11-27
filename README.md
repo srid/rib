@@ -78,16 +78,21 @@ data DocMeta
 -- In the shake build action you would expect to use the utility functions
 -- provided by Rib to do the actual generation of your static site.
 main :: IO ()
-main = Rib.run [reldir|a|] [reldir|b|] $ do
-  -- Copy over the static files
-  Rib.buildStaticFiles [[relfile|static/**|]]
-  -- Build individual markdown files, generating .html for each.
-  posts <- Rib.buildHtmlMulti [relfile|*.md|] (renderPage . Page_Doc)
-  -- Build an index.html linking to the aforementioned files.
-  Rib.buildHtml [relfile|index.html|]
-    $ renderPage
-    $ Page_Index posts
+main = Rib.run [reldir|a|] [reldir|b|] generateSite
   where
+    -- Shake Action for generating the static site
+    generateSite :: Action ()
+    generateSite = do
+      -- Copy over the static files
+      Rib.buildStaticFiles [[relfile|static/**|]]
+      -- Build individual markdown files, generating .html for each.
+      docs <-
+        Rib.buildHtmlMulti [relfile|*.md|] $
+          renderPage . Page_Doc
+      -- Build an index.html linking to the aforementioned files.
+      Rib.buildHtml [relfile|index.html|]
+        $ renderPage
+        $ Page_Index docs
     -- Define your site HTML here
     renderPage :: Page -> Html ()
     renderPage page = with html_ [lang_ "en"] $ do
