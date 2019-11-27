@@ -44,23 +44,23 @@ data Document repr meta
       }
   deriving (Generic, Show)
 
-data DocumentError repr
-  = DocumentError_MarkupError (MarkupError repr)
+data DocumentError
+  = DocumentError_MarkupError Text
   | DocumentError_MetadataMissing
-  | DocumentError_MetadataBadJSON String
+  | DocumentError_MetadataBadJSON Text
 
-instance Markup repr => Show (DocumentError repr) where
+instance Show DocumentError where
   show = \case
-    DocumentError_MarkupError e -> toString (showMarkupError @repr e)
+    DocumentError_MarkupError e -> toString e
     DocumentError_MetadataMissing -> "Metadata missing"
-    DocumentError_MetadataBadJSON msg -> "Bad metadata JSON: " <> msg
+    DocumentError_MetadataBadJSON msg -> "Bad metadata JSON: " <> toString msg
 
 -- | Parse, render to HTML and extract metadata from the given file.
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
   forall m b repr meta.
-  (MonadError (DocumentError repr) m, MonadIO m, Markup repr, FromJSON meta) =>
+  (MonadError DocumentError m, MonadIO m, Markup repr, FromJSON meta) =>
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
@@ -82,7 +82,7 @@ mkDocumentFrom k@(arg #relpath -> k') f = do
       metaValueM
   meta <-
     liftEither
-      $ first DocumentError_MetadataBadJSON
+      $ first (DocumentError_MetadataBadJSON . toText)
       $ resultToEither
       $ fromJSON metaValue
   pure $ Document k' v html metaValueM meta

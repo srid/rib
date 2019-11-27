@@ -53,9 +53,7 @@ instance Show RibPandocError where
 
 instance Markup Pandoc where
 
-  type MarkupError Pandoc = RibPandocError
-
-  parseDoc k s = runExcept $ do
+  parseDoc k s = first show $ runExcept $ do
     r <-
       withExcept RibPandocError_UnknownFormat
         $ liftEither
@@ -66,20 +64,18 @@ instance Markup Pandoc where
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
     r <-
-      withExceptT RibPandocError_UnknownFormat $
+      withExceptT (show . RibPandocError_UnknownFormat) $
         detectReader k
-    withExceptT RibPandocError_PandocError $
+    withExceptT (show . RibPandocError_PandocError) $
       parse r content
 
   extractMeta (Pandoc meta _) = flattenMeta meta
 
   renderDoc =
-    fmap toHtmlRaw
+    bimap show toHtmlRaw
       . first RibPandocError_PandocError
       . liftEither
       . render'
-
-  showMarkupError = toText @String . show
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()

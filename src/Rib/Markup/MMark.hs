@@ -36,10 +36,8 @@ import Text.URI (URI)
 
 instance Markup MMark where
 
-  type MarkupError MMark = M.ParseErrorBundle Text MMark.MMarkErr
-
   parseDoc f s = case MMark.parse (toFilePath f) s of
-    Left e -> Left e
+    Left e -> Left $ toText $ M.errorBundlePretty e
     Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
   readDoc (Arg k) (Arg f) = do
@@ -50,11 +48,9 @@ instance Markup MMark where
 
   renderDoc = Right . MMark.render
 
-  showMarkupError = toText . M.errorBundlePretty
-
 -- | Parse and render the markup directly to HTML
 renderMarkdown :: Text -> Html ()
-renderMarkdown s = either (error . showMarkupError @MMark) id $ runExcept $ do
+renderMarkdown s = either error id $ runExcept $ do
   doc <- liftEither $ parseDoc @MMark [relfile|<memory>.md|] s
   liftEither $ renderDoc doc
 
