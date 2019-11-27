@@ -95,7 +95,7 @@ main = Rib.run [reldir|a|] [reldir|b|] $ do
         meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
         title_ $ case page of
           Page_Index _ -> "My website!"
-          Page_Doc doc -> toHtml $ title $ Rib._document_meta doc
+          Page_Doc doc -> toHtml $ title $ Rib.documentMeta doc
         style_ [type_ "text/css"] $ Clay.render pageStyle
       body_
         $ with div_ [id_ "thesite"]
@@ -105,14 +105,14 @@ main = Rib.run [reldir|a|] [reldir|b|] $ do
           case page of
             Page_Index docs ->
               div_ $ forM_ docs $ \doc -> with li_ [class_ "links"] $ do
-                let meta = Rib._document_meta doc
-                b_ $ with a_ [href_ (Rib.getDocumentUrl doc)] $ toHtml $ title meta
+                let meta = Rib.documentMeta doc
+                b_ $ with a_ [href_ (Rib.documentUrl doc)] $ toHtml $ title meta
                 maybe mempty Rib.renderMarkdown $
                   description meta
             Page_Doc doc ->
               with article_ [class_ "post"] $ do
-                h1_ $ toHtml $ title $ Rib._document_meta doc
-                Rib._document_html doc
+                h1_ $ toHtml $ title $ Rib.documentMeta doc
+                Rib.documentHtml doc
     -- Define your site CSS here
     pageStyle :: Css
     pageStyle = "div#thesite" ? do
