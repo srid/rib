@@ -75,7 +75,7 @@ buildHtmlMulti ::
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ _document_path x
+    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
     buildHtml outfile (r x)
   pure xs
 
@@ -91,10 +91,11 @@ readDocMulti pat = do
   fs <- getDirectoryFiles' input [pat]
   forP fs $ \f -> do
     need $ toFilePath <$> [input </> f]
-    result <- runExceptT $
-      mkDocumentFrom
-        ! #relpath f
-        ! #path (input </> f)
+    result <-
+      runExceptT $
+        mkDocumentFrom
+          ! #relpath f
+          ! #path (input </> f)
     -- TODO: Make error reporting nice, without Shake's stack trace ugliness.
     case result of
       Left e ->

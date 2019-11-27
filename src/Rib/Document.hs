@@ -3,6 +3,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -11,16 +13,24 @@
 
 module Rib.Document
   ( -- * Document type
-    Document (..),
+    Document,
     mkDocumentFrom,
+
+    -- * Document properties
+    documentPath,
+    documentVal,
+    documentHtml,
+    documentMeta,
+    documentUrl,
   )
 where
 
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
+import Development.Shake.FilePath ((-<.>))
 import Lucid (Html)
 import Named
-import Path
+import Path hiding ((-<.>))
 import Rib.Markup
 import qualified Text.Show
 
@@ -40,6 +50,27 @@ data Document repr meta
         _document_meta :: meta
       }
   deriving (Generic, Show)
+
+documentPath :: Document repr meta -> Path Rel File
+documentPath = _document_path
+
+documentVal :: Document repr meta -> repr
+documentVal = _document_val
+
+documentHtml :: Document repr meta -> Html ()
+documentHtml = _document_html
+
+documentMeta :: Document repr meta -> meta
+documentMeta = _document_meta
+
+-- | Return the URL for the given @.html@ file under serve directory
+--
+-- File path must be relative to the serve directory.
+--
+-- You may also pass source paths as long as they map directly to destination
+-- path except for file extension.
+documentUrl :: Document repr meta -> Text
+documentUrl doc = toText $ toFilePath ([absdir|/|] </> (documentPath doc)) -<.> ".html"
 
 data DocumentError
   = DocumentError_MarkupError Text
