@@ -13,7 +13,7 @@ module Rib.Markup
   )
 where
 
-import Data.Aeson
+import Data.Aeson (Value)
 import Lucid (Html)
 import Named
 import Path
@@ -42,7 +42,7 @@ class Markup repr where
 
   extractMeta ::
     repr ->
-    Maybe Value
+    Maybe (Either Text Value)
 
   -- | Render the document as Lucid HTML
   renderDoc ::

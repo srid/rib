@@ -36,9 +36,6 @@ data Document repr meta
         _document_val :: repr,
         -- | HTML rendering of the parsed representation.
         _document_html :: Html (),
-        -- | Metadata associated with the document as an aeson Value. If no metadata
-        -- is provided this will be Nothing.
-        _document_metaValue :: Maybe Value,
         -- | The parsed metadata.
         _document_meta :: meta
       }
@@ -47,13 +44,13 @@ data Document repr meta
 data DocumentError
   = DocumentError_MarkupError Text
   | DocumentError_MetadataMissing
-  | DocumentError_MetadataBadJSON Text
+  | DocumentError_MetadataMalformed Text
 
 instance Show DocumentError where
   show = \case
     DocumentError_MarkupError e -> toString e
     DocumentError_MetadataMissing -> "Metadata missing"
-    DocumentError_MetadataBadJSON msg -> "Bad metadata JSON: " <> toString msg
+    DocumentError_MetadataMalformed msg -> "Bad metadata JSON: " <> toString msg
 
 -- | Parse, render to HTML and extract metadata from the given file.
 --
@@ -75,17 +72,16 @@ mkDocumentFrom k@(arg #relpath -> k') f = do
     liftEither
       $ first DocumentError_MarkupError
       $ renderDoc v
-  let metaValueM = extractMeta v
   metaValue <-
-    maybeToEither
-      DocumentError_MetadataMissing
-      metaValueM
+    liftEither
+      . (first DocumentError_MetadataMalformed)
+      =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
   meta <-
     liftEither
-      $ first (DocumentError_MetadataBadJSON . toText)
+      $ first (DocumentError_MetadataMalformed . toText)
       $ resultToEither
       $ fromJSON metaValue
-  pure $ Document k' v html metaValueM meta
+  pure $ Document k' v html meta
   where
     maybeToEither e = \case
       Nothing -> throwError e

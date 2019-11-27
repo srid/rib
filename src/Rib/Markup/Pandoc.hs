@@ -77,10 +77,8 @@ instance Markup Pandoc where
   extractMeta (Pandoc meta _) = flattenMeta meta
 
   renderDoc =
-    bimap show toHtmlRaw
-      . first RibPandocError_PandocError
+    bimap (show . RibPandocError_PandocError) toHtmlRaw
       . liftEither
-      . fmap toHtmlRaw
       . runPure
       . writeHtml5String writerSettings
 
@@ -170,16 +168,20 @@ detectReader f = do
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
 -- Renders Pandoc text objects into plain strings along the way.
-flattenMeta :: Meta -> Maybe Value
-flattenMeta (Meta meta) = toJSON . fmap go <$> guarded null meta
+flattenMeta :: Meta -> Maybe (Either Text Value)
+flattenMeta (Meta meta) = fmap toJSON . traverse go <$> guarded null meta
   where
-    go :: MetaValue -> Value
-    go (MetaMap m) = toJSON $ fmap go m
-    go (MetaList m) = toJSONList $ fmap go m
-    go (MetaBool m) = toJSON m
-    go (MetaString m) = toJSON m
-    go (MetaInlines m) = toJSON (runPure' . writer $ Pandoc mempty [Plain m])
-    go (MetaBlocks m) = toJSON (runPure' . writer $ Pandoc mempty m)
-    runPure' :: PandocPure a -> a
-    runPure' = either (error . show) id . runPure
-    writer = writePlain def
+    go :: MetaValue -> Either Text Value
+    go (MetaMap m) = toJSON <$> traverse go m
+    go (MetaList m) = toJSONList <$> traverse go m
+    go (MetaBool m) = pure $ toJSON m
+    go (MetaString m) = pure $ toJSON m
+    go (MetaInlines m) =
+      bimap show toJSON
+        $ runPure . plainWriter
+        $ Pandoc mempty [Plain m]
+    go (MetaBlocks m) =
+      bimap show toJSON
+        $ runPure . plainWriter
+        $ Pandoc mempty m
+    plainWriter = writePlain def

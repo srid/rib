@@ -44,7 +44,7 @@ instance Markup MMark where
     content <- readFileText (toFilePath f)
     pure $ parseDoc k content
 
-  extractMeta = MMark.projectYaml
+  extractMeta = fmap Right . MMark.projectYaml
 
   renderDoc = Right . MMark.render
 
