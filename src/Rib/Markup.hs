@@ -33,12 +33,13 @@ class Markup repr where
 
   -- | Like `parseDoc` but take the actual filepath instead of text.
   readDoc ::
-    forall b.
+    forall m b.
+    MonadIO m =>
     -- | File path, used to identify the document only.
     "relpath" :! Path Rel File ->
     -- | Actual path to the file to parse.
     "path" :! Path b File ->
-    IO (Either Text repr)
+    m (Either Text repr)
 
   extractMeta ::
     repr ->

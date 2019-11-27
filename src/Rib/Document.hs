@@ -96,27 +96,20 @@ mkDocumentFrom ::
   m (Document repr meta)
 mkDocumentFrom k@(arg #relpath -> k') f = do
   v <-
-    liftEither
-      . first DocumentError_MarkupError
-        =<< liftIO (readDoc k f)
+    liftEither . first DocumentError_MarkupError
+      =<< readDoc k f
   html <-
-    liftEither
-      $ first DocumentError_MarkupError
-      $ renderDoc v
+    liftEither . first DocumentError_MarkupError $
+      renderDoc v
   metaValue <-
-    liftEither
-      . (first DocumentError_MetadataMalformed)
+    liftEither . (first DocumentError_MetadataMalformed)
       =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
   meta <-
-    liftEither
-      $ first (DocumentError_MetadataMalformed . toText)
-      $ resultToEither
-      $ fromJSON metaValue
+    liftEither . first (DocumentError_MetadataMalformed . toText) $
+      resultToEither (fromJSON metaValue)
   pure $ Document k' v html meta
   where
-    maybeToEither e = \case
-      Nothing -> throwError e
-      Just v -> pure v
+    maybeToEither e = liftEither . maybeToRight e
     resultToEither = \case
       Error e -> Left e
       Success v -> Right v

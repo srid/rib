@@ -11,6 +11,8 @@ let
     if compiler == "default"
       then pkgs.haskellPackages
       else pkgs.haskell.packages.${compiler};
+  t = pkgs.lib.trivial;
+  h = pkgs.haskell.lib;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 in
@@ -37,14 +39,21 @@ haskellPackages.developPackage {
     relude =
       githubRepo "kowainik/relude" "bfb5f60";
   } // source-overrides;
-  overrides = self: super: with pkgs.haskell.lib; {
-    clay = dontCheck super.clay;
-    path = dontCheck super.path;
-    path-io = doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
-    relude = dontCheck super.relude;
+  overrides = self: super: {
+    clay = h.dontCheck super.clay;
+    path = h.dontCheck super.path;
+    path-io = h.doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
+    relude = h.dontCheck super.relude;
   };
-  modifier = drv: pkgs.haskell.lib.overrideCabal drv (attrs: {
-    buildTools = with haskellPackages;
-      (attrs.buildTools or []) ++ [cabal-install ghcid] ;
-  });
+  modifier =
+    let
+      addExtraDeps =
+        (t.flip h.addBuildTools) (with haskellPackages;
+          [ cabal-install
+            ghcid
+          ]);
+    in (t.flip t.pipe) [
+      addExtraDeps
+      h.dontHaddock
+    ];
 }
