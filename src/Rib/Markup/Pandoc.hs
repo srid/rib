@@ -13,10 +13,9 @@
 
 -- | Helpers for working with Pandoc documents
 module Rib.Markup.Pandoc
-  ( module Text.Pandoc.Readers,
-
-    -- * Manual rendering
+  ( -- * Manual rendering
     renderPandoc,
+    renderPandocInlines,
 
     -- * Extracting information
     getH1,
@@ -36,7 +35,6 @@ import Relude.Extra.Map ((!?))
 import Rib.Markup
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
-import Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
 import qualified Text.Show
 
@@ -58,16 +56,23 @@ instance Markup Pandoc where
       withExcept RibPandocError_UnknownFormat
         $ liftEither
         $ detectReader k
-    withExcept RibPandocError_PandocError $
-      parsePure r s
+    withExcept RibPandocError_PandocError
+      $ liftEither
+      $ runPure
+      $ r readerSettings s
 
   readDoc (Arg k) (Arg f) = runExceptT $ do
     content <- readFileText $ toFilePath f
     r <-
       withExceptT (show . RibPandocError_UnknownFormat) $
         detectReader k
-    withExceptT (show . RibPandocError_PandocError) $
-      parse r content
+    withExceptT (show . RibPandocError_PandocError) $ do
+      v' <-
+        liftEither
+          =<< liftIO (runIO $ r readerSettings content)
+      liftIO $ walkM includeSources v'
+    where
+      includeSources = includeCode $ Just $ Format "html5"
 
   extractMeta (Pandoc meta _) = flattenMeta meta
 
@@ -75,7 +80,9 @@ instance Markup Pandoc where
     bimap show toHtmlRaw
       . first RibPandocError_PandocError
       . liftEither
-      . render'
+      . fmap toHtmlRaw
+      . runPure
+      . writeHtml5String writerSettings
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()
@@ -83,53 +90,20 @@ renderPandoc f s = either (error . show) id $ runExcept $ do
   doc <- liftEither $ parseDoc @Pandoc f s
   liftEither $ renderDoc doc
 
--- | Pure version of `parse`
-parsePure ::
-  MonadError PandocError m =>
-  (ReaderOptions -> Text -> PandocPure Pandoc) ->
-  Text ->
-  m Pandoc
-parsePure r =
-  liftEither . runPure . r settings
-  where
-    settings = def {readerExtensions = exts}
-
--- | Parse the source text as a Pandoc document
---
--- Supports the [includeCode](https://github.com/owickstrom/pandoc-include-code) extension.
-parse ::
-  (MonadIO m, MonadError PandocError m) =>
-  -- | Markup format. Example: `Text.Pandoc.Readers.readMarkdown`
-  (ReaderOptions -> Text -> PandocIO Pandoc) ->
-  -- | Source text to parse
-  Text ->
-  m Pandoc
-parse r s = do
-  v' <- liftEither =<< liftIO (runIO $ r settings s)
-  liftIO $ walkM includeSources v'
-  where
-    settings = def {readerExtensions = exts}
-    includeSources = includeCode $ Just $ Format "html5"
-
--- | Render a Pandoc document as HTML
-render' :: Pandoc -> Either PandocError (Html ())
-render' = fmap toHtmlRaw . runPure . writeHtml5String settings
-  where
-    settings = def {writerExtensions = exts}
-
--- | Like `renderInlines` but returns the raw HTML string, or the rendering error.
-renderInlines' :: [Inline] -> Either PandocError (Html ())
-renderInlines' = render' . Pandoc mempty . pure . Plain
-
 -- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
 --
 -- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
-renderInlines :: [Inline] -> Html ()
-renderInlines = either (error . show) toHtmlRaw . renderInlines'
+renderPandocInlines :: [Inline] -> Html ()
+renderPandocInlines =
+  either (error . show) toHtmlRaw
+    . renderDoc
+    . Pandoc mempty
+    . pure
+    . Plain
 
 -- | Get the top-level heading as Lucid HTML
 getH1 :: Pandoc -> Maybe (Html ())
-getH1 (Pandoc _ bs) = fmap renderInlines $ flip query bs $ \case
+getH1 (Pandoc _ bs) = fmap renderPandocInlines $ flip query bs $ \case
   Header 1 _ xs -> Just xs
   _ -> Nothing
 
@@ -153,6 +127,12 @@ exts =
         ],
       githubMarkdownExtensions
     ]
+
+readerSettings :: ReaderOptions
+readerSettings = def {readerExtensions = exts}
+
+writerSettings :: WriterOptions
+writerSettings = def {writerExtensions = exts}
 
 -- Internal code
 
