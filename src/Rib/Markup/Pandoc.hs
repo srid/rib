@@ -146,14 +146,13 @@ detectReader ::
   m (ReaderOptions -> Text -> m1 Pandoc)
 detectReader f = do
   ext <-
-    catchInMonadError (UnknownExtension . show) $
+    liftEither . first (UnknownExtension . show) $
       fileExtension f
-  liftEither $ maybeToRight (UnknownExtension ext) $
+  liftEither . maybeToRight (UnknownExtension ext) $
     formats !? ext
   where
     formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
     formats =
-      -- TODO: Expand this list, cf. `Text.Pandoc.Readers.readers`
       fromList
         [ (".md", readMarkdown),
           (".rst", readRST),
@@ -161,9 +160,6 @@ detectReader f = do
           (".tex", readLaTeX),
           (".ipynb", readIpynb)
         ]
-    -- Re-constrain code constrained by MonadThrow to be constrained by
-    -- MonadError instead.
-    catchInMonadError ef = either (throwError . ef) pure
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --

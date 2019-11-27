@@ -96,7 +96,6 @@ readDocMulti pat = do
         mkDocumentFrom
           ! #relpath f
           ! #path (input </> f)
-    -- TODO: Make error reporting nice, without Shake's stack trace ugliness.
     case result of
       Left e ->
         fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
