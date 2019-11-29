@@ -53,34 +53,36 @@ instance Markup Pandoc where
 
   parseDoc k s = first show $ runExcept $ do
     r <-
-      withExcept RibPandocError_UnknownFormat
-        $ liftEither
-        $ detectReader k
+      withExcept RibPandocError_UnknownFormat $
+        detectReader k
     withExcept RibPandocError_PandocError
-      $ liftEither
-      $ runPure
+      $ runPure'
       $ r readerSettings s
 
-  readDoc (Arg k) (Arg f) = runExceptT $ do
-    content <- readFileText $ toFilePath f
+  readDoc (Arg k) (Arg f) = fmap (first show) $ runExceptT $ do
+    content <- readFileText (toFilePath f)
     r <-
-      withExceptT (show . RibPandocError_UnknownFormat) $
+      withExceptT RibPandocError_UnknownFormat $
         detectReader k
-    withExceptT (show . RibPandocError_PandocError) $ do
-      v' <-
-        liftEither
-          =<< liftIO (runIO $ r readerSettings content)
+    withExceptT RibPandocError_PandocError $ do
+      v' <- runIO' $ r readerSettings content
       liftIO $ walkM includeSources v'
     where
       includeSources = includeCode $ Just $ Format "html5"
 
   extractMeta (Pandoc meta _) = flattenMeta meta
 
-  renderDoc =
-    bimap (show . RibPandocError_PandocError) toHtmlRaw
-      . liftEither
-      . runPure
-      . writeHtml5String writerSettings
+  renderDoc doc = first show $ runExcept $ do
+    withExcept RibPandocError_PandocError
+      $ runPure'
+      $ fmap toHtmlRaw
+      $ writeHtml5String writerSettings doc
+
+runPure' :: MonadError PandocError m => PandocPure a -> m a
+runPure' = liftEither . runPure
+
+runIO' :: (MonadError PandocError m, MonadIO m) => PandocIO a -> m a
+runIO' = liftEither <=< liftIO . runIO
 
 -- | Parse and render the markup directly to HTML
 renderPandoc :: Path Rel File -> Text -> Html ()
