@@ -23,7 +23,6 @@ Rib prioritizes the use of *existing* tools over reinventing them, and enables
 the user to compose them as they wish instead of having to write code to fit a
 custom framework.
 
-<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
 - [rib](#rib)
@@ -36,8 +35,6 @@ custom framework.
         - [Editing workflow](#editing-workflow)
         - [What's next?](#whats-next)
     - [Examples](#examples)
-
-<!-- markdown-toc end -->
 
 ## Quick Preview
 

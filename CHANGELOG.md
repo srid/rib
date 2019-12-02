@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## 0.5.0.0 (UNRELEASED)
+## 0.5.0.0
 
 This release comes with a major API refactor. Key changes:
 
