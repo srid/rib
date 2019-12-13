@@ -30,8 +30,8 @@ import qualified Lucid
 import Named
 import Path
 import Path.IO
+import Relude.Extra.Map
 import Rib.Document
-import Rib.Markup (Markup)
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -64,14 +64,14 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall repr meta.
-  (Markup repr, FromJSON meta) =>
+  forall meta.
+  FromJSON meta =>
   -- | Source file patterns
-  Path Rel File ->
+  Map (Path Rel File) DocParser ->
   -- | How to render the given document to HTML
-  (Document repr meta -> Html ()) ->
+  (Document meta -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Document repr meta]
+  Action [Document meta]
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
@@ -81,25 +81,26 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall repr meta.
-  (Markup repr, FromJSON meta) =>
+  forall meta.
+  FromJSON meta =>
   -- | Source file patterns
-  Path Rel File ->
-  Action [Document repr meta]
-readDocMulti pat = do
+  Map (Path Rel File) DocParser ->
+  Action [Document meta]
+readDocMulti pats = do
   input <- ribInputDir
-  fs <- getDirectoryFiles' input [pat]
-  forP fs $ \f -> do
-    need $ toFilePath <$> [input </> f]
-    result <-
-      runExceptT $
-        mkDocumentFrom
-          ! #relpath f
-          ! #path (input </> f)
-    case result of
-      Left e ->
-        fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
-      Right v -> pure v
+  fmap concat $ forM (toPairs pats) $ \(pat, dp) -> do
+    fs <- getDirectoryFiles' input [pat]
+    forP fs $ \f -> do
+      need $ toFilePath <$> [input </> f]
+      result <-
+        runExceptT $
+          mkDocumentFrom dp
+            ! #relpath f
+            ! #path (input </> f)
+      case result of
+        Left e ->
+          fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
+        Right v -> pure v
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
@@ -114,4 +115,5 @@ buildHtml f html = do
 -- | Like `getDirectoryFiles` but work with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
 getDirectoryFiles' dir pat =
-  traverse (liftIO . parseRelFile) =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)
+  traverse (liftIO . parseRelFile)
+    =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)

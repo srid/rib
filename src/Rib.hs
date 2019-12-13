@@ -13,6 +13,8 @@ module Rib
     renderMarkdown,
     Pandoc,
     renderPandoc,
+    DocParser (..),
+    SomeDoc (..),
   )
 where
 
