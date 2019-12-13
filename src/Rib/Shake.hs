@@ -75,7 +75,7 @@ buildHtmlMulti ::
 buildHtmlMulti pat r = do
   xs <- readDocMulti pat
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ setFileExtension ".html" $ documentPath x
+    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
     buildHtml outfile (r x)
   pure xs
 

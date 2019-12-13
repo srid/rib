@@ -147,8 +147,9 @@ detectReader ::
   Path Rel File ->
   m (ReaderOptions -> Text -> m1 Pandoc)
 detectReader f = do
-  let ext = fileExtension f
-  when (null ext) (throwError $ UnknownExtension "No extension")
+  ext <-
+    liftEither . first (UnknownExtension . show) $
+      fileExtension f
   liftEither . maybeToRight (UnknownExtension ext) $
     formats !? ext
   where
