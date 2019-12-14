@@ -11,7 +11,7 @@
 module Rib.Markup
   ( -- * Type class
     IsMarkup (..),
-    MarkupDoc (..),
+    Markup (..),
   )
 where
 
@@ -23,9 +23,9 @@ import Text.MMark (MMark)
 import Text.Pandoc (Pandoc)
 
 -- A light-weight markup document structure
-data MarkupDoc doc where
-  MarkupDoc_Pandoc :: MarkupDoc Pandoc
-  MarkupDoc_MMark :: MarkupDoc MMark
+data Markup doc where
+  Markup_Pandoc :: Markup Pandoc
+  Markup_MMark :: Markup MMark
 
 -- | Class for denoting Markup representations.
 --

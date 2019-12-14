@@ -68,7 +68,7 @@ buildHtmlMulti ::
   forall meta.
   FromJSON meta =>
   -- | Source file patterns
-  Map (Path Rel File) (Some MarkupDoc) ->
+  Map (Path Rel File) (Some Markup) ->
   -- | How to render the given document to HTML
   (Document meta -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
@@ -85,7 +85,7 @@ readDocMulti ::
   forall meta.
   (FromJSON meta) =>
   -- | Source file patterns
-  Map (Path Rel File) (Some MarkupDoc) ->
+  Map (Path Rel File) (Some Markup) ->
   Action [Document meta]
 readDocMulti pats = do
   input <- ribInputDir

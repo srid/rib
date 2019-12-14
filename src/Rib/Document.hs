@@ -17,7 +17,7 @@
 module Rib.Document
   ( -- * Document type
     Document,
-    MarkupDoc (..),
+    Markup (..),
     mkDocumentFrom,
 
     -- * Document properties
@@ -48,7 +48,7 @@ data Document meta
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
-        _document_val :: DSum MarkupDoc Identity,
+        _document_val :: DSum Markup Identity,
         -- | HTML rendering of the parsed representation.
         _document_html :: Html (),
         -- | The parsed metadata.
@@ -59,7 +59,7 @@ data Document meta
 documentPath :: Document meta -> Path Rel File
 documentPath = _document_path
 
-documentVal :: Document meta -> DSum MarkupDoc Identity
+documentVal :: Document meta -> DSum Markup Identity
 documentVal = _document_val
 
 documentHtml :: Document meta -> Html ()
@@ -95,7 +95,7 @@ mkDocumentFrom ::
   forall m b meta.
   (MonadError DocumentError m, MonadIO m, FromJSON meta) =>
   -- | Which Markup parser to use
-  Some MarkupDoc ->
+  Some Markup ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
@@ -104,13 +104,13 @@ mkDocumentFrom ::
 mkDocumentFrom mp k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< withSomeMarkupDoc (readDoc k f) mp
+      =<< withSomeMarkup (readDoc k f) mp
   html <-
     liftEither . first DocumentError_MarkupError $
-      withMarkupDoc renderDoc v
+      withMarkup renderDoc v
   metaValue <-
     liftEither . (first DocumentError_MetadataMalformed)
-      =<< maybeToEither DocumentError_MetadataMissing (withMarkupDoc extractMeta v)
+      =<< maybeToEither DocumentError_MetadataMissing (withMarkup extractMeta v)
   meta <-
     liftEither . first (DocumentError_MetadataMalformed . toText) $
       resultToEither (fromJSON metaValue)
@@ -121,17 +121,17 @@ mkDocumentFrom mp k@(arg #relpath -> k') f = do
       Error e -> Left e
       Success v -> Right v
 
-withMarkupDoc :: (forall doc. IsMarkup doc => doc -> a) -> DSum MarkupDoc Identity -> a
-withMarkupDoc f = \case
-  MarkupDoc_Pandoc :=> Identity doc -> f doc
-  MarkupDoc_MMark :=> Identity doc -> f doc
+withMarkup :: (forall doc. IsMarkup doc => doc -> a) -> DSum Markup Identity -> a
+withMarkup f = \case
+  Markup_Pandoc :=> Identity doc -> f doc
+  Markup_MMark :=> Identity doc -> f doc
 
-withSomeMarkupDoc ::
+withSomeMarkup ::
   forall f f1.
   (Functor f, Functor f1) =>
-  (forall doc. (IsMarkup doc) => f (f1 doc)) ->
-  Some MarkupDoc ->
-  f (f1 (DSum MarkupDoc Identity))
-withSomeMarkupDoc g = \case
-  Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> g
-  Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> g
+  (forall doc. IsMarkup doc => f (f1 doc)) ->
+  Some Markup ->
+  f (f1 (DSum Markup Identity))
+withSomeMarkup g = \case
+  Some Markup_Pandoc -> fmap (Markup_Pandoc ==>) <$> g
+  Some Markup_MMark -> fmap (Markup_MMark ==>) <$> g
