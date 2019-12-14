@@ -66,9 +66,9 @@ buildStaticFiles staticFilePatterns = do
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
   forall meta doc.
-  (FromJSON meta, Markup doc) =>
+  (FromJSON meta, IsMarkup doc) =>
   -- | Source file patterns
-  Map (Path Rel File) (ParsedDoc doc) ->
+  Map (Path Rel File) (MarkupDoc doc) ->
   -- | How to render the given document to HTML
   (Document meta -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
@@ -83,9 +83,9 @@ buildHtmlMulti pat r = do
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
   forall meta doc.
-  (FromJSON meta, Markup doc) =>
+  (FromJSON meta, IsMarkup doc) =>
   -- | Source file patterns
-  Map (Path Rel File) (ParsedDoc doc) ->
+  Map (Path Rel File) (MarkupDoc doc) ->
   Action [Document meta]
 readDocMulti pats = do
   input <- ribInputDir

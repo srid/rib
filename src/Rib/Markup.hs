@@ -9,7 +9,7 @@
 
 module Rib.Markup
   ( -- * Type class
-    Markup (..),
+    IsMarkup (..),
   )
 where
 
@@ -18,10 +18,11 @@ import Lucid (Html)
 import Named
 import Path
 
+
 -- | Class for denoting Markup representations.
 --
 -- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.
-class Markup repr where
+class IsMarkup repr where
 
   -- | Parse the given markup text
   parseDoc ::

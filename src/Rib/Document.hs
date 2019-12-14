@@ -1,23 +1,23 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Rib.Document
   ( -- * Document type
     Document,
-    ParsedDoc (..),
+    MarkupDoc (..),
     mkDocumentFrom,
 
     -- * Document properties
@@ -31,9 +31,6 @@ where
 
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
--- TODO: for instances
-
--- TODO: for instances
 import Data.Dependent.Sum
 import Development.Shake.FilePath ((-<.>))
 import Lucid (Html)
@@ -46,25 +43,23 @@ import Text.MMark (MMark)
 import Text.Pandoc (Pandoc)
 import qualified Text.Show
 
-data ParsedDoc doc where
-  ParsedDoc_Pandoc :: ParsedDoc Pandoc
-  ParsedDoc_MMark :: ParsedDoc MMark
+-- | A light-weight markup document structure
+data MarkupDoc doc where
+  MarkupDoc_Pandoc :: MarkupDoc Pandoc
+  MarkupDoc_MMark :: MarkupDoc MMark
 
-withParsedDoc :: (forall doc. Markup doc => doc -> a) -> DSum ParsedDoc Identity -> a
-withParsedDoc f = \case
-  ParsedDoc_Pandoc :=> Identity doc -> f doc
-  ParsedDoc_MMark :=> Identity doc -> f doc
+withMarkupDoc :: (forall doc. IsMarkup doc => doc -> a) -> DSum MarkupDoc Identity -> a
+withMarkupDoc f = \case
+  MarkupDoc_Pandoc :=> Identity doc -> f doc
+  MarkupDoc_MMark :=> Identity doc -> f doc
 
--- | A document written in a lightweight markup language (LML)
---
--- The type variable `repr` indicates the representation type of the Markup
--- parser to be used.
+-- | A document generated from a Markup source file.
 data Document meta
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
-        _document_val :: DSum ParsedDoc Identity,
+        _document_val :: DSum MarkupDoc Identity,
         -- | HTML rendering of the parsed representation.
         _document_html :: Html (),
         -- | The parsed metadata.
@@ -75,7 +70,7 @@ data Document meta
 documentPath :: Document meta -> Path Rel File
 documentPath = _document_path
 
-documentVal :: Document meta -> DSum ParsedDoc Identity
+documentVal :: Document meta -> DSum MarkupDoc Identity
 documentVal = _document_val
 
 documentHtml :: Document meta -> Html ()
@@ -109,8 +104,8 @@ instance Show DocumentError where
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
   forall m b meta doc.
-  (MonadError DocumentError m, MonadIO m, FromJSON meta, Markup doc) =>
-  ParsedDoc doc ->
+  (MonadError DocumentError m, MonadIO m, FromJSON meta, IsMarkup doc) =>
+  MarkupDoc doc ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
@@ -122,10 +117,10 @@ mkDocumentFrom dp k@(arg #relpath -> k') f = do
       =<< fmap (dp ==>) <$> readDoc k f
   html <-
     liftEither . first DocumentError_MarkupError $
-      withParsedDoc renderDoc v
+      withMarkupDoc renderDoc v
   metaValue <-
     liftEither . (first DocumentError_MetadataMalformed)
-      =<< maybeToEither DocumentError_MetadataMissing (withParsedDoc extractMeta v)
+      =<< maybeToEither DocumentError_MetadataMissing (withMarkupDoc extractMeta v)
   meta <-
     liftEither . first (DocumentError_MetadataMalformed . toText) $
       resultToEither (fromJSON metaValue)
