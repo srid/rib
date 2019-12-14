@@ -32,6 +32,7 @@ where
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
 import Data.Dependent.Sum
+import Data.Some
 import Development.Shake.FilePath ((-<.>))
 import Lucid (Html)
 import Named
@@ -103,18 +104,22 @@ instance Show DocumentError where
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
-  forall m b meta doc.
-  (MonadError DocumentError m, MonadIO m, FromJSON meta, IsMarkup doc) =>
-  MarkupDoc doc ->
+  forall m b meta.
+  (MonadError DocumentError m, MonadIO m, FromJSON meta) =>
+  -- | Which Markup parser to use
+  Some MarkupDoc ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
   m (Document meta)
-mkDocumentFrom dp k@(arg #relpath -> k') f = do
+mkDocumentFrom mp k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< fmap (dp ==>) <$> readDoc k f
+      =<< case mp of
+        -- TODO: Can this be refactored out?
+        Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> readDoc @Pandoc k f
+        Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> readDoc @MMark k f
   html <-
     liftEither . first DocumentError_MarkupError $
       withMarkupDoc renderDoc v
