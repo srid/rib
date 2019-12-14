@@ -54,6 +54,16 @@ withMarkupDoc f = \case
   MarkupDoc_Pandoc :=> Identity doc -> f doc
   MarkupDoc_MMark :=> Identity doc -> f doc
 
+withSomeMarkupDoc ::
+  forall f f1.
+  (Functor f, Functor f1) =>
+  (forall doc. (IsMarkup doc) => f (f1 doc)) ->
+  Some MarkupDoc ->
+  f (f1 (DSum MarkupDoc Identity))
+withSomeMarkupDoc g = \case
+  Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> g
+  Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> g
+
 -- | A document generated from a Markup source file.
 data Document meta
   = Document
@@ -116,10 +126,7 @@ mkDocumentFrom ::
 mkDocumentFrom mp k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< case mp of
-        -- TODO: Can this be refactored out?
-        Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> readDoc @Pandoc k f
-        Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> readDoc @MMark k f
+      =<< withSomeMarkupDoc (readDoc k f) mp
   html <-
     liftEither . first DocumentError_MarkupError $
       withMarkupDoc renderDoc v
