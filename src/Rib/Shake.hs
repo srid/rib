@@ -32,6 +32,7 @@ import Path
 import Path.IO
 import Relude.Extra.Map
 import Rib.Document
+import Rib.Markup
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -64,10 +65,10 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall meta.
-  FromJSON meta =>
+  forall meta doc.
+  (FromJSON meta, Markup doc) =>
   -- | Source file patterns
-  Map (Path Rel File) DocParser ->
+  Map (Path Rel File) (ParsedDoc doc) ->
   -- | How to render the given document to HTML
   (Document meta -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
@@ -81,10 +82,10 @@ buildHtmlMulti pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall meta.
-  FromJSON meta =>
+  forall meta doc.
+  (FromJSON meta, Markup doc) =>
   -- | Source file patterns
-  Map (Path Rel File) DocParser ->
+  Map (Path Rel File) (ParsedDoc doc) ->
   Action [Document meta]
 readDocMulti pats = do
   input <- ribInputDir
@@ -115,5 +116,4 @@ buildHtml f html = do
 -- | Like `getDirectoryFiles` but work with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
 getDirectoryFiles' dir pat =
-  traverse (liftIO . parseRelFile)
-    =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)
+  traverse (liftIO . parseRelFile) =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)
