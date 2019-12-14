@@ -2,7 +2,9 @@
 
 ## 0.6.0.0
 
-- WIP: API simplifications
+- Allow multiple parsers in the same static site
+  - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
+  - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
 
 ## 0.5.0.0
 
