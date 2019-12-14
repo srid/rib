@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -10,6 +11,7 @@
 module Rib.Markup
   ( -- * Type class
     IsMarkup (..),
+    MarkupDoc (..),
   )
 where
 
@@ -17,7 +19,13 @@ import Data.Aeson (Value)
 import Lucid (Html)
 import Named
 import Path
+import Text.MMark (MMark)
+import Text.Pandoc (Pandoc)
 
+-- A light-weight markup document structure
+data MarkupDoc doc where
+  MarkupDoc_Pandoc :: MarkupDoc Pandoc
+  MarkupDoc_MMark :: MarkupDoc MMark
 
 -- | Class for denoting Markup representations.
 --

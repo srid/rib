@@ -40,29 +40,7 @@ import Path hiding ((-<.>))
 import Rib.Markup
 import Rib.Markup.MMark ()
 import Rib.Markup.Pandoc ()
-import Text.MMark (MMark)
-import Text.Pandoc (Pandoc)
 import qualified Text.Show
-
--- | A light-weight markup document structure
-data MarkupDoc doc where
-  MarkupDoc_Pandoc :: MarkupDoc Pandoc
-  MarkupDoc_MMark :: MarkupDoc MMark
-
-withMarkupDoc :: (forall doc. IsMarkup doc => doc -> a) -> DSum MarkupDoc Identity -> a
-withMarkupDoc f = \case
-  MarkupDoc_Pandoc :=> Identity doc -> f doc
-  MarkupDoc_MMark :=> Identity doc -> f doc
-
-withSomeMarkupDoc ::
-  forall f f1.
-  (Functor f, Functor f1) =>
-  (forall doc. (IsMarkup doc) => f (f1 doc)) ->
-  Some MarkupDoc ->
-  f (f1 (DSum MarkupDoc Identity))
-withSomeMarkupDoc g = \case
-  Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> g
-  Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> g
 
 -- | A document generated from a Markup source file.
 data Document meta
@@ -142,3 +120,18 @@ mkDocumentFrom mp k@(arg #relpath -> k') f = do
     resultToEither = \case
       Error e -> Left e
       Success v -> Right v
+
+withMarkupDoc :: (forall doc. IsMarkup doc => doc -> a) -> DSum MarkupDoc Identity -> a
+withMarkupDoc f = \case
+  MarkupDoc_Pandoc :=> Identity doc -> f doc
+  MarkupDoc_MMark :=> Identity doc -> f doc
+
+withSomeMarkupDoc ::
+  forall f f1.
+  (Functor f, Functor f1) =>
+  (forall doc. (IsMarkup doc) => f (f1 doc)) ->
+  Some MarkupDoc ->
+  f (f1 (DSum MarkupDoc Identity))
+withSomeMarkupDoc g = \case
+  Some MarkupDoc_Pandoc -> fmap (MarkupDoc_Pandoc ==>) <$> g
+  Some MarkupDoc_MMark -> fmap (MarkupDoc_MMark ==>) <$> g
