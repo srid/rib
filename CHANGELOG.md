@@ -1,5 +1,11 @@
 # Change Log for rib
 
+## 0.6.0.0
+
+- Allow multiple parsers in the same static site
+  - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
+  - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
+
 ## 0.5.0.0
 
 This release comes with a major API refactor. Key changes:

@@ -34,7 +34,7 @@ import qualified Text.MMark.Extension.Common as Ext
 import qualified Text.Megaparsec as M
 import Text.URI (URI)
 
-instance Markup MMark where
+instance IsMarkup MMark where
 
   parseDoc f s = case MMark.parse (toFilePath f) s of
     Left e -> Left $ toText $ M.errorBundlePretty e

@@ -5,6 +5,7 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -14,6 +15,7 @@
 module Rib.Document
   ( -- * Document type
     Document,
+    Markup (..),
     mkDocumentFrom,
 
     -- * Document properties
@@ -27,40 +29,41 @@ where
 
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
+import Data.Dependent.Sum
+import Data.Some
 import Development.Shake.FilePath ((-<.>))
 import Lucid (Html)
 import Named
 import Path hiding ((-<.>))
 import Rib.Markup
+import Rib.Markup.MMark ()
+import Rib.Markup.Pandoc ()
 import qualified Text.Show
 
--- | A document written in a lightweight markup language (LML)
---
--- The type variable `repr` indicates the representation type of the Markup
--- parser to be used.
-data Document repr meta
+-- | A document generated from a Markup source file.
+data Document meta
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
-        _document_val :: repr,
+        _document_val :: DSum Markup Identity,
         -- | HTML rendering of the parsed representation.
         _document_html :: Html (),
         -- | The parsed metadata.
         _document_meta :: meta
       }
-  deriving (Generic, Show)
+  deriving (Generic)
 
-documentPath :: Document repr meta -> Path Rel File
+documentPath :: Document meta -> Path Rel File
 documentPath = _document_path
 
-documentVal :: Document repr meta -> repr
+documentVal :: Document meta -> DSum Markup Identity
 documentVal = _document_val
 
-documentHtml :: Document repr meta -> Html ()
+documentHtml :: Document meta -> Html ()
 documentHtml = _document_html
 
-documentMeta :: Document repr meta -> meta
+documentMeta :: Document meta -> meta
 documentMeta = _document_meta
 
 -- | Return the URL for the given @.html@ file under serve directory
@@ -69,7 +72,7 @@ documentMeta = _document_meta
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-documentUrl :: Document repr meta -> Text
+documentUrl :: Document meta -> Text
 documentUrl doc = toText $ toFilePath ([absdir|/|] </> (documentPath doc)) -<.> ".html"
 
 data DocumentError
@@ -87,23 +90,25 @@ instance Show DocumentError where
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
-  forall m b repr meta.
-  (MonadError DocumentError m, MonadIO m, Markup repr, FromJSON meta) =>
+  forall m b meta.
+  (MonadError DocumentError m, MonadIO m, FromJSON meta) =>
+  -- | Which Markup parser to use
+  Some Markup ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
-  m (Document repr meta)
-mkDocumentFrom k@(arg #relpath -> k') f = do
+  m (Document meta)
+mkDocumentFrom mp k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< readDoc k f
+      =<< withSomeMarkup (readDoc k f) mp
   html <-
     liftEither . first DocumentError_MarkupError $
-      renderDoc v
+      withMarkup renderDoc v
   metaValue <-
     liftEither . (first DocumentError_MetadataMalformed)
-      =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
+      =<< maybeToEither DocumentError_MetadataMissing (withMarkup extractMeta v)
   meta <-
     liftEither . first (DocumentError_MetadataMalformed . toText) $
       resultToEither (fromJSON metaValue)
@@ -113,3 +118,18 @@ mkDocumentFrom k@(arg #relpath -> k') f = do
     resultToEither = \case
       Error e -> Left e
       Success v -> Right v
+
+withMarkup :: (forall doc. IsMarkup doc => doc -> a) -> DSum Markup Identity -> a
+withMarkup f = \case
+  Markup_Pandoc :=> Identity doc -> f doc
+  Markup_MMark :=> Identity doc -> f doc
+
+withSomeMarkup ::
+  forall f f1.
+  (Functor f, Functor f1) =>
+  (forall doc. IsMarkup doc => f (f1 doc)) ->
+  Some Markup ->
+  f (f1 (DSum Markup Identity))
+withSomeMarkup g = \case
+  Some Markup_Pandoc -> fmap (Markup_Pandoc ==>) <$> g
+  Some Markup_MMark -> fmap (Markup_MMark ==>) <$> g

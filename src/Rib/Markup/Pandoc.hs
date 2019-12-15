@@ -49,7 +49,7 @@ instance Show RibPandocError where
     RibPandocError_UnknownFormat s ->
       "Unsupported extension: " <> show s
 
-instance Markup Pandoc where
+instance IsMarkup Pandoc where
 
   parseDoc k s = first show $ runExcept $ do
     r <-
