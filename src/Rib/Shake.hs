@@ -24,6 +24,7 @@ module Rib.Shake
 where
 
 import Data.Aeson
+import Data.Some
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -32,7 +33,6 @@ import Path
 import Path.IO
 import Relude.Extra.Map
 import Rib.Document
-import Data.Some
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
