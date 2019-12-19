@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## 0.6.0.0
+## UNRELEASED
 
 - Allow multiple parsers in the same static site
   - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
