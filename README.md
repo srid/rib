@@ -47,16 +47,16 @@ using Rib:
 
 -- | A generated page is either an index of documents, or an individual document.
 --
--- The `Document` type takes two type variables:
--- 1. The first type variable specifies the parser to use: MMark or Pandoc
--- 2. The second type variable should be your metadata record
+-- `DocMeta` is the metadata type associated with documents.
 data Page
-  = Page_Index [Document DocMeta]
-  | Page_Doc (Document DocMeta)
+  = -- | Index page, containing a list of documents.
+    Page_Index [Document DocMeta]
+  | -- | Individual page associated with a document
+    Page_Doc (Document DocMeta)
 
 -- | Type representing the metadata in our Markdown documents
 --
--- Note that if a field is not optional (i.e., not Maybe) it must be present.
+-- Optional fields are of kind Maybe. Other fields must be present.
 data DocMeta
   = DocMeta
       { title :: Text,
