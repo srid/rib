@@ -1,10 +1,11 @@
 # Change Log for rib
 
-## UNRELEASED
+## 0.6.0.0 - UNRELEASED
 
 - Allow multiple parsers in the same static site
   - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
   - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
+- Fix #63: create intermediate directories when generating post HTML
 
 ## 0.5.0.0
 
