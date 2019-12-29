@@ -10,8 +10,8 @@
 -- Suppressing orphans warning for `Markup MMark` instance
 
 module Rib.Markup.MMark
-  ( -- * Manual rendering
-    renderMarkdown,
+  ( -- * Rendering
+    render,
 
     -- * Extracting information
     getFirstImg,
@@ -22,7 +22,6 @@ module Rib.Markup.MMark
 where
 
 import Control.Foldl (Fold (..))
-import Control.Monad.Except
 import Lucid (Html)
 import Named
 import Path
@@ -36,6 +35,7 @@ import Text.URI (URI)
 
 instance IsMarkup MMark where
 
+  -- TODO: why do we have two parsers - pure and impure? instead of one?
   parseDoc f s = case MMark.parse (toFilePath f) s of
     Left e -> Left $ toText $ M.errorBundlePretty e
     Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
@@ -46,13 +46,9 @@ instance IsMarkup MMark where
 
   extractMeta = fmap Right . MMark.projectYaml
 
-  renderDoc = Right . MMark.render
-
--- | Parse and render the markup directly to HTML
-renderMarkdown :: Text -> Html ()
-renderMarkdown s = either error id $ runExcept $ do
-  doc <- liftEither $ parseDoc @MMark [relfile|<memory>.md|] s
-  liftEither $ renderDoc doc
+-- | Render a MMark document as HTML
+render :: MMark -> Html ()
+render = MMark.render
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

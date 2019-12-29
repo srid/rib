@@ -21,7 +21,6 @@ module Rib.Document
     -- * Document properties
     documentPath,
     documentVal,
-    documentHtml,
     documentMeta,
     documentUrl,
   )
@@ -30,7 +29,6 @@ where
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
 import Development.Shake.FilePath ((-<.>))
-import Lucid (Html)
 import Named
 import Path hiding ((-<.>))
 import Rib.Markup
@@ -45,8 +43,6 @@ data Document meta repr
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
         _document_val :: repr,
-        -- | HTML rendering of the parsed representation.
-        _document_html :: Html (),
         -- | The parsed metadata.
         _document_meta :: meta
       }
@@ -57,9 +53,6 @@ documentPath = _document_path
 
 documentVal :: Document meta repr -> repr
 documentVal = _document_val
-
-documentHtml :: Document meta repr -> Html ()
-documentHtml = _document_html
 
 documentMeta :: Document meta repr -> meta
 documentMeta = _document_meta
@@ -99,16 +92,13 @@ mkDocumentFrom k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
       =<< readDoc @repr k f
-  html <-
-    liftEither . first DocumentError_MarkupError $
-      renderDoc v
   metaValue <-
     liftEither . (first DocumentError_MetadataMalformed)
       =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
   meta <-
     liftEither . first (DocumentError_MetadataMalformed . toText) $
       resultToEither (fromJSON metaValue)
-  pure $ Document k' v html meta
+  pure $ Document k' v meta
   where
     maybeToEither e = liftEither . maybeToRight e
     resultToEither = \case

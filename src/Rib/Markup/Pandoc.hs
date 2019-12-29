@@ -13,8 +13,8 @@
 
 -- | Helpers for working with Pandoc documents
 module Rib.Markup.Pandoc
-  ( -- * Manual rendering
-    renderPandoc,
+  ( -- * Rendering
+    render,
     renderPandocInlines,
 
     -- * Extracting information
@@ -72,11 +72,13 @@ instance IsMarkup Pandoc where
 
   extractMeta (Pandoc meta _) = flattenMeta meta
 
-  renderDoc doc = first show $ runExcept $ do
-    withExcept RibPandocError_PandocError
-      $ runPure'
-      $ fmap toHtmlRaw
-      $ writeHtml5String writerSettings doc
+-- | Render a Pandoc document to HTML
+render :: Pandoc -> Html ()
+render doc = either error id $ first show $ runExcept $ do
+  withExcept RibPandocError_PandocError
+    $ runPure'
+    $ fmap toHtmlRaw
+    $ writeHtml5String writerSettings doc
 
 runPure' :: MonadError PandocError m => PandocPure a -> m a
 runPure' = liftEither . runPure
@@ -84,19 +86,13 @@ runPure' = liftEither . runPure
 runIO' :: (MonadError PandocError m, MonadIO m) => PandocIO a -> m a
 runIO' = liftEither <=< liftIO . runIO
 
--- | Parse and render the markup directly to HTML
-renderPandoc :: Path Rel File -> Text -> Html ()
-renderPandoc f s = either (error . show) id $ runExcept $ do
-  doc <- liftEither $ parseDoc @Pandoc f s
-  liftEither $ renderDoc doc
-
 -- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
 --
 -- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
 renderPandocInlines :: [Inline] -> Html ()
 renderPandocInlines =
-  either (error . show) toHtmlRaw
-    . renderDoc
+  toHtmlRaw
+    . render
     . Pandoc mempty
     . pure
     . Plain

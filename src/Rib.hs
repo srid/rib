@@ -6,11 +6,8 @@ module Rib
     Document,
     documentPath,
     documentVal,
-    documentHtml,
     documentMeta,
     documentUrl,
-    renderMarkdown,
-    renderPandoc,
     MMark,
     Pandoc,
   )
@@ -19,6 +16,6 @@ where
 import Rib.App
 import Rib.Document
 import Rib.Markup
-import Rib.Markup.MMark (MMark, renderMarkdown)
-import Rib.Markup.Pandoc (Pandoc, renderPandoc)
+import Rib.Markup.MMark (MMark)
+import Rib.Markup.Pandoc (Pandoc)
 import Rib.Shake
