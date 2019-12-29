@@ -25,7 +25,6 @@ module Rib.Shake
   )
 where
 
-import Data.Aeson
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -66,15 +65,15 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall meta repr.
-  (FromJSON meta, IsMarkup repr) =>
+  forall repr.
+  (IsMarkup repr) =>
   SubMarkup repr ->
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to render the given document to HTML
-  (Document meta repr -> Html ()) ->
+  (Document repr -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Document meta repr]
+  Action [Document repr]
 buildHtmlMulti sm pat r = do
   xs <- readDocMulti sm pat
   void $ forP xs $ \x -> do
@@ -84,12 +83,12 @@ buildHtmlMulti sm pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall meta repr.
-  (FromJSON meta, IsMarkup repr) =>
+  forall repr.
+  (IsMarkup repr) =>
   SubMarkup repr ->
   -- | Source file patterns
   [Path Rel File] ->
-  Action [Document meta repr]
+  Action [Document repr]
 readDocMulti sm pats = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do

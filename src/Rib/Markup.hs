@@ -14,7 +14,6 @@ module Rib.Markup
   )
 where
 
-import Data.Aeson (Value)
 import Named
 import Path
 
@@ -43,7 +42,3 @@ class IsMarkup repr where
     -- | Actual path to the file to parse.
     "path" :! Path b File ->
     m (Either Text repr)
-
-  extractMeta ::
-    repr ->
-    Maybe (Either Text Value)

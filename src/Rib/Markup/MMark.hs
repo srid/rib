@@ -16,6 +16,7 @@ module Rib.Markup.MMark
 
     -- * Extracting information
     getFirstImg,
+    projectYaml,
 
     -- * Re-exports
     MMark,
@@ -27,7 +28,7 @@ import Lucid (Html)
 import Named
 import Path
 import Rib.Markup
-import Text.MMark (MMark)
+import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
 import qualified Text.MMark.Extension.Common as Ext
@@ -44,8 +45,6 @@ instance IsMarkup MMark where
 
   readDoc () (Arg f) =
     parse (toFilePath f) <$> readFileText (toFilePath f)
-
-  extractMeta = fmap Right . MMark.projectYaml
 
 -- | Render a MMark document as HTML
 render :: MMark -> Html ()

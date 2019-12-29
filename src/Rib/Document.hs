@@ -21,13 +21,11 @@ module Rib.Document
     -- * Document properties
     documentPath,
     documentVal,
-    documentMeta,
     documentUrl,
   )
 where
 
 import Control.Monad.Except hiding (fail)
-import Data.Aeson
 import Development.Shake.FilePath ((-<.>))
 import Named
 import Path hiding ((-<.>))
@@ -37,25 +35,20 @@ import Rib.Markup.Pandoc ()
 import qualified Text.Show
 
 -- | A document generated from a Markup source file.
-data Document meta repr
+data Document repr
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
-        _document_val :: repr,
-        -- | The parsed metadata.
-        _document_meta :: meta
+        _document_val :: repr
       }
   deriving (Generic, Functor)
 
-documentPath :: Document meta repr -> Path Rel File
+documentPath :: Document repr -> Path Rel File
 documentPath = _document_path
 
-documentVal :: Document meta repr -> repr
+documentVal :: Document repr -> repr
 documentVal = _document_val
-
-documentMeta :: Document meta repr -> meta
-documentMeta = _document_meta
 
 -- | Return the URL for the given @.html@ file under serve directory
 --
@@ -63,7 +56,7 @@ documentMeta = _document_meta
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-documentUrl :: Document meta repr -> Text
+documentUrl :: Document repr -> Text
 documentUrl doc = toText $ toFilePath ([absdir|/|] </> (documentPath doc)) -<.> ".html"
 
 data DocumentError
@@ -81,27 +74,16 @@ instance Show DocumentError where
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
-  forall m b meta repr.
-  (MonadError DocumentError m, MonadIO m, FromJSON meta, IsMarkup repr) =>
+  forall m b repr.
+  (MonadError DocumentError m, MonadIO m, IsMarkup repr) =>
   SubMarkup repr ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
-  m (Document meta repr)
+  m (Document repr)
 mkDocumentFrom sm (arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
       =<< readDoc sm f
-  metaValue <-
-    liftEither . (first DocumentError_MetadataMalformed)
-      =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
-  meta <-
-    liftEither . first (DocumentError_MetadataMalformed . toText) $
-      resultToEither (fromJSON metaValue)
-  pure $ Document k' v meta
-  where
-    maybeToEither e = liftEither . maybeToRight e
-    resultToEither = \case
-      Error e -> Left e
-      Success v -> Right v
+  pure $ Document k' v

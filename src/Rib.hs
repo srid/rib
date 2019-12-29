@@ -6,7 +6,6 @@ module Rib
     Document,
     documentPath,
     documentVal,
-    documentMeta,
     documentUrl,
     MMark,
     Pandoc,

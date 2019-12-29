@@ -18,6 +18,7 @@ module Rib.Markup.Pandoc
     renderPandocInlines,
 
     -- * Extracting information
+    extractMeta,
     getH1,
     getFirstImg,
 
@@ -66,8 +67,6 @@ instance IsMarkup Pandoc where
     where
       includeSources = includeCode $ Just $ Format "html5"
 
-  extractMeta (Pandoc meta _) = flattenMeta meta
-
 -- | Render a Pandoc document to HTML
 render :: Pandoc -> Html ()
 render doc =
@@ -75,6 +74,9 @@ render doc =
     runPure'
     $ fmap toHtmlRaw
     $ writeHtml5String writerSettings doc
+
+extractMeta :: Pandoc -> Maybe (Either Text Value)
+extractMeta (Pandoc meta _) = flattenMeta meta
 
 runPure' :: MonadError PandocError m => PandocPure a -> m a
 runPure' = liftEither . runPure
