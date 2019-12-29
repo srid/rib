@@ -14,7 +14,6 @@ module Rib.Markup
   )
 where
 
-import Named
 import Path
 
 -- | Class for denoting Markup representations.
@@ -40,5 +39,5 @@ class IsMarkup repr where
     MonadIO m =>
     SubMarkup repr ->
     -- | Actual path to the file to parse.
-    "path" :! Path b File ->
+    Path b File ->
     m (Either Text repr)

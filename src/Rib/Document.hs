@@ -82,7 +82,7 @@ mkDocumentFrom ::
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
   m (Document repr)
-mkDocumentFrom sm (arg #relpath -> k') f = do
+mkDocumentFrom sm (arg #relpath -> k') (Arg f) = do
   v <-
     liftEither . first DocumentError_MarkupError
       =<< readDoc sm f

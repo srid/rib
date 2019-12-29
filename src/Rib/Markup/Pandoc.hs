@@ -30,7 +30,6 @@ where
 import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
-import Named
 import Path
 import Rib.Markup
 import Text.Pandoc
@@ -55,14 +54,14 @@ instance IsMarkup Pandoc where
 
   defaultSubMarkup = PandocFormat_Markdown
 
-  parseDoc k s =
+  parseDoc fmt s =
     first show $ runExcept $ do
       runPure'
-      $ readPandocFormat k readerSettings s
+      $ readPandocFormat fmt readerSettings s
 
-  readDoc k (Arg f) = fmap (first show) $ runExceptT $ do
+  readDoc fmt f = fmap (first show) $ runExceptT $ do
     content <- readFileText (toFilePath f)
-    v' <- runIO' $ readPandocFormat k readerSettings content
+    v' <- runIO' $ readPandocFormat fmt readerSettings content
     liftIO $ walkM includeSources v'
     where
       includeSources = includeCode $ Just $ Format "html5"

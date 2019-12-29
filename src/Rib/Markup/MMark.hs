@@ -25,7 +25,6 @@ where
 
 import Control.Foldl (Fold (..))
 import Lucid (Html)
-import Named
 import Path
 import Rib.Markup
 import Text.MMark (MMark, projectYaml)
@@ -43,7 +42,7 @@ instance IsMarkup MMark where
 
   parseDoc () = parse "<memory>"
 
-  readDoc () (Arg f) =
+  readDoc () f =
     parse (toFilePath f) <$> readFileText (toFilePath f)
 
 -- | Render a MMark document as HTML
