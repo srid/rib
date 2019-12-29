@@ -66,15 +66,16 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  MarkupParser repr ->
   -- | Source file patterns
   [Path Rel File] ->
+  -- | How to parse the source
+  MarkupParser repr ->
   -- | How to render the given document to HTML
   (Document repr -> Html ()) ->
-  -- | List of relative path to generated HTML and the associated document
+  -- | Result
   Action [Document repr]
-buildHtmlMulti sm pat r = do
-  xs <- readDocMulti sm pat
+buildHtmlMulti pat parser r = do
+  xs <- readDocMulti pat parser
   void $ forP xs $ \x -> do
     outfile <- liftIO $ replaceExtension ".html" $ documentPath x
     buildHtml outfile (r x)
@@ -82,11 +83,13 @@ buildHtmlMulti sm pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  MarkupParser repr ->
   -- | Source file patterns
   [Path Rel File] ->
+  -- | How to parse the source
+  MarkupParser repr ->
+  -- | Result
   Action [Document repr]
-readDocMulti parser pats = do
+readDocMulti pats parser = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
