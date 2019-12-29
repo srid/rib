@@ -20,6 +20,8 @@ module Rib.Shake
     -- * Misc
     buildStaticFiles,
     Dirs (..),
+    ribInputDir,
+    ribOutputDir,
   )
 where
 
