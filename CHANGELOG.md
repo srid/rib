@@ -2,13 +2,13 @@
 
 ## 0.6.0.0 - UNRELEASED
 
-- API: Allow multiple parsers in the same static site
-  - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
-  - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
 - API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Fix #63: create intermediate directories when generating post HTML
 - Advance nixpkgs; require Shake >=0.18.4
-- API: Remove `Markup` type, and adjust Shake API to allow specifying it via `Proxy` (This allow the user to add their own custom markup type without forking rib)
+- API: Expose `IsMarkup` type class so user may add their own markup parsers. 
+  - Remove `Markup` type
+  - Simplify Shake API to not use Data.Some (let the user do it)
+- TODO: How to use multiple parsers at the same time? Add to doc, describing the use of Data.Some in user code.
 
 ## 0.5.0.0
 
