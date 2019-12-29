@@ -26,7 +26,6 @@ module Rib.Shake
 where
 
 import Data.Aeson
-import Data.Some
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
@@ -69,17 +68,16 @@ buildStaticFiles staticFilePatterns = do
 buildHtmlMulti ::
   forall meta repr.
   (FromJSON meta, IsMarkup repr) =>
-  Proxy repr ->
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to render the given document to HTML
-  (Some (Document meta) -> Html ()) ->
+  (Document meta repr -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Some (Document meta)]
-buildHtmlMulti pxy pat r = do
-  xs <- readDocMulti pxy pat
+  Action [Document meta repr]
+buildHtmlMulti pat r = do
+  xs <- readDocMulti pat
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ withSome x documentPath
+    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
     buildHtml outfile (r x)
   pure xs
 
@@ -87,11 +85,10 @@ buildHtmlMulti pxy pat r = do
 readDocMulti ::
   forall meta repr.
   (FromJSON meta, IsMarkup repr) =>
-  Proxy repr ->
   -- | Source file patterns
   [Path Rel File] ->
-  Action [Some (Document meta)]
-readDocMulti Proxy pats = do
+  Action [Document meta repr]
+readDocMulti pats = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
@@ -99,8 +96,7 @@ readDocMulti Proxy pats = do
       need $ toFilePath <$> [input </> f]
       result <-
         runExceptT $
-          mkSome
-            <$> mkDocumentFrom (Proxy @repr)
+          mkDocumentFrom
             ! #relpath f
             ! #path (input </> f)
       case result of

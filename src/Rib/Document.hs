@@ -89,14 +89,12 @@ instance Show DocumentError where
 mkDocumentFrom ::
   forall m b meta repr.
   (MonadError DocumentError m, MonadIO m, FromJSON meta, IsMarkup repr) =>
-  -- | Which Markup parser to use
-  Proxy repr ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
   m (Document meta repr)
-mkDocumentFrom Proxy k@(arg #relpath -> k') f = do
+mkDocumentFrom k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
       =<< readDoc @repr k f
