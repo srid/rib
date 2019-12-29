@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -49,7 +50,7 @@ data Document meta repr
         -- | The parsed metadata.
         _document_meta :: meta
       }
-  deriving (Generic)
+  deriving (Generic, Functor)
 
 documentPath :: Document meta repr -> Path Rel File
 documentPath = _document_path
