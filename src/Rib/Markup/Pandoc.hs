@@ -1,19 +1,20 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -- Suppressing orphans warning for `Markup Pandoc` instance
 
 -- | Helpers for working with Pandoc documents
 module Rib.Markup.Pandoc
-  ( -- * Rendering
+  ( -- * Parsing
+    PandocFormat (..),
+    parsePure,
+    parseIO,
+
+    -- * Rendering
     render,
     renderPandocInlines,
 
@@ -31,7 +32,6 @@ import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
 import Path
-import Rib.Markup
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Walk (query, walkM)
@@ -48,23 +48,19 @@ readPandocFormat = \case
   PandocFormat_Markdown -> readMarkdown
   PandocFormat_RST -> readRST
 
-instance IsMarkup Pandoc where
+parsePure :: PandocFormat -> Text -> Either Text Pandoc
+parsePure fmt s =
+  first show $ runExcept $ do
+    runPure'
+    $ readPandocFormat fmt readerSettings s
 
-  type SubMarkup Pandoc = PandocFormat
-
-  defaultSubMarkup = PandocFormat_Markdown
-
-  parseDoc fmt s =
-    first show $ runExcept $ do
-      runPure'
-      $ readPandocFormat fmt readerSettings s
-
-  readDoc fmt f = fmap (first show) $ runExceptT $ do
-    content <- readFileText (toFilePath f)
-    v' <- runIO' $ readPandocFormat fmt readerSettings content
-    liftIO $ walkM includeSources v'
-    where
-      includeSources = includeCode $ Just $ Format "html5"
+parseIO :: MonadIO m => PandocFormat -> Path b File -> m (Either Text Pandoc)
+parseIO fmt f = fmap (first show) $ runExceptT $ do
+  content <- readFileText (toFilePath f)
+  v' <- runIO' $ readPandocFormat fmt readerSettings content
+  liftIO $ walkM includeSources v'
+  where
+    includeSources = includeCode $ Just $ Format "html5"
 
 -- | Render a Pandoc document to HTML
 render :: Pandoc -> Html ()

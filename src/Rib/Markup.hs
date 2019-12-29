@@ -1,43 +1,11 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
 
 module Rib.Markup
-  ( -- * Type class
-    IsMarkup (..),
+  ( MarkupParser,
   )
 where
 
 import Path
 
--- | Class for denoting Markup representations.
---
--- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.
-class IsMarkup repr where
-
-  -- Rename the class and type to: IsDocument / MarkupType
-  type SubMarkup repr :: *
-
-  defaultSubMarkup :: SubMarkup repr
-
-  -- | Parse the given markup text
-  parseDoc ::
-    SubMarkup repr ->
-    -- | Markup text to parse
-    Text ->
-    Either Text repr
-
-  -- | Like `parseDoc` but take the actual filepath instead of text.
-  readDoc ::
-    forall m b.
-    MonadIO m =>
-    SubMarkup repr ->
-    -- | Actual path to the file to parse.
-    Path b File ->
-    m (Either Text repr)
+type MarkupParser a = forall m b. MonadIO m => Path b File -> m (Either Text a)

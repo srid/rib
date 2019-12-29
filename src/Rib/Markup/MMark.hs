@@ -6,12 +6,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
--- Suppressing orphans warning for `Markup MMark` instance
 
 module Rib.Markup.MMark
-  ( -- * Rendering
+  ( -- * Parsing
+    parsePure,
+    parseIO,
+
+    -- * Rendering
     render,
 
     -- * Extracting information
@@ -26,7 +27,6 @@ where
 import Control.Foldl (Fold (..))
 import Lucid (Html)
 import Path
-import Rib.Markup
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
@@ -34,25 +34,17 @@ import qualified Text.MMark.Extension.Common as Ext
 import qualified Text.Megaparsec as M
 import Text.URI (URI)
 
-instance IsMarkup MMark where
-
-  type SubMarkup MMark = ()
-
-  defaultSubMarkup = ()
-
-  parseDoc () = parse "<memory>"
-
-  readDoc () f =
-    parse (toFilePath f) <$> readFileText (toFilePath f)
-
 -- | Render a MMark document as HTML
 render :: MMark -> Html ()
 render = MMark.render
 
-parse :: FilePath -> Text -> Either Text MMark
-parse k s = case MMark.parse k s of
+parsePure :: FilePath -> Text -> Either Text MMark
+parsePure k s = case MMark.parse k s of
   Left e -> Left $ toText $ M.errorBundlePretty e
   Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
+
+parseIO :: MonadIO m => Path b File -> m (Either Text MMark)
+parseIO f = parsePure (toFilePath f) <$> readFileText (toFilePath f)
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

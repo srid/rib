@@ -75,15 +75,15 @@ instance Show DocumentError where
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
   forall m b repr.
-  (MonadError DocumentError m, MonadIO m, IsMarkup repr) =>
-  SubMarkup repr ->
+  (MonadError DocumentError m, MonadIO m) =>
+  MarkupParser repr ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
   m (Document repr)
-mkDocumentFrom sm (arg #relpath -> k') (Arg f) = do
+mkDocumentFrom parser (arg #relpath -> k') (Arg f) = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< readDoc sm f
+      =<< parser f
   pure $ Document k' v

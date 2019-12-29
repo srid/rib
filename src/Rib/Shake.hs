@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -65,9 +66,7 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall repr.
-  (IsMarkup repr) =>
-  SubMarkup repr ->
+  MarkupParser repr ->
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to render the given document to HTML
@@ -83,13 +82,11 @@ buildHtmlMulti sm pat r = do
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall repr.
-  (IsMarkup repr) =>
-  SubMarkup repr ->
+  MarkupParser repr ->
   -- | Source file patterns
   [Path Rel File] ->
   Action [Document repr]
-readDocMulti sm pats = do
+readDocMulti parser pats = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
@@ -97,7 +94,7 @@ readDocMulti sm pats = do
       need $ toFilePath <$> [input </> f]
       result <-
         runExceptT $
-          mkDocumentFrom sm
+          mkDocumentFrom parser
             ! #relpath f
             ! #path (input </> f)
       case result of
