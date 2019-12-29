@@ -7,7 +7,7 @@
   - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
 - API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Fix #63: create intermediate directories when generating post HTML
-- Require Shake >=0.18.4
+- Advance nixpkgs; require Shake >=0.18.4
 
 ## 0.5.0.0
 
