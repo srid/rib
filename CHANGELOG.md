@@ -8,6 +8,7 @@
 - API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Fix #63: create intermediate directories when generating post HTML
 - Advance nixpkgs; require Shake >=0.18.4
+- API: Remove `Markup` type, and adjust Shake API to allow specifying it via `Proxy` (This allow the user to add their own custom markup type without forking rib)
 
 ## 0.5.0.0
 

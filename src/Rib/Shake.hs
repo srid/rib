@@ -33,8 +33,8 @@ import qualified Lucid
 import Named
 import Path
 import Path.IO
-import Relude.Extra.Map
 import Rib.Document
+import Rib.Markup
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -67,37 +67,40 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall meta.
-  FromJSON meta =>
+  forall meta repr.
+  (FromJSON meta, IsMarkup repr) =>
+  Proxy repr ->
   -- | Source file patterns
-  Map (Path Rel File) (Some Markup) ->
+  [Path Rel File] ->
   -- | How to render the given document to HTML
-  (Document meta -> Html ()) ->
+  (Some (Document meta) -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
-  Action [Document meta]
-buildHtmlMulti pat r = do
-  xs <- readDocMulti pat
+  Action [Some (Document meta)]
+buildHtmlMulti pxy pat r = do
+  xs <- readDocMulti pxy pat
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
+    outfile <- liftIO $ replaceExtension ".html" $ withSome x documentPath
     buildHtml outfile (r x)
   pure xs
 
 -- | Like `readDoc'` but operates on multiple files
 readDocMulti ::
-  forall meta.
-  (FromJSON meta) =>
+  forall meta repr.
+  (FromJSON meta, IsMarkup repr) =>
+  Proxy repr ->
   -- | Source file patterns
-  Map (Path Rel File) (Some Markup) ->
-  Action [Document meta]
-readDocMulti pats = do
+  [Path Rel File] ->
+  Action [Some (Document meta)]
+readDocMulti Proxy pats = do
   input <- ribInputDir
-  fmap concat $ forM (toPairs pats) $ \(pat, dp) -> do
+  fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
     forP fs $ \f -> do
       need $ toFilePath <$> [input </> f]
       result <-
         runExceptT $
-          mkDocumentFrom dp
+          mkSome
+            <$> mkDocumentFrom (Proxy @repr)
             ! #relpath f
             ! #path (input </> f)
       case result of

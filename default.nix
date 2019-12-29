@@ -47,8 +47,6 @@ haskellPackages.developPackage {
       githubRepo "mrkkrp/path-io" "84ce6a2";
     relude =
       githubRepo "kowainik/relude" "bfb5f60";
-    dependent-sum =
-      let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; in "${dsum}/dependent-sum";
 
     # Dhall, and its dependency overrides
     # TODO: So many overrides ... might have to provide cachix cache.

@@ -15,7 +15,6 @@
 module Rib.Document
   ( -- * Document type
     Document,
-    Markup (..),
     mkDocumentFrom,
 
     -- * Document properties
@@ -29,8 +28,6 @@ where
 
 import Control.Monad.Except hiding (fail)
 import Data.Aeson
-import Data.Dependent.Sum
-import Data.Some
 import Development.Shake.FilePath ((-<.>))
 import Lucid (Html)
 import Named
@@ -41,12 +38,12 @@ import Rib.Markup.Pandoc ()
 import qualified Text.Show
 
 -- | A document generated from a Markup source file.
-data Document meta
+data Document meta repr
   = Document
       { -- | Path to the document; relative to the source directory.
         _document_path :: Path Rel File,
         -- | Parsed representation of the document.
-        _document_val :: DSum Markup Identity,
+        _document_val :: repr,
         -- | HTML rendering of the parsed representation.
         _document_html :: Html (),
         -- | The parsed metadata.
@@ -54,16 +51,16 @@ data Document meta
       }
   deriving (Generic)
 
-documentPath :: Document meta -> Path Rel File
+documentPath :: Document meta repr -> Path Rel File
 documentPath = _document_path
 
-documentVal :: Document meta -> DSum Markup Identity
+documentVal :: Document meta repr -> repr
 documentVal = _document_val
 
-documentHtml :: Document meta -> Html ()
+documentHtml :: Document meta repr -> Html ()
 documentHtml = _document_html
 
-documentMeta :: Document meta -> meta
+documentMeta :: Document meta repr -> meta
 documentMeta = _document_meta
 
 -- | Return the URL for the given @.html@ file under serve directory
@@ -72,7 +69,7 @@ documentMeta = _document_meta
 --
 -- You may also pass source paths as long as they map directly to destination
 -- path except for file extension.
-documentUrl :: Document meta -> Text
+documentUrl :: Document meta repr -> Text
 documentUrl doc = toText $ toFilePath ([absdir|/|] </> (documentPath doc)) -<.> ".html"
 
 data DocumentError
@@ -90,25 +87,25 @@ instance Show DocumentError where
 --
 -- Return the Document type containing converted values.
 mkDocumentFrom ::
-  forall m b meta.
-  (MonadError DocumentError m, MonadIO m, FromJSON meta) =>
+  forall m b meta repr.
+  (MonadError DocumentError m, MonadIO m, FromJSON meta, IsMarkup repr) =>
   -- | Which Markup parser to use
-  Some Markup ->
+  Proxy repr ->
   -- | File path, used only to identify (not access) the document
   "relpath" :! Path Rel File ->
   -- | Actual file path, for access and reading
   "path" :! Path b File ->
-  m (Document meta)
-mkDocumentFrom mp k@(arg #relpath -> k') f = do
+  m (Document meta repr)
+mkDocumentFrom Proxy k@(arg #relpath -> k') f = do
   v <-
     liftEither . first DocumentError_MarkupError
-      =<< withSomeMarkup (readDoc k f) mp
+      =<< readDoc @repr k f
   html <-
     liftEither . first DocumentError_MarkupError $
-      withMarkup renderDoc v
+      renderDoc v
   metaValue <-
     liftEither . (first DocumentError_MetadataMalformed)
-      =<< maybeToEither DocumentError_MetadataMissing (withMarkup extractMeta v)
+      =<< maybeToEither DocumentError_MetadataMissing (extractMeta v)
   meta <-
     liftEither . first (DocumentError_MetadataMalformed . toText) $
       resultToEither (fromJSON metaValue)
@@ -118,18 +115,3 @@ mkDocumentFrom mp k@(arg #relpath -> k') f = do
     resultToEither = \case
       Error e -> Left e
       Success v -> Right v
-
-withMarkup :: (forall doc. IsMarkup doc => doc -> a) -> DSum Markup Identity -> a
-withMarkup f = \case
-  Markup_Pandoc :=> Identity doc -> f doc
-  Markup_MMark :=> Identity doc -> f doc
-
-withSomeMarkup ::
-  forall f f1.
-  (Functor f, Functor f1) =>
-  (forall doc. IsMarkup doc => f (f1 doc)) ->
-  Some Markup ->
-  f (f1 (DSum Markup Identity))
-withSomeMarkup g = \case
-  Some Markup_Pandoc -> fmap (Markup_Pandoc ==>) <$> g
-  Some Markup_MMark -> fmap (Markup_MMark ==>) <$> g
