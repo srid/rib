@@ -58,7 +58,6 @@ library
         mmark-ext,
         modern-uri,
         mtl >=2.2.2 && <2.3,
-        named,
         pandoc >=2.7 && <3,
         pandoc-include-code >=1.4.0 && <1.5,
         pandoc-types >=1.17.5 && <1.18,

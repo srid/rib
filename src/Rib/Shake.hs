@@ -29,11 +29,9 @@ where
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
-import Named
 import Path
 import Path.IO
 import Rib.Document
-import Rib.Markup
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -69,7 +67,7 @@ buildHtmlMulti ::
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to parse the source
-  MarkupParser repr ->
+  DocumentReader repr ->
   -- | How to render the given document to HTML
   (Document repr -> Html ()) ->
   -- | Result
@@ -86,7 +84,7 @@ readDocMulti ::
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to parse the source
-  MarkupParser repr ->
+  DocumentReader repr ->
   -- | Result
   Action [Document repr]
 readDocMulti pats parser = do
@@ -95,11 +93,7 @@ readDocMulti pats parser = do
     fs <- getDirectoryFiles' input [pat]
     forP fs $ \f -> do
       need $ toFilePath <$> [input </> f]
-      result <-
-        runExceptT $
-          mkDocumentFrom parser
-            ! #relpath f
-            ! #path (input </> f)
+      result <- fmap (Document f) <$> parser (input </> f)
       case result of
         Left e ->
           fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e

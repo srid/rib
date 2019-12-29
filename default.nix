@@ -24,7 +24,7 @@ let
       cp --remove-destination ${pp}/prettyprinter/README.md $sourceRoot/
     '';
   });
-  # justBuild = p: h.dontHaddock (h.dontCheck p);
+  justBuild = p: h.dontHaddock (h.dontCheck p);
 in
 haskellPackages.developPackage {
   inherit root name;
@@ -37,8 +37,6 @@ haskellPackages.developPackage {
       githubRepo "mmark-md/mmark" "8f5534d";
     mmark-ext =
       githubRepo "mmark-md/mmark-ext" "4d1c40e";
-    named =
-      githubRepo "monadfix/named" "e684a00";
     pandoc-include-code =
       githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
     path =
@@ -70,6 +68,7 @@ haskellPackages.developPackage {
     relude = h.dontCheck super.relude;
     prettyprinter = h.dontCheck (ppUnpackSymlinks super.prettyprinter);
     dhall = h.dontCheck super.dhall;
+    rib = justBuild super.rib;
   };
   modifier =
     let

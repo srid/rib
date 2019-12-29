@@ -15,8 +15,8 @@
 
 module Rib.Document
   ( -- * Document type
-    Document,
-    mkDocumentFrom,
+    Document (Document),
+    DocumentReader,
 
     -- * Document properties
     documentPath,
@@ -25,14 +25,8 @@ module Rib.Document
   )
 where
 
-import Control.Monad.Except hiding (fail)
 import Development.Shake.FilePath ((-<.>))
-import Named
 import Path hiding ((-<.>))
-import Rib.Markup
-import Rib.Markup.MMark ()
-import Rib.Markup.Pandoc ()
-import qualified Text.Show
 
 -- | A document generated from a Markup source file.
 data Document repr
@@ -43,6 +37,9 @@ data Document repr
         _document_val :: repr
       }
   deriving (Generic, Functor)
+
+
+type DocumentReader repr = forall m b. MonadIO m => Path b File -> m (Either Text repr)
 
 documentPath :: Document repr -> Path Rel File
 documentPath = _document_path
@@ -58,32 +55,3 @@ documentVal = _document_val
 -- path except for file extension.
 documentUrl :: Document repr -> Text
 documentUrl doc = toText $ toFilePath ([absdir|/|] </> (documentPath doc)) -<.> ".html"
-
-data DocumentError
-  = DocumentError_MarkupError Text
-  | DocumentError_MetadataMissing
-  | DocumentError_MetadataMalformed Text
-
-instance Show DocumentError where
-  show = \case
-    DocumentError_MarkupError e -> toString e
-    DocumentError_MetadataMissing -> "Metadata missing"
-    DocumentError_MetadataMalformed msg -> "Bad metadata JSON: " <> toString msg
-
--- | Parse, render to HTML and extract metadata from the given file.
---
--- Return the Document type containing converted values.
-mkDocumentFrom ::
-  forall m b repr.
-  (MonadError DocumentError m, MonadIO m) =>
-  MarkupParser repr ->
-  -- | File path, used only to identify (not access) the document
-  "relpath" :! Path Rel File ->
-  -- | Actual file path, for access and reading
-  "path" :! Path b File ->
-  m (Document repr)
-mkDocumentFrom parser (arg #relpath -> k') (Arg f) = do
-  v <-
-    liftEither . first DocumentError_MarkupError
-      =<< parser f
-  pure $ Document k' v
