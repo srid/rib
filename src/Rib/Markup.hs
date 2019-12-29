@@ -23,10 +23,14 @@ import Path
 -- See `Rib.Markup.Pandoc` and `Rib.Markup.MMark` for two available instances.
 class IsMarkup repr where
 
+  -- Rename the class and type to: IsDocument / MarkupType
+  type SubMarkup repr :: *
+
+  defaultSubMarkup :: SubMarkup repr
+
   -- | Parse the given markup text
   parseDoc ::
-    -- | File path, used to identify the document only.
-    Path Rel File ->
+    SubMarkup repr ->
     -- | Markup text to parse
     Text ->
     Either Text repr
@@ -35,8 +39,7 @@ class IsMarkup repr where
   readDoc ::
     forall m b.
     MonadIO m =>
-    -- | File path, used to identify the document only.
-    "relpath" :! Path Rel File ->
+    SubMarkup repr ->
     -- | Actual path to the file to parse.
     "path" :! Path b File ->
     m (Either Text repr)

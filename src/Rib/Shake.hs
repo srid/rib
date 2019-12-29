@@ -68,14 +68,15 @@ buildStaticFiles staticFilePatterns = do
 buildHtmlMulti ::
   forall meta repr.
   (FromJSON meta, IsMarkup repr) =>
+  SubMarkup repr ->
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to render the given document to HTML
   (Document meta repr -> Html ()) ->
   -- | List of relative path to generated HTML and the associated document
   Action [Document meta repr]
-buildHtmlMulti pat r = do
-  xs <- readDocMulti pat
+buildHtmlMulti sm pat r = do
+  xs <- readDocMulti sm pat
   void $ forP xs $ \x -> do
     outfile <- liftIO $ replaceExtension ".html" $ documentPath x
     buildHtml outfile (r x)
@@ -85,10 +86,11 @@ buildHtmlMulti pat r = do
 readDocMulti ::
   forall meta repr.
   (FromJSON meta, IsMarkup repr) =>
+  SubMarkup repr ->
   -- | Source file patterns
   [Path Rel File] ->
   Action [Document meta repr]
-readDocMulti pats = do
+readDocMulti sm pats = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
@@ -96,7 +98,7 @@ readDocMulti pats = do
       need $ toFilePath <$> [input </> f]
       result <-
         runExceptT $
-          mkDocumentFrom
+          mkDocumentFrom sm
             ! #relpath f
             ! #path (input </> f)
       case result of

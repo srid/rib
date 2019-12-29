@@ -31,42 +31,38 @@ import Data.Aeson
 import Lucid (Html, toHtmlRaw)
 import Named
 import Path
-import Relude.Extra.Map ((!?))
 import Rib.Markup
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Walk (query, walkM)
-import qualified Text.Show
 
-data RibPandocError
-  = RibPandocError_PandocError PandocError
-  | RibPandocError_UnknownFormat UnknownExtension
+-- | List of formats supported by Pandoc
+--
+-- TODO: Complete this list.
+data PandocFormat
+  = PandocFormat_Markdown
+  | PandocFormat_RST
 
-instance Show RibPandocError where
-  show = \case
-    RibPandocError_PandocError e ->
-      show e
-    RibPandocError_UnknownFormat s ->
-      "Unsupported extension: " <> show s
+readPandocFormat :: PandocMonad m => PandocFormat -> ReaderOptions -> Text -> m Pandoc
+readPandocFormat = \case
+  PandocFormat_Markdown -> readMarkdown
+  PandocFormat_RST -> readRST
 
 instance IsMarkup Pandoc where
 
-  parseDoc k s = first show $ runExcept $ do
-    r <-
-      withExcept RibPandocError_UnknownFormat $
-        detectReader k
-    withExcept RibPandocError_PandocError
-      $ runPure'
-      $ r readerSettings s
+  type SubMarkup Pandoc = PandocFormat
 
-  readDoc (Arg k) (Arg f) = fmap (first show) $ runExceptT $ do
+  defaultSubMarkup = PandocFormat_Markdown
+
+  parseDoc k s =
+    first show $ runExcept $ do
+      runPure'
+      $ readPandocFormat k readerSettings s
+
+  readDoc k (Arg f) = fmap (first show) $ runExceptT $ do
     content <- readFileText (toFilePath f)
-    r <-
-      withExceptT RibPandocError_UnknownFormat $
-        detectReader k
-    withExceptT RibPandocError_PandocError $ do
-      v' <- runIO' $ r readerSettings content
-      liftIO $ walkM includeSources v'
+    v' <- runIO' $ readPandocFormat k readerSettings content
+    liftIO $ walkM includeSources v'
     where
       includeSources = includeCode $ Just $ Format "html5"
 
@@ -74,9 +70,9 @@ instance IsMarkup Pandoc where
 
 -- | Render a Pandoc document to HTML
 render :: Pandoc -> Html ()
-render doc = either error id $ first show $ runExcept $ do
-  withExcept RibPandocError_PandocError
-    $ runPure'
+render doc =
+  either error id $ first show $ runExcept $ do
+    runPure'
     $ fmap toHtmlRaw
     $ writeHtml5String writerSettings doc
 
@@ -131,33 +127,6 @@ writerSettings :: WriterOptions
 writerSettings = def {writerExtensions = exts}
 
 -- Internal code
-
-data UnknownExtension
-  = UnknownExtension String
-  deriving (Show, Eq)
-
--- | Detect the Pandoc reader to use based on file extension
-detectReader ::
-  forall m m1.
-  (MonadError UnknownExtension m, PandocMonad m1) =>
-  Path Rel File ->
-  m (ReaderOptions -> Text -> m1 Pandoc)
-detectReader f = do
-  ext <-
-    liftEither . first (UnknownExtension . show) $
-      fileExtension f
-  liftEither . maybeToRight (UnknownExtension ext) $
-    formats !? ext
-  where
-    formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
-    formats =
-      fromList
-        [ (".md", readMarkdown),
-          (".rst", readRST),
-          (".org", readOrg),
-          (".tex", readLaTeX),
-          (".ipynb", readIpynb)
-        ]
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --
