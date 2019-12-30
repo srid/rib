@@ -3,12 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
--- Suppressing orphans warning for `Markup Pandoc` instance
 
 -- | Helpers for working with Pandoc documents
-module Rib.Markup.Pandoc
+module Rib.Parser.Pandoc
   ( -- * Parsing
     PandocFormat (..),
     parsePure,

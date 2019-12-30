@@ -26,8 +26,8 @@ library
         Rib
         Rib.App
         Rib.Source
-        Rib.Markup.MMark
-        Rib.Markup.Pandoc
+        Rib.Parser.MMark
+        Rib.Parser.Pandoc
         Rib.Shake
     other-modules:
         Prelude

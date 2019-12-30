@@ -14,6 +14,6 @@ where
 
 import Rib.App
 import Rib.Source
-import Rib.Markup.MMark (MMark)
-import Rib.Markup.Pandoc (Pandoc)
+import Rib.Parser.MMark (MMark)
+import Rib.Parser.Pandoc (Pandoc)
 import Rib.Shake

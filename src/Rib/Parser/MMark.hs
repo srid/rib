@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Rib.Markup.MMark
+module Rib.Parser.MMark
   ( -- * Parsing
     parsePure,
     parseIO,

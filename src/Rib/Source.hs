@@ -23,7 +23,7 @@ where
 import Development.Shake.FilePath ((-<.>))
 import Path hiding ((-<.>))
 
--- | A source generated from a Markup source file.
+-- | A source file on disk
 data Source repr
   = Source
       { -- | Path to the source; relative to the source directory.
