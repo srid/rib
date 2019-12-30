@@ -43,8 +43,8 @@ parsePure k s = case MMark.parse k s of
   Left e -> Left $ toText $ M.errorBundlePretty e
   Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
-parseIO :: MonadIO m => Path b File -> m (Either Text MMark)
-parseIO f = parsePure (toFilePath f) <$> readFileText (toFilePath f)
+parseIO :: MonadIO m => Path Rel File -> Text -> m (Either Text MMark)
+parseIO k s = pure $ parsePure (toFilePath k) s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

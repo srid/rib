@@ -95,8 +95,8 @@ runWith src dst buildAction = \case
   Generate fullGen ->
     flip shakeForward buildAction $
       shakeOptions
-        { shakeVerbosity = Chatty,
+        { shakeVerbosity = Verbose,
           shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
-          shakeLintInside = [toFilePath src, toFilePath dst],
+          shakeLintInside = [""],
           shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
         }

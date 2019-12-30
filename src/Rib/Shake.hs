@@ -12,9 +12,6 @@ module Rib.Shake
     buildHtmlMulti,
     buildHtml,
 
-    -- * Read helpers
-    readSourceMulti,
-
     -- * Misc
     Dirs (..),
     ribInputDir,
@@ -23,6 +20,7 @@ module Rib.Shake
 where
 
 import Development.Shake
+import Development.Shake.Forward
 import Lucid (Html)
 import qualified Lucid
 import Path
@@ -68,37 +66,27 @@ buildHtmlMulti ::
   (Source repr -> Html ()) ->
   -- | Result
   Action [Source repr]
-buildHtmlMulti pat parser r = do
-  srcs <- readSourceMulti pat parser
-  void $ forP srcs $ \src -> do
-    outfile <- liftIO $ replaceExtension ".html" $ sourcePath src
-    buildHtml outfile $ r src
-  pure srcs
-
--- | Like `readSource'` but operates on multiple files
-readSourceMulti ::
-  -- | Source file patterns
-  [Path Rel File] ->
-  -- | How to parse the source
-  SourceReader repr ->
-  -- | Result
-  Action [Source repr]
-readSourceMulti pats parser = do
+buildHtmlMulti pats parser r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
     let f = input </> k
-    need $ toFilePath <$> [f]
-    readSource parser k f >>= \case
+    outfile <- liftIO $ replaceExtension ".html" k
+    content <- fmap toText <$> readFile' $ toFilePath f
+    readSource parser k content >>= \case
       Left e ->
-        fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
-      Right v -> pure v
+        fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
+      Right src -> do
+        cacheActionWith (toFilePath f) content $ do
+          buildHtml outfile $ r src
+        pure src
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
 buildHtml f html = do
   output <- ribOutputDir
   writeHtml (output </> f) html
+  putInfo $ "[Rib] Wrote " <> toFilePath (output </> f)
   where
     writeHtml :: MonadIO m => Path b File -> Html () -> m ()
     writeHtml p htmlVal = do

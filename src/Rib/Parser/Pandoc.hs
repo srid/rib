@@ -51,9 +51,8 @@ parsePure fmt s =
     runPure'
     $ readPandocFormat fmt readerSettings s
 
-parseIO :: MonadIO m => PandocFormat -> Path b File -> m (Either Text Pandoc)
-parseIO fmt f = fmap (first show) $ runExceptT $ do
-  content <- readFileText (toFilePath f)
+parseIO :: MonadIO m => PandocFormat -> Path Rel File -> Text -> m (Either Text Pandoc)
+parseIO fmt _k content = fmap (first show) $ runExceptT $ do
   v' <- runIO' $ readPandocFormat fmt readerSettings content
   liftIO $ walkM includeSources v'
   where
