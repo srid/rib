@@ -78,42 +78,33 @@ buildHtmlMulti pats parser r = do
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
     let f = input </> k
-    outfile <- liftIO $ replaceExtension ".html" k
     content <- fmap toText <$> readFile' $ toFilePath f
+    -- NOTE: We don't really use cacheActionWith prior to parsing content,
+    -- because the parsed representation (`repr`) may not always have instances
+    -- for Typeable/Binary/Generic (for example, MMark does not expose its
+    -- structure.). Consequently we are forced to cache merely the HTML writing
+    -- stage (see below).
     readSource parser k content >>= \case
       Left e ->
         fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
       Right src -> do
-        cacheActionWithFileContent f content $ do
-          buildHtml outfile $ r src
+        outfile <- liftIO $ replaceExtension ".html" k
+        let html = toString $ Lucid.renderText $ r src
+            cacheClosure = (toFilePath outfile, html)
+        cacheActionWith ("buildHtmlMulti" :: Text, toFilePath k) cacheClosure $ do
+          buildHtml' outfile html
         pure src
-
-cacheActionWithFileContent ::
-  (Typeable a, Binary a, Show a) =>
-  Path b File ->
-  Text ->
-  Action a ->
-  Action a
-cacheActionWithFileContent f content act = do
-  -- FIXME: This does not preserve cache across multiple runs of the Haskell
-  -- process. On the good side, within a single session (which is the typical
-  -- run use case, at least for the author, esp. with ghcid) cache is observed.
-  uuid <- _ribSettings_processUUID <$> ribSettings
-  let key = toFilePath f
-      -- NOTE: key must be part of the cache value to avoid an odd caching bug.
-      val = (uuid, key, content)
-  cacheActionWith key val act
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
-buildHtml f html = do
+buildHtml f = buildHtml' f . toString . Lucid.renderText
+
+buildHtml' :: Path Rel File -> String -> Action ()
+buildHtml' k s = do
   output <- ribOutputDir
-  writeHtml (output </> f) html
-  putInfo $ "[Rib] Wrote " <> toFilePath (output </> f)
-  where
-    writeHtml :: Path b File -> Html () -> Action ()
-    writeHtml p htmlVal = do
-      writeFile' (toFilePath p) $! toString $ Lucid.renderText htmlVal
+  let f = toFilePath $ output </> k
+  writeFile' f $! s
+  putInfo $ "[Rib] Wrote " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
