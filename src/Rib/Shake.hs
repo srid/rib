@@ -12,37 +12,39 @@ module Rib.Shake
     buildHtmlMulti,
     buildHtml,
 
-    -- * Read helpers
-    readSourceMulti,
-
     -- * Misc
-    Dirs (..),
+    RibSettings (..),
     ribInputDir,
     ribOutputDir,
   )
 where
 
 import Development.Shake
+import Development.Shake.Forward
 import Lucid (Html)
 import qualified Lucid
 import Path
 import Path.IO
 import Rib.Source
 
-data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
+data RibSettings
+  = RibSettings
+      { _ribSettings_inputDir :: Path Rel Dir,
+        _ribSettings_outputDir :: Path Rel Dir
+      }
   deriving (Typeable)
 
-getDirs :: Action (Path Rel Dir, Path Rel Dir)
-getDirs = getShakeExtra >>= \case
-  Just (Dirs d) -> return d
-  Nothing -> fail "Input output directories are not initialized"
+ribSettings :: Action RibSettings
+ribSettings = getShakeExtra >>= \case
+  Just v -> pure v
+  Nothing -> fail "RibSettings not initialized"
 
 ribInputDir :: Action (Path Rel Dir)
-ribInputDir = fst <$> getDirs
+ribInputDir = _ribSettings_inputDir <$> ribSettings
 
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
-  output <- snd <$> getDirs
+  output <- _ribSettings_outputDir <$> ribSettings
   liftIO $ createDirIfMissing True output
   return output
 
@@ -68,43 +70,43 @@ buildHtmlMulti ::
   (Source repr -> Html ()) ->
   -- | Result
   Action [Source repr]
-buildHtmlMulti pat parser r = do
-  srcs <- readSourceMulti pat parser
-  void $ forP srcs $ \src -> do
-    outfile <- liftIO $ replaceExtension ".html" $ sourcePath src
-    buildHtml outfile $ r src
-  pure srcs
-
--- | Like `readSource'` but operates on multiple files
-readSourceMulti ::
-  -- | Source file patterns
-  [Path Rel File] ->
-  -- | How to parse the source
-  SourceReader repr ->
-  -- | Result
-  Action [Source repr]
-readSourceMulti pats parser = do
+buildHtmlMulti pats parser r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
     let f = input </> k
-    need $ toFilePath <$> [f]
-    readSource parser k f >>= \case
+    content <- fmap toText <$> readFile' $ toFilePath f
+    -- NOTE: We don't really use cacheActionWith prior to parsing content,
+    -- because the parsed representation (`repr`) may not always have instances
+    -- for Typeable/Binary/Generic (for example, MMark does not expose its
+    -- structure.). Consequently we are forced to cache merely the HTML writing
+    -- stage (see buildHtml').
+    readSource parser k content >>= \case
       Left e ->
-        fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
-      Right v -> pure v
+        fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
+      Right src -> do
+        outfile <- liftIO $ replaceExtension ".html" k
+        writeFileCached outfile $ toString $ Lucid.renderText $ r src
+        pure src
 
--- | Build a single HTML file with the given value
+-- | Build a single HTML file with the given HTML value
+--
+-- The HTML text value will be cached, so subsequent writes of the same value
+-- will be skipped.
 buildHtml :: Path Rel File -> Html () -> Action ()
-buildHtml f html = do
-  output <- ribOutputDir
-  writeHtml (output </> f) html
-  where
-    writeHtml :: MonadIO m => Path b File -> Html () -> m ()
-    writeHtml p htmlVal = do
-      -- TODO: Is there a way to make Shake automatically do this for us?
-      createDirIfMissing True $ parent p
-      writeFileLText (toFilePath p) $! Lucid.renderText htmlVal
+buildHtml f = writeFileCached f . toString . Lucid.renderText
+
+-- | Like writeFile' but uses `cacheAction`.
+--
+-- Also, always writes under ribOutputDir
+writeFileCached :: Path Rel File -> String -> Action ()
+writeFileCached k s = do
+  f <- fmap (toFilePath . (</> k)) ribOutputDir
+  let cacheClosure = (f, s)
+      cacheKey = ("writeFileCached" :: Text, f)
+  cacheActionWith cacheKey cacheClosure $ do
+    writeFile' f $! s
+    putInfo $ "W " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]

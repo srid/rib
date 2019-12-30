@@ -20,7 +20,7 @@ import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
 import qualified Rib.Server as Server
-import Rib.Shake (Dirs (..))
+import Rib.Shake (RibSettings (..))
 import System.Console.CmdArgs
 import System.FSNotify (watchTree, withManager)
 
@@ -80,11 +80,15 @@ runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
     -- Begin with a *full* generation as the HTML layout may have been changed.
-    runWith src dst buildAction $ Generate True
+    -- TODO: This assumption is not true when running the program from compiled
+    -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
+    -- by being part of the binary. In this scenario, we should not do full
+    -- generation (i.e., toggle the bool here to False).
+    runShake True
     -- And then every time a file changes under the current directory
-    putStrLn $ "[Rib] Watching " <> toFilePath src
+    putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
     void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
-      runWith src dst buildAction (Generate False)
+      runShake False
         `catch` \(e :: SomeException) -> putStrLn $ show e
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
@@ -92,11 +96,14 @@ runWith src dst buildAction = \case
     concurrently_
       (unless dw $ runWith src dst buildAction WatchAndGenerate)
       (Server.serve p $ toFilePath dst)
-  Generate fullGen ->
-    flip shakeForward buildAction $
-      shakeOptions
-        { shakeVerbosity = Chatty,
-          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
-          shakeLintInside = [toFilePath src, toFilePath dst],
-          shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
-        }
+  Generate fullGen -> do
+    runShake fullGen
+  where
+    runShake fullGen =
+      flip shakeForward buildAction $
+        shakeOptions
+          { shakeVerbosity = Verbose,
+            shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+            shakeLintInside = [""],
+            shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
+          }
