@@ -10,14 +10,11 @@ Rib is a Haskell library for writing your own **static site generator**.
 
 How does it compare to Hakyll?
 
-- Use the [Shake](https://shakebuild.com/) build system
-- Builtin support for using Haskell DSL to define the HTML
-  ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS
-  ([Clay](http://fvisser.nl/clay/)) of your site 
-  - Like Hakyll, Rib uses [Pandoc](https://pandoc.org/) for parsing the source
-    documents. It also supports [MMark](https://github.com/mmark-md/mmark) if you need a lightweight alternative.
-- Remain as simple as possible to use (see example below)
-- Optional Nix based workflow for easily reproducible environment
+- At its core, uses the [Shake](https://shakebuild.com/) build system.
+- Allows writing Haskell DSL to define HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/)).
+- Support for [Pandoc](https://pandoc.org/) (like Hakyll) and [MMark](https://github.com/mmark-md/mmark) (or your custom parser function).
+- Remain as simple as possible to use (see example below).
+- Optional but recommended Nix-based workflow for easily reproducible environment.
 
 Rib prioritizes the use of *existing* tools over reinventing them, and enables
 the user to compose them as they wish instead of having to write code to fit a
@@ -42,24 +39,20 @@ Here is how your code may look like if you were to generate your static site
 using Rib:
 
 ``` haskell
--- First we shall define two datatypes to represent our pages. One, the page
--- itself. Second, the metadata associated with each document.
-
--- | A generated page is either an index of documents, or an individual document.
+-- | A generated page corresponds to either an index of sources, or an
+-- individual source.
 --
--- `DocMeta` is the metadata type associated with documents.
+-- Each `Source` specifies the parser type to use. Rib provides `MMark` and
+-- `Pandoc`; but you may define your own as well.
 data Page
-  = -- | Index page, containing a list of documents.
-    Page_Index [Document DocMeta]
-  | -- | Individual page associated with a document
-    Page_Doc (Document DocMeta)
+  = Page_Index [Source M.MMark]
+  | Page_Single (Source M.MMark)
 
--- | Type representing the metadata in our Markdown documents
---
--- Optional fields are of kind Maybe. Other fields must be present.
-data DocMeta
-  = DocMeta
+-- | Metadata in our markdown sources. Parsed as JSON.
+data SrcMeta
+  = SrcMeta
       { title :: Text,
+        -- | Description is optional, hence it is a `Maybe`
         description :: Maybe Text
       }
   deriving (Show, Eq, Generic, FromJSON)
@@ -82,19 +75,17 @@ main = Rib.run [reldir|a|] [reldir|b|] generateSite
     generateSite = do
       -- Copy over the static files
       Rib.buildStaticFiles [[relfile|static/**|]]
-      -- Build individual markup sources, generating .html for each.
-      docs <-
-        Rib.buildHtmlMulti patterns $
-          renderPage . Page_Doc
+      -- Build individual sources, generating .html for each.
+      -- The function `buildHtmlMulti` takes the following arguments:
+      -- - File patterns to build
+      -- - Function that will parse the file (here we use mmark)
+      -- - Function that will generate the HTML (see below)
+      srcs <-
+        Rib.buildHtmlMulti [[relfile|*.md|]] M.parseIO $
+          renderPage . Page_Single
       -- Build an index.html linking to the aforementioned files.
-      Rib.buildHtml [relfile|index.html|]
-        $ renderPage
-        $ Page_Index docs
-    -- File patterns to build, using the associated markup parser
-    patterns =
-      Map.fromList
-        [ ([relfile|*.md|], Some Rib.Markup_MMark)
-        ]
+      Rib.buildHtml [relfile|index.html|] $
+        renderPage (Page_Index srcs)
     -- Define your site HTML here
     renderPage :: Page -> Html ()
     renderPage page = with html_ [lang_ "en"] $ do
@@ -102,7 +93,7 @@ main = Rib.run [reldir|a|] [reldir|b|] generateSite
         meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
         title_ $ case page of
           Page_Index _ -> "My website!"
-          Page_Doc doc -> toHtml $ title $ Rib.documentMeta doc
+          Page_Single src -> toHtml $ title $ getMeta src
         style_ [type_ "text/css"] $ Clay.render pageStyle
       body_
         $ with div_ [id_ "thesite"]
@@ -110,16 +101,22 @@ main = Rib.run [reldir|a|] [reldir|b|] generateSite
           with a_ [href_ "/"] "Back to Home"
           hr_ []
           case page of
-            Page_Index docs ->
-              div_ $ forM_ docs $ \doc -> with li_ [class_ "links"] $ do
-                let meta = Rib.documentMeta doc
-                b_ $ with a_ [href_ (Rib.documentUrl doc)] $ toHtml $ title meta
-                maybe mempty Rib.renderMarkdown $
-                  description meta
-            Page_Doc doc ->
+            Page_Index srcs ->
+              div_ $ forM_ srcs $ \src -> with li_ [class_ "links"] $ do
+                let meta = getMeta src
+                b_ $ with a_ [href_ (Rib.sourceUrl src)] $ toHtml $ title meta
+                maybe mempty (M.render . either (error . T.unpack) id . M.parsePure "<desc>") $ description meta
+            Page_Single src ->
               with article_ [class_ "post"] $ do
-                h1_ $ toHtml $ title $ Rib.documentMeta doc
-                Rib.documentHtml doc
+                h1_ $ toHtml $ title $ getMeta src
+                M.render $ Rib.sourceVal src
+    -- Get metadata from Markdown YAML block
+    getMeta :: Source M.MMark -> SrcMeta
+    getMeta src = case M.projectYaml (Rib.sourceVal src) of
+      Nothing -> error "No YAML metadata"
+      Just val -> case fromJSON val of
+        Aeson.Error e -> error $ "JSON error: " <> e
+        Aeson.Success v -> v
     -- Define your site CSS here
     pageStyle :: Css
     pageStyle = "div#thesite" ? do

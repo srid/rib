@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -15,7 +16,7 @@ module Rib.Shake
     buildHtml,
 
     -- * Read helpers
-    readDocMulti,
+    readSourceMulti,
 
     -- * Misc
     buildStaticFiles,
@@ -25,16 +26,12 @@ module Rib.Shake
   )
 where
 
-import Data.Aeson
-import Data.Some
 import Development.Shake
 import Lucid (Html)
 import qualified Lucid
-import Named
 import Path
 import Path.IO
-import Relude.Extra.Map
-import Rib.Document
+import Rib.Source
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -67,42 +64,40 @@ buildStaticFiles staticFilePatterns = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  forall meta.
-  FromJSON meta =>
   -- | Source file patterns
-  Map (Path Rel File) (Some Markup) ->
-  -- | How to render the given document to HTML
-  (Document meta -> Html ()) ->
-  -- | List of relative path to generated HTML and the associated document
-  Action [Document meta]
-buildHtmlMulti pat r = do
-  xs <- readDocMulti pat
+  [Path Rel File] ->
+  -- | How to parse the source
+  SourceReader repr ->
+  -- | How to render the given source to HTML
+  (Source repr -> Html ()) ->
+  -- | Result
+  Action [Source repr]
+buildHtmlMulti pat parser r = do
+  xs <- readSourceMulti pat parser
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
+    outfile <- liftIO $ replaceExtension ".html" $ sourcePath x
     buildHtml outfile (r x)
   pure xs
 
--- | Like `readDoc'` but operates on multiple files
-readDocMulti ::
-  forall meta.
-  (FromJSON meta) =>
+-- | Like `readSource'` but operates on multiple files
+readSourceMulti ::
   -- | Source file patterns
-  Map (Path Rel File) (Some Markup) ->
-  Action [Document meta]
-readDocMulti pats = do
+  [Path Rel File] ->
+  -- | How to parse the source
+  SourceReader repr ->
+  -- | Result
+  Action [Source repr]
+readSourceMulti pats parser = do
   input <- ribInputDir
-  fmap concat $ forM (toPairs pats) $ \(pat, dp) -> do
+  fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
-    forP fs $ \f -> do
-      need $ toFilePath <$> [input </> f]
-      result <-
-        runExceptT $
-          mkDocumentFrom dp
-            ! #relpath f
-            ! #path (input </> f)
+    forP fs $ \k -> do
+      let f = input </> k
+      need $ toFilePath <$> [f]
+      result <- readSource parser k f
       case result of
         Left e ->
-          fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
+          fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
         Right v -> pure v
 
 -- | Build a single HTML file with the given value

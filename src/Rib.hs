@@ -2,20 +2,18 @@
 module Rib
   ( module Rib.App,
     module Rib.Shake,
-    Document,
-    documentPath,
-    documentVal,
-    documentHtml,
-    documentMeta,
-    documentUrl,
-    Markup (..),
-    renderMarkdown,
-    renderPandoc,
+    Source,
+    SourceReader,
+    sourcePath,
+    sourceVal,
+    sourceUrl,
+    MMark,
+    Pandoc,
   )
 where
 
 import Rib.App
-import Rib.Document
-import Rib.Markup.MMark (renderMarkdown)
-import Rib.Markup.Pandoc (renderPandoc)
+import Rib.Source
+import Rib.Parser.MMark (MMark)
+import Rib.Parser.Pandoc (Pandoc)
 import Rib.Shake

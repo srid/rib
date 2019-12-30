@@ -2,11 +2,12 @@
 
 ## 0.6.0.0 - UNRELEASED
 
-- API: Allow multiple parsers in the same static site
-  - Changes API of `Rib.buildHtmlMulti`, to use `Data.Some`
-  - Changes the `documentVal` of `Document` type, to use `Data.Dependent.DSum`
+- Significant API simplication: no more type class!
+  - Allows user to specify their own markup parser as a Haskell function
+  - Dropped namings "Document" and "Markup" in favour of "Source"
 - API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Fix #63: create intermediate directories when generating post HTML
+- Advance nixpkgs; require Shake >=0.18.4
 
 ## 0.5.0.0
 

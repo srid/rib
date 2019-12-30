@@ -1,23 +1,22 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
--- Suppressing orphans warning for `Markup Pandoc` instance
 
 -- | Helpers for working with Pandoc documents
-module Rib.Markup.Pandoc
-  ( -- * Manual rendering
-    renderPandoc,
+module Rib.Parser.Pandoc
+  ( -- * Parsing
+    PandocFormat (..),
+    parsePure,
+    parseIO,
+
+    -- * Rendering
+    render,
     renderPandocInlines,
 
     -- * Extracting information
+    extractMeta,
     getH1,
     getFirstImg,
 
@@ -29,54 +28,47 @@ where
 import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
-import Named
 import Path
-import Relude.Extra.Map ((!?))
-import Rib.Markup
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Walk (query, walkM)
-import qualified Text.Show
 
-data RibPandocError
-  = RibPandocError_PandocError PandocError
-  | RibPandocError_UnknownFormat UnknownExtension
+-- | List of formats supported by Pandoc
+--
+-- TODO: Complete this list.
+data PandocFormat
+  = PandocFormat_Markdown
+  | PandocFormat_RST
 
-instance Show RibPandocError where
-  show = \case
-    RibPandocError_PandocError e ->
-      show e
-    RibPandocError_UnknownFormat s ->
-      "Unsupported extension: " <> show s
+readPandocFormat :: PandocMonad m => PandocFormat -> ReaderOptions -> Text -> m Pandoc
+readPandocFormat = \case
+  PandocFormat_Markdown -> readMarkdown
+  PandocFormat_RST -> readRST
 
-instance IsMarkup Pandoc where
+parsePure :: PandocFormat -> Text -> Either Text Pandoc
+parsePure fmt s =
+  first show $ runExcept $ do
+    runPure'
+    $ readPandocFormat fmt readerSettings s
 
-  parseDoc k s = first show $ runExcept $ do
-    r <-
-      withExcept RibPandocError_UnknownFormat $
-        detectReader k
-    withExcept RibPandocError_PandocError
-      $ runPure'
-      $ r readerSettings s
+parseIO :: MonadIO m => PandocFormat -> Path b File -> m (Either Text Pandoc)
+parseIO fmt f = fmap (first show) $ runExceptT $ do
+  content <- readFileText (toFilePath f)
+  v' <- runIO' $ readPandocFormat fmt readerSettings content
+  liftIO $ walkM includeSources v'
+  where
+    includeSources = includeCode $ Just $ Format "html5"
 
-  readDoc (Arg k) (Arg f) = fmap (first show) $ runExceptT $ do
-    content <- readFileText (toFilePath f)
-    r <-
-      withExceptT RibPandocError_UnknownFormat $
-        detectReader k
-    withExceptT RibPandocError_PandocError $ do
-      v' <- runIO' $ r readerSettings content
-      liftIO $ walkM includeSources v'
-    where
-      includeSources = includeCode $ Just $ Format "html5"
+-- | Render a Pandoc document to HTML
+render :: Pandoc -> Html ()
+render doc =
+  either error id $ first show $ runExcept $ do
+    runPure'
+    $ fmap toHtmlRaw
+    $ writeHtml5String writerSettings doc
 
-  extractMeta (Pandoc meta _) = flattenMeta meta
-
-  renderDoc doc = first show $ runExcept $ do
-    withExcept RibPandocError_PandocError
-      $ runPure'
-      $ fmap toHtmlRaw
-      $ writeHtml5String writerSettings doc
+extractMeta :: Pandoc -> Maybe (Either Text Value)
+extractMeta (Pandoc meta _) = flattenMeta meta
 
 runPure' :: MonadError PandocError m => PandocPure a -> m a
 runPure' = liftEither . runPure
@@ -84,19 +76,13 @@ runPure' = liftEither . runPure
 runIO' :: (MonadError PandocError m, MonadIO m) => PandocIO a -> m a
 runIO' = liftEither <=< liftIO . runIO
 
--- | Parse and render the markup directly to HTML
-renderPandoc :: Path Rel File -> Text -> Html ()
-renderPandoc f s = either (error . show) id $ runExcept $ do
-  doc <- liftEither $ parseDoc @Pandoc f s
-  liftEither $ renderDoc doc
-
 -- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
 --
 -- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
 renderPandocInlines :: [Inline] -> Html ()
 renderPandocInlines =
-  either (error . show) toHtmlRaw
-    . renderDoc
+  toHtmlRaw
+    . render
     . Pandoc mempty
     . pure
     . Plain
@@ -135,33 +121,6 @@ writerSettings :: WriterOptions
 writerSettings = def {writerExtensions = exts}
 
 -- Internal code
-
-data UnknownExtension
-  = UnknownExtension String
-  deriving (Show, Eq)
-
--- | Detect the Pandoc reader to use based on file extension
-detectReader ::
-  forall m m1.
-  (MonadError UnknownExtension m, PandocMonad m1) =>
-  Path Rel File ->
-  m (ReaderOptions -> Text -> m1 Pandoc)
-detectReader f = do
-  ext <-
-    liftEither . first (UnknownExtension . show) $
-      fileExtension f
-  liftEither . maybeToRight (UnknownExtension ext) $
-    formats !? ext
-  where
-    formats :: Map String (ReaderOptions -> Text -> m1 Pandoc)
-    formats =
-      fromList
-        [ (".md", readMarkdown),
-          (".rst", readRST),
-          (".org", readOrg),
-          (".tex", readLaTeX),
-          (".ipynb", readIpynb)
-        ]
 
 -- | Flatten a Pandoc 'Meta' into a well-structured JSON object.
 --

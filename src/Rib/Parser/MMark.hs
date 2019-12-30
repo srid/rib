@@ -1,20 +1,23 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
--- Suppressing orphans warning for `Markup MMark` instance
+module Rib.Parser.MMark
+  ( -- * Parsing
+    parsePure,
+    parseIO,
 
-module Rib.Markup.MMark
-  ( -- * Manual rendering
-    renderMarkdown,
+    -- * Rendering
+    render,
 
     -- * Extracting information
     getFirstImg,
+    projectYaml,
 
     -- * Re-exports
     MMark,
@@ -22,37 +25,26 @@ module Rib.Markup.MMark
 where
 
 import Control.Foldl (Fold (..))
-import Control.Monad.Except
 import Lucid (Html)
-import Named
 import Path
-import Rib.Markup
-import Text.MMark (MMark)
+import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
 import qualified Text.MMark.Extension.Common as Ext
 import qualified Text.Megaparsec as M
 import Text.URI (URI)
 
-instance IsMarkup MMark where
+-- | Render a MMark document as HTML
+render :: MMark -> Html ()
+render = MMark.render
 
-  parseDoc f s = case MMark.parse (toFilePath f) s of
-    Left e -> Left $ toText $ M.errorBundlePretty e
-    Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
+parsePure :: FilePath -> Text -> Either Text MMark
+parsePure k s = case MMark.parse k s of
+  Left e -> Left $ toText $ M.errorBundlePretty e
+  Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
-  readDoc (Arg k) (Arg f) = do
-    content <- readFileText (toFilePath f)
-    pure $ parseDoc k content
-
-  extractMeta = fmap Right . MMark.projectYaml
-
-  renderDoc = Right . MMark.render
-
--- | Parse and render the markup directly to HTML
-renderMarkdown :: Text -> Html ()
-renderMarkdown s = either error id $ runExcept $ do
-  doc <- liftEither $ parseDoc @MMark [relfile|<memory>.md|] s
-  liftEither $ renderDoc doc
+parseIO :: MonadIO m => Path b File -> m (Either Text MMark)
+parseIO f = parsePure (toFilePath f) <$> readFileText (toFilePath f)
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

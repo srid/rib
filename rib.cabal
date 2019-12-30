@@ -25,13 +25,12 @@ library
     exposed-modules:
         Rib
         Rib.App
-        Rib.Document
-        Rib.Markup.MMark
-        Rib.Markup.Pandoc
+        Rib.Source
+        Rib.Parser.MMark
+        Rib.Parser.Pandoc
         Rib.Shake
     other-modules:
         Prelude
-        Rib.Markup
         Rib.Server
     hs-source-dirs: src
     default-language: Haskell2010
@@ -47,7 +46,6 @@ library
         clay >=0.13.1 && <0.14,
         cmdargs >=0.10.20 && <0.11,
         containers >=0.6.0 && <0.7,
-        dependent-sum,
         directory >= 1.0 && <2.0,
         exceptions,
         foldl,
@@ -58,14 +56,13 @@ library
         mmark-ext,
         modern-uri,
         mtl >=2.2.2 && <2.3,
-        named,
         pandoc >=2.7 && <3,
         pandoc-include-code >=1.4.0 && <1.5,
         pandoc-types >=1.17.5 && <1.18,
         path >= 0.7.0,
         path-io,
         relude >= 0.6 && < 0.7,
-        shake,
+        shake >= 0.18.4,
         text >=1.2.3 && <1.3,
         wai >=3.2.2 && <3.3,
         wai-app-static >=3.1.6 && <3.2,
