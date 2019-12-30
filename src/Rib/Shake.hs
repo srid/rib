@@ -1,17 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 
 -- | Combinators for working with Shake.
 --
 -- See the source of `Rib.Simple.buildAction` for example usage.
 module Rib.Shake
   ( -- * Basic helpers
+    buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
 
@@ -19,7 +16,6 @@ module Rib.Shake
     readSourceMulti,
 
     -- * Misc
-    buildStaticFiles,
     Dirs (..),
     ribInputDir,
     ribOutputDir,
@@ -73,11 +69,11 @@ buildHtmlMulti ::
   -- | Result
   Action [Source repr]
 buildHtmlMulti pat parser r = do
-  xs <- readSourceMulti pat parser
-  void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ sourcePath x
-    buildHtml outfile (r x)
-  pure xs
+  srcs <- readSourceMulti pat parser
+  void $ forP srcs $ \src -> do
+    outfile <- liftIO $ replaceExtension ".html" $ sourcePath src
+    buildHtml outfile $ r src
+  pure srcs
 
 -- | Like `readSource'` but operates on multiple files
 readSourceMulti ::
@@ -89,16 +85,14 @@ readSourceMulti ::
   Action [Source repr]
 readSourceMulti pats parser = do
   input <- ribInputDir
-  fmap concat $ forM pats $ \pat -> do
-    fs <- getDirectoryFiles' input [pat]
-    forP fs $ \k -> do
-      let f = input </> k
-      need $ toFilePath <$> [f]
-      result <- readSource parser k f
-      case result of
-        Left e ->
-          fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
-        Right v -> pure v
+  fs <- getDirectoryFiles' input pats
+  forP fs $ \k -> do
+    let f = input </> k
+    need $ toFilePath <$> [f]
+    readSource parser k f >>= \case
+      Left e ->
+        fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
+      Right v -> pure v
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
@@ -112,7 +106,7 @@ buildHtml f html = do
       createDirIfMissing True $ parent p
       writeFileLText (toFilePath p) $! Lucid.renderText htmlVal
 
--- | Like `getDirectoryFiles` but work with `Path`
+-- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
 getDirectoryFiles' dir pat =
   traverse (liftIO . parseRelFile) =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)

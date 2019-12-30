@@ -93,11 +93,10 @@ runWith src dst buildAction = \case
       (unless dw $ runWith src dst buildAction WatchAndGenerate)
       (Server.serve p $ toFilePath dst)
   Generate fullGen ->
-    let opts =
-          shakeOptions
-            { shakeVerbosity = Chatty,
-              shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
-              shakeLintInside = [toFilePath src, toFilePath dst],
-              shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
-            }
-     in shakeForward opts buildAction
+    flip shakeForward buildAction $
+      shakeOptions
+        { shakeVerbosity = Chatty,
+          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+          shakeLintInside = [toFilePath src, toFilePath dst],
+          shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
+        }
