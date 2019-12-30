@@ -99,7 +99,10 @@ cacheActionWithFileContent f content act = do
   -- process. On the good side, within a single session (which is the typical
   -- run use case, at least for the author, esp. with ghcid) cache is observed.
   uuid <- _ribSettings_processUUID <$> ribSettings
-  cacheActionWith (toFilePath f) (show uuid <> content) act
+  let key = toFilePath f
+      -- NOTE: key must be part of the cache value to avoid an odd caching bug.
+      val = (uuid, key, content)
+  cacheActionWith key val act
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()
