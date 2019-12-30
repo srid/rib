@@ -9,6 +9,7 @@
 - Fix #63: create intermediate directories when generating post HTML
 - Advance nixpkgs; require Shake >=0.18.4
 - Fix unnecessary rebuild of all files when only one file changed
+  - Use caching, to avoid writing HTML to disk until it has changed.
 
 ## 0.5.0.0
 
