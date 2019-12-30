@@ -4,10 +4,10 @@
 
 - Significant API simplication: no more type class!
   - Allows user to specify their own markup parser as a Haskell function
+  - Dropped namings "Document" and "Markup" in favour of "Source"
 - API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Fix #63: create intermediate directories when generating post HTML
 - Advance nixpkgs; require Shake >=0.18.4
-- TODO: How to use multiple parsers at the same time? Add to doc, describing the use of Data.Some in user code.
 
 ## 0.5.0.0
 

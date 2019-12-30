@@ -46,7 +46,6 @@ library
         clay >=0.13.1 && <0.14,
         cmdargs >=0.10.20 && <0.11,
         containers >=0.6.0 && <0.7,
-        dhall >= 1.28.0,
         directory >= 1.0 && <2.0,
         exceptions,
         foldl,
