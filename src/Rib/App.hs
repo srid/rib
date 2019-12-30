@@ -16,7 +16,6 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Exception (catch)
-import qualified Data.UUID.V4 as UUID
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
@@ -80,17 +79,16 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
 runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
-    uuid <- UUID.nextRandom
     -- Begin with a *full* generation as the HTML layout may have been changed.
     -- TODO: This assumption is not true when running the program from compiled
     -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
     -- by being part of the binary. In this scenario, we should not do full
     -- generation (i.e., toggle the bool here to False).
-    runShake uuid True
+    runShake True
     -- And then every time a file changes under the current directory
     putStrLn $ "[Rib] Watching " <> toFilePath src
     void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
-      runShake uuid False
+      runShake False
         `catch` \(e :: SomeException) -> putStrLn $ show e
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
@@ -99,14 +97,13 @@ runWith src dst buildAction = \case
       (unless dw $ runWith src dst buildAction WatchAndGenerate)
       (Server.serve p $ toFilePath dst)
   Generate fullGen -> do
-    uuid <- UUID.nextRandom
-    runShake uuid fullGen
+    runShake fullGen
   where
-    runShake uuid fullGen =
+    runShake fullGen =
       flip shakeForward buildAction $
         shakeOptions
           { shakeVerbosity = Verbose,
             shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
             shakeLintInside = [""],
-            shakeExtra = addShakeExtra (RibSettings src dst uuid) (shakeExtra shakeOptions)
+            shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
           }

@@ -19,8 +19,6 @@ module Rib.Shake
   )
 where
 
-import Data.Binary
-import Data.UUID (UUID)
 import Development.Shake
 import Development.Shake.Forward
 import Lucid (Html)
@@ -32,8 +30,7 @@ import Rib.Source
 data RibSettings
   = RibSettings
       { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir,
-        _ribSettings_processUUID :: UUID
+        _ribSettings_outputDir :: Path Rel Dir
       }
   deriving (Typeable)
 
