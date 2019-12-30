@@ -13,12 +13,14 @@ module Rib.Shake
     buildHtml,
 
     -- * Misc
-    Dirs (..),
+    RibSettings (..),
     ribInputDir,
     ribOutputDir,
   )
 where
 
+import Data.Binary
+import Data.UUID (UUID)
 import Development.Shake
 import Development.Shake.Forward
 import Lucid (Html)
@@ -27,20 +29,25 @@ import Path
 import Path.IO
 import Rib.Source
 
-data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
+data RibSettings
+  = RibSettings
+      { _ribSettings_inputDir :: Path Rel Dir,
+        _ribSettings_outputDir :: Path Rel Dir,
+        _ribSettings_processUUID :: UUID
+      }
   deriving (Typeable)
 
-getDirs :: Action (Path Rel Dir, Path Rel Dir)
-getDirs = getShakeExtra >>= \case
-  Just (Dirs d) -> return d
-  Nothing -> fail "Input output directories are not initialized"
+ribSettings :: Action RibSettings
+ribSettings = getShakeExtra >>= \case
+  Just v -> pure v
+  Nothing -> fail "RibSettings not initialized"
 
 ribInputDir :: Action (Path Rel Dir)
-ribInputDir = fst <$> getDirs
+ribInputDir = _ribSettings_inputDir <$> ribSettings
 
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
-  output <- snd <$> getDirs
+  output <- _ribSettings_outputDir <$> ribSettings
   liftIO $ createDirIfMissing True output
   return output
 
@@ -77,9 +84,22 @@ buildHtmlMulti pats parser r = do
       Left e ->
         fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
       Right src -> do
-        cacheActionWith (toFilePath f) content $ do
+        cacheActionWithFileContent f content $ do
           buildHtml outfile $ r src
         pure src
+
+cacheActionWithFileContent ::
+  (Typeable a, Binary a, Show a) =>
+  Path b File ->
+  Text ->
+  Action a ->
+  Action a
+cacheActionWithFileContent f content act = do
+  -- FIXME: This does not preserve cache across multiple runs of the Haskell
+  -- process. On the good side, within a single ghcid session (which is the
+  -- typical run use case, at least for the author) cache is observed.
+  uuid <- _ribSettings_processUUID <$> ribSettings
+  cacheActionWith (toFilePath f) (show uuid <> content) act
 
 -- | Build a single HTML file with the given value
 buildHtml :: Path Rel File -> Html () -> Action ()

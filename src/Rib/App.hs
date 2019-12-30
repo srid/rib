@@ -16,11 +16,12 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Exception (catch)
+import qualified Data.UUID.V4 as UUID
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
 import qualified Rib.Server as Server
-import Rib.Shake (Dirs (..))
+import Rib.Shake (RibSettings (..))
 import System.Console.CmdArgs
 import System.FSNotify (watchTree, withManager)
 
@@ -79,12 +80,13 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
 runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
 runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
+    uuid <- UUID.nextRandom
     -- Begin with a *full* generation as the HTML layout may have been changed.
-    runWith src dst buildAction $ Generate True
+    runShake uuid True
     -- And then every time a file changes under the current directory
     putStrLn $ "[Rib] Watching " <> toFilePath src
     void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
-      runWith src dst buildAction (Generate False)
+      runShake uuid False
         `catch` \(e :: SomeException) -> putStrLn $ show e
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
@@ -92,11 +94,15 @@ runWith src dst buildAction = \case
     concurrently_
       (unless dw $ runWith src dst buildAction WatchAndGenerate)
       (Server.serve p $ toFilePath dst)
-  Generate fullGen ->
-    flip shakeForward buildAction $
-      shakeOptions
-        { shakeVerbosity = Verbose,
-          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
-          shakeLintInside = [""],
-          shakeExtra = addShakeExtra (Dirs (src, dst)) (shakeExtra shakeOptions)
-        }
+  Generate fullGen -> do
+    uuid <- UUID.nextRandom
+    runShake uuid fullGen
+  where
+    runShake uuid fullGen =
+      flip shakeForward buildAction $
+        shakeOptions
+          { shakeVerbosity = Verbose,
+            shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+            shakeLintInside = [""],
+            shakeExtra = addShakeExtra (RibSettings src dst uuid) (shakeExtra shakeOptions)
+          }
