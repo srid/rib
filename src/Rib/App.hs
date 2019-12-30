@@ -82,6 +82,10 @@ runWith src dst buildAction = \case
   WatchAndGenerate -> withManager $ \mgr -> do
     uuid <- UUID.nextRandom
     -- Begin with a *full* generation as the HTML layout may have been changed.
+    -- TODO: This assumption is not true when running the program from compiled
+    -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
+    -- by being part of the binary. In this scenario, we should not do full
+    -- generation (i.e., toggle the bool here to False).
     runShake uuid True
     -- And then every time a file changes under the current directory
     putStrLn $ "[Rib] Watching " <> toFilePath src

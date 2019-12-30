@@ -96,8 +96,8 @@ cacheActionWithFileContent ::
   Action a
 cacheActionWithFileContent f content act = do
   -- FIXME: This does not preserve cache across multiple runs of the Haskell
-  -- process. On the good side, within a single ghcid session (which is the
-  -- typical run use case, at least for the author) cache is observed.
+  -- process. On the good side, within a single session (which is the typical
+  -- run use case, at least for the author, esp. with ghcid) cache is observed.
   uuid <- _ribSettings_processUUID <$> ribSettings
   cacheActionWith (toFilePath f) (show uuid <> content) act
 
