@@ -86,7 +86,7 @@ runWith src dst buildAction = \case
     -- generation (i.e., toggle the bool here to False).
     runShake True
     -- And then every time a file changes under the current directory
-    putStrLn $ "[Rib] Watching " <> toFilePath src
+    putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
     void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
       runShake False
         `catch` \(e :: SomeException) -> putStrLn $ show e

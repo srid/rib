@@ -101,12 +101,12 @@ buildHtml f = writeFileCached f . toString . Lucid.renderText
 -- Also, always writes under ribOutputDir
 writeFileCached :: Path Rel File -> String -> Action ()
 writeFileCached k s = do
-  let cacheClosure = (toFilePath k, s)
-      cacheKey = ("writeFileCached" :: Text, toFilePath k)
+  f <- fmap (toFilePath . (</> k)) ribOutputDir
+  let cacheClosure = (f, s)
+      cacheKey = ("writeFileCached" :: Text, f)
   cacheActionWith cacheKey cacheClosure $ do
-    output <- ribOutputDir
-    writeFile' (toFilePath $ output </> k) $! s
-    putInfo $ "[Rib] Wrote " <> toFilePath k
+    writeFile' f $! s
+    putInfo $ "W " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
