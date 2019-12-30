@@ -16,7 +16,7 @@ module Rib.Shake
     buildHtml,
 
     -- * Read helpers
-    readDocMulti,
+    readSourceMulti,
 
     -- * Misc
     buildStaticFiles,
@@ -31,7 +31,7 @@ import Lucid (Html)
 import qualified Lucid
 import Path
 import Path.IO
-import Rib.Document
+import Rib.Source
 
 data Dirs = Dirs (Path Rel Dir, Path Rel Dir)
   deriving (Typeable)
@@ -67,36 +67,37 @@ buildHtmlMulti ::
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to parse the source
-  DocumentReader repr ->
-  -- | How to render the given document to HTML
-  (Document repr -> Html ()) ->
+  SourceReader repr ->
+  -- | How to render the given source to HTML
+  (Source repr -> Html ()) ->
   -- | Result
-  Action [Document repr]
+  Action [Source repr]
 buildHtmlMulti pat parser r = do
-  xs <- readDocMulti pat parser
+  xs <- readSourceMulti pat parser
   void $ forP xs $ \x -> do
-    outfile <- liftIO $ replaceExtension ".html" $ documentPath x
+    outfile <- liftIO $ replaceExtension ".html" $ sourcePath x
     buildHtml outfile (r x)
   pure xs
 
--- | Like `readDoc'` but operates on multiple files
-readDocMulti ::
+-- | Like `readSource'` but operates on multiple files
+readSourceMulti ::
   -- | Source file patterns
   [Path Rel File] ->
   -- | How to parse the source
-  DocumentReader repr ->
+  SourceReader repr ->
   -- | Result
-  Action [Document repr]
-readDocMulti pats parser = do
+  Action [Source repr]
+readSourceMulti pats parser = do
   input <- ribInputDir
   fmap concat $ forM pats $ \pat -> do
     fs <- getDirectoryFiles' input [pat]
-    forP fs $ \f -> do
-      need $ toFilePath <$> [input </> f]
-      result <- fmap (Document f) <$> parser (input </> f)
+    forP fs $ \k -> do
+      let f = input </> k
+      need $ toFilePath <$> [f]
+      result <- readSource parser k f
       case result of
         Left e ->
-          fail $ "Error converting " <> toFilePath f <> " to HTML: " <> show e
+          fail $ "Error converting " <> toFilePath k <> " to HTML: " <> show e
         Right v -> pure v
 
 -- | Build a single HTML file with the given value
