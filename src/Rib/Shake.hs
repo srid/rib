@@ -108,11 +108,9 @@ buildHtml f html = do
   writeHtml (output </> f) html
   putInfo $ "[Rib] Wrote " <> toFilePath (output </> f)
   where
-    writeHtml :: MonadIO m => Path b File -> Html () -> m ()
+    writeHtml :: Path b File -> Html () -> Action ()
     writeHtml p htmlVal = do
-      -- TODO: Is there a way to make Shake automatically do this for us?
-      createDirIfMissing True $ parent p
-      writeFileLText (toFilePath p) $! Lucid.renderText htmlVal
+      writeFile' (toFilePath p) $! toString $ Lucid.renderText htmlVal
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
