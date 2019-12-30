@@ -80,28 +80,33 @@ buildHtmlMulti pats parser r = do
     -- because the parsed representation (`repr`) may not always have instances
     -- for Typeable/Binary/Generic (for example, MMark does not expose its
     -- structure.). Consequently we are forced to cache merely the HTML writing
-    -- stage (see below).
+    -- stage (see buildHtml').
     readSource parser k content >>= \case
       Left e ->
         fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
       Right src -> do
         outfile <- liftIO $ replaceExtension ".html" k
-        let html = toString $ Lucid.renderText $ r src
-            cacheClosure = (toFilePath outfile, html)
-        cacheActionWith ("buildHtmlMulti" :: Text, toFilePath k) cacheClosure $ do
-          buildHtml' outfile html
+        writeFileCached outfile $ toString $ Lucid.renderText $ r src
         pure src
 
--- | Build a single HTML file with the given value
+-- | Build a single HTML file with the given HTML value
+--
+-- The HTML text value will be cached, so subsequent writes of the same value
+-- will be skipped.
 buildHtml :: Path Rel File -> Html () -> Action ()
-buildHtml f = buildHtml' f . toString . Lucid.renderText
+buildHtml f = writeFileCached f . toString . Lucid.renderText
 
-buildHtml' :: Path Rel File -> String -> Action ()
-buildHtml' k s = do
-  output <- ribOutputDir
-  let f = toFilePath $ output </> k
-  writeFile' f $! s
-  putInfo $ "[Rib] Wrote " <> f
+-- | Like writeFile' but uses `cacheAction`.
+--
+-- Also, always writes under ribOutputDir
+writeFileCached :: Path Rel File -> String -> Action ()
+writeFileCached k s = do
+  let cacheClosure = (toFilePath k, s)
+      cacheKey = ("writeFileCached" :: Text, toFilePath k)
+  cacheActionWith cacheKey cacheClosure $ do
+    output <- ribOutputDir
+    writeFile' (toFilePath $ output </> k) $! s
+    putInfo $ "[Rib] Wrote " <> toFilePath k
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
