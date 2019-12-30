@@ -75,13 +75,13 @@ buildHtmlMulti pats parser r = do
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
     let f = input </> k
-    content <- fmap toText <$> readFile' $ toFilePath f
     -- NOTE: We don't really use cacheActionWith prior to parsing content,
     -- because the parsed representation (`repr`) may not always have instances
     -- for Typeable/Binary/Generic (for example, MMark does not expose its
     -- structure.). Consequently we are forced to cache merely the HTML writing
     -- stage (see buildHtml').
-    readSource parser k content >>= \case
+    need [toFilePath f]
+    readSource parser k f >>= \case
       Left e ->
         fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
       Right src -> do

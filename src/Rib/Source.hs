@@ -50,12 +50,12 @@ sourceUrl doc = toText $ toFilePath ([absdir|/|] </> (sourcePath doc)) -<.> ".ht
 
 -- | A function that parses a source representation out of the given file
 type SourceReader repr =
-  forall m. MonadIO m => Path Rel File -> Text -> m (Either Text repr)
+  forall m b. MonadIO m => Path b File -> m (Either Text repr)
 
 readSource ::
   MonadIO m =>
   SourceReader repr ->
   Path Rel File ->
-  Text ->
+  Path b File ->
   m (Either Text (Source repr))
-readSource r k f = fmap (Source k) <$> r k f
+readSource r k f = fmap (Source k) <$> r f

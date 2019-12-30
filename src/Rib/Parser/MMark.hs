@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Rib.Parser.MMark
   ( -- * Parsing
@@ -27,6 +28,7 @@ where
 import Control.Foldl (Fold (..))
 import Lucid (Html)
 import Path
+import Rib.Source (SourceReader)
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
@@ -43,8 +45,10 @@ parsePure k s = case MMark.parse k s of
   Left e -> Left $ toText $ M.errorBundlePretty e
   Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
-parseIO :: MonadIO m => Path Rel File -> Text -> m (Either Text MMark)
-parseIO k s = pure $ parsePure (toFilePath k) s
+parseIO :: SourceReader MMark
+parseIO (toFilePath -> f) = do
+  s <- readFileText f
+  pure $ parsePure f s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

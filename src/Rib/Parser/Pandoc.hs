@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -29,6 +30,7 @@ import Control.Monad.Except
 import Data.Aeson
 import Lucid (Html, toHtmlRaw)
 import Path
+import Rib.Source (SourceReader)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import Text.Pandoc.Walk (query, walkM)
@@ -51,8 +53,9 @@ parsePure fmt s =
     runPure'
     $ readPandocFormat fmt readerSettings s
 
-parseIO :: MonadIO m => PandocFormat -> Path Rel File -> Text -> m (Either Text Pandoc)
-parseIO fmt _k content = fmap (first show) $ runExceptT $ do
+parseIO :: PandocFormat -> SourceReader Pandoc
+parseIO fmt f = fmap (first show) $ runExceptT $ do
+  content <- readFileText $ toFilePath f
   v' <- runIO' $ readPandocFormat fmt readerSettings content
   liftIO $ walkM includeSources v'
   where
