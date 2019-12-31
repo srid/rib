@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Combinators for working with Shake.
 --
@@ -16,6 +17,7 @@ module Rib.Shake
     RibSettings (..),
     ribInputDir,
     ribOutputDir,
+    getDirectoryFiles',
   )
 where
 
@@ -57,8 +59,8 @@ buildStaticFiles staticFilePatterns = do
   void $ forP files $ \f ->
     copyFileChanged' (input </> f) (output </> f)
   where
-    copyFileChanged' old new =
-      copyFileChanged (toFilePath old) (toFilePath new)
+    copyFileChanged' (toFilePath -> old) (toFilePath -> new) =
+      copyFileChanged old new
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
@@ -110,5 +112,5 @@ writeFileCached k s = do
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
-getDirectoryFiles' dir pat =
-  traverse (liftIO . parseRelFile) =<< getDirectoryFiles (toFilePath dir) (toFilePath <$> pat)
+getDirectoryFiles' (toFilePath -> dir) (fmap toFilePath -> pat) =
+  traverse (liftIO . parseRelFile) =<< getDirectoryFiles dir pat

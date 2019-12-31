@@ -83,7 +83,8 @@ runWith src dst buildAction = \case
     -- TODO: This assumption is not true when running the program from compiled
     -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
     -- by being part of the binary. In this scenario, we should not do full
-    -- generation (i.e., toggle the bool here to False).
+    -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
+    -- flag to disable this.
     runShake True
     -- And then every time a file changes under the current directory
     putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
