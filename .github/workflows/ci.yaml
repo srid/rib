@@ -1,21 +1,16 @@
+# TODO: DRY up the YAML after Github supports YAML anchors
+# cf. https://github.community/t5/GitHub-Actions/Support-for-YAML-anchors/td-p/30336
+
 name: "CI"
 on:
   pull_request:
   push:
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - uses: cachix/install-nix-action@v6
-    - uses: cachix/cachix-action@v3
-      with:
-        name: srid
-        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        # Only needed for private caches
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
-  build-macos:
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     steps:
     - uses: actions/checkout@v1
     - uses: cachix/install-nix-action@v6
