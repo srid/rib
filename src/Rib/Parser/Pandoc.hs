@@ -4,6 +4,7 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Helpers for working with Pandoc documents
 module Rib.Parser.Pandoc
@@ -28,6 +29,7 @@ where
 
 import Control.Monad.Except
 import Data.Aeson
+import Development.Shake (readFile')
 import Lucid (Html, toHtmlRaw)
 import Path
 import Rib.Source (SourceReader)
@@ -54,10 +56,11 @@ parsePure fmt s =
     $ readPandocFormat fmt readerSettings s
 
 parseIO :: PandocFormat -> SourceReader Pandoc
-parseIO fmt f = fmap (first show) $ runExceptT $ do
-  content <- readFileText $ toFilePath f
-  v' <- runIO' $ readPandocFormat fmt readerSettings content
-  liftIO $ walkM includeSources v'
+parseIO fmt (toFilePath -> f) = do
+  content <- toText <$> readFile' f
+  fmap (first show) $ runExceptT $ do
+    v' <- runIO' $ readPandocFormat fmt readerSettings content
+    liftIO $ walkM includeSources v'
   where
     includeSources = includeCode $ Just $ Format "html5"
 

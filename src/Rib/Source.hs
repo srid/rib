@@ -20,6 +20,7 @@ module Rib.Source
   )
 where
 
+import Development.Shake (Action)
 import Development.Shake.FilePath ((-<.>))
 import Path hiding ((-<.>))
 
@@ -49,13 +50,11 @@ sourceUrl :: Source repr -> Text
 sourceUrl doc = toText $ toFilePath ([absdir|/|] </> (sourcePath doc)) -<.> ".html"
 
 -- | A function that parses a source representation out of the given file
-type SourceReader repr =
-  forall m b. MonadIO m => Path b File -> m (Either Text repr)
+type SourceReader repr = forall b. Path b File -> Action (Either Text repr)
 
 readSource ::
-  MonadIO m =>
   SourceReader repr ->
   Path Rel File ->
   Path b File ->
-  m (Either Text (Source repr))
+  Action (Either Text (Source repr))
 readSource r k f = fmap (Source k) <$> r f

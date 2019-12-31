@@ -26,6 +26,7 @@ module Rib.Parser.MMark
 where
 
 import Control.Foldl (Fold (..))
+import Development.Shake (readFile')
 import Lucid (Html)
 import Path
 import Rib.Source (SourceReader)
@@ -47,7 +48,7 @@ parsePure k s = case MMark.parse k s of
 
 parseIO :: SourceReader MMark
 parseIO (toFilePath -> f) = do
-  s <- readFileText f
+  s <- toText <$> readFile' f
   pure $ parsePure f s
 
 -- | Get the first image in the document if one exists
