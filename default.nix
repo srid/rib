@@ -72,12 +72,16 @@ haskellPackages.developPackage {
   };
   modifier =
     let
+      platformSpecificDeps =
+        if builtins.currentSystem == "x86_64-linux"
+        then [pkgs.fsatrace]
+        else []; # fsatrace disabled on macOS, and requires sytem configuration.
       addExtraDeps =
         (t.flip h.addBuildTools) (with haskellPackages;
           [ cabal-install
             ghcid
-            pkgs.fsatrace
-          ]);
+          ] ++ platformSpecificDeps
+        );
     in (t.flip t.pipe) [
       addExtraDeps
       h.dontHaddock
