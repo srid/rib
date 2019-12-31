@@ -76,6 +76,7 @@ haskellPackages.developPackage {
         (t.flip h.addBuildTools) (with haskellPackages;
           [ cabal-install
             ghcid
+            pkgs.fsatrace
           ]);
     in (t.flip t.pipe) [
       addExtraDeps
