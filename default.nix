@@ -76,7 +76,6 @@ haskellPackages.developPackage {
         (t.flip h.addBuildTools) (with haskellPackages;
           [ cabal-install
             ghcid
-            pkgs.fsatrace  # Used by Shake.Development.Forward
           ]);
     in (t.flip t.pipe) [
       addExtraDeps
