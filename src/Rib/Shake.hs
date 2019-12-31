@@ -108,7 +108,9 @@ writeFileCached k s = do
       cacheKey = ("writeFileCached" :: Text, f)
   cacheActionWith cacheKey cacheClosure $ do
     writeFile' f $! s
-    putInfo $ "W " <> f
+    -- Use a character (like +) that contrasts with what Shake uses (#) for
+    -- logging modified files being read.
+    putInfo $ "+ " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
