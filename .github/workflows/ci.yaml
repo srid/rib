@@ -3,8 +3,18 @@ on:
   pull_request:
   push:
 jobs:
-  tests:
+  build-linux:
     runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: cachix/install-nix-action@v3
+    - uses: cachix/cachix-action@v2
+      with:
+        name: srid
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+        # Only needed for private caches
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  build-macos:
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@v1
