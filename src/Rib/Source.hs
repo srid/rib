@@ -9,9 +9,8 @@
 
 module Rib.Source
   ( -- * Source type
-    Source,
+    Source (..),
     SourceReader,
-    readSource,
 
     -- * Source properties
     sourcePath,
@@ -51,10 +50,3 @@ sourceUrl doc = toText $ toFilePath ([absdir|/|] </> (sourcePath doc)) -<.> ".ht
 
 -- | A function that parses a source representation out of the given file
 type SourceReader repr = forall b. Path b File -> Action (Either Text repr)
-
-readSource ::
-  SourceReader repr ->
-  Path Rel File ->
-  Path b File ->
-  Action (Either Text (Source repr))
-readSource r k f = fmap (Source k) <$> r f
