@@ -13,6 +13,7 @@ module Rib.Shake
     buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
+    buildHtml',
     writeHtml,
 
     -- * Misc
@@ -43,9 +44,15 @@ ribSettings = getShakeExtra >>= \case
   Just v -> pure v
   Nothing -> fail "RibSettings not initialized"
 
+-- | Input directory containing source files
+--
+-- This is same as the first argument to `Rib.App.run`
 ribInputDir :: Action (Path Rel Dir)
 ribInputDir = _ribSettings_inputDir <$> ribSettings
 
+-- Output directory containing generated files
+--
+-- This is same as the second argument to `Rib.App.run`
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
   output <- _ribSettings_outputDir <$> ribSettings
@@ -64,9 +71,11 @@ buildStaticFiles staticFilePatterns = do
     copyFileChanged' (toFilePath -> old) (toFilePath -> new) =
       copyFileChanged old new
 
--- | Read and parse an individual source file from the source directory
+-- | Read and parse an individual source file
 readSource ::
+  -- | How to parse the source
   SourceReader repr ->
+  -- | Path to the source file relative to `ribInputDir`
   Path Rel File ->
   Action (Source repr)
 readSource sourceReader k = do
@@ -98,15 +107,26 @@ buildHtmlMulti pats parser r = do
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> buildHtml k parser r
 
--- | Like buildHtmlMulti but operates on a single file.
+-- | Like `buildHtmlMulti` but operate on a single file.
 buildHtml ::
   Path Rel File ->
   SourceReader repr ->
   (Source repr -> Html ()) ->
   Action (Source repr)
 buildHtml k parser r = do
-  src <- readSource parser k
   outfile <- liftIO $ replaceExtension ".html" k
+  buildHtml' outfile k parser r
+
+-- | Like `buildHtml` but explicitly takes the output HTML path
+buildHtml' ::
+  -- | Path to the HTML file, relative to `ribOutputDir`
+  Path Rel File ->
+  Path Rel File ->
+  SourceReader repr ->
+  (Source repr -> Html ()) ->
+  Action (Source repr)
+buildHtml' outfile k parser r = do
+  src <- readSource parser k
   writeHtml outfile $ r src
   pure src
 
