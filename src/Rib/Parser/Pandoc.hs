@@ -9,7 +9,6 @@
 -- | Helpers for working with Pandoc documents
 module Rib.Parser.Pandoc
   ( -- * Parsing
-    PandocFormat (..),
     parse,
     parsePure,
 
@@ -24,6 +23,7 @@ module Rib.Parser.Pandoc
 
     -- * Re-exports
     Pandoc,
+    module Text.Pandoc.Readers,
   )
 where
 
@@ -35,36 +35,27 @@ import Path
 import Rib.Source (SourceReader)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
+import qualified Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
 
--- | List of formats supported by Pandoc
---
--- TODO: Complete this list.
-data PandocFormat
-  = PandocFormat_Markdown
-  | PandocFormat_RST
-
-readPandocFormat :: PandocMonad m => PandocFormat -> ReaderOptions -> Text -> m Pandoc
-readPandocFormat = \case
-  PandocFormat_Markdown -> readMarkdown
-  PandocFormat_RST -> readRST
-
 -- | Pure version of `parse`
-parsePure :: PandocFormat -> Text -> Either Text Pandoc
-parsePure fmt s =
+parsePure ::
+  (ReaderOptions -> Text -> PandocPure Pandoc) ->
+  Text ->
+  Either Text Pandoc
+parsePure textReader s =
   first show $ runExcept $ do
-    runPure'
-    $ readPandocFormat fmt readerSettings s
+    runPure' $ textReader readerSettings s
 
--- | `SourceReader` for parsing a lightweight markup language using Pandoc
+-- `SourceReader` for parsing a lightweight markup language using Pandoc
 parse ::
-  -- | The markup format to use when parsing the source. Eg: `PandocFormat_Markdown`
-  PandocFormat ->
+  -- | The pandoc text reader function to use, eg: `readMarkdown`
+  (ReaderOptions -> Text -> PandocIO Pandoc) ->
   SourceReader Pandoc
-parse fmt (toFilePath -> f) = do
+parse textReader (toFilePath -> f) = do
   content <- toText <$> readFile' f
   fmap (first show) $ runExceptT $ do
-    v' <- runIO' $ readPandocFormat fmt readerSettings content
+    v' <- runIO' $ textReader readerSettings content
     liftIO $ walkM includeSources v'
   where
     includeSources = includeCode $ Just $ Format "html5"
