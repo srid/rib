@@ -9,10 +9,11 @@
 -- See the source of `Rib.Simple.buildAction` for example usage.
 module Rib.Shake
   ( -- * Basic helpers
+    readSource,
     buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
-    readSource,
+    writeHtml,
 
     -- * Misc
     RibSettings (..),
@@ -95,18 +96,26 @@ buildHtmlMulti ::
 buildHtmlMulti pats parser r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
-  forP fs $ \k -> do
-    src <- readSource parser k
-    outfile <- liftIO $ replaceExtension ".html" k
-    writeFileCached outfile $ toString $ Lucid.renderText $ r src
-    pure src
+  forP fs $ \k -> buildHtml k parser r
 
--- | Build a single HTML file with the given HTML value
+-- | Like buildHtmlMulti but operates on a single file.
+buildHtml ::
+  Path Rel File ->
+  SourceReader repr ->
+  (Source repr -> Html ()) ->
+  Action (Source repr)
+buildHtml k parser r = do
+  src <- readSource parser k
+  outfile <- liftIO $ replaceExtension ".html" k
+  writeHtml outfile $ r src
+  pure src
+
+-- | Write a single HTML file with the given HTML value
 --
 -- The HTML text value will be cached, so subsequent writes of the same value
 -- will be skipped.
-buildHtml :: Path Rel File -> Html () -> Action ()
-buildHtml f = writeFileCached f . toString . Lucid.renderText
+writeHtml :: Path Rel File -> Html () -> Action ()
+writeHtml f = writeFileCached f . toString . Lucid.renderText
 
 -- | Like writeFile' but uses `cacheAction`.
 --
