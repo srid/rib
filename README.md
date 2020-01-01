@@ -82,7 +82,7 @@ main = Rib.run [reldir|a|] [reldir|b|] generateSite
       -- - Function that will parse the file (here we use mmark)
       -- - Function that will generate the HTML (see below)
       srcs <-
-        Rib.buildHtmlMulti [[relfile|*.md|]] M.parse $
+        Rib.buildHtmlMulti M.parse [[relfile|*.md|]] $
           renderPage . Page_Single
       -- Write an index.html linking to the aforementioned files.
       Rib.writeHtml [relfile|index.html|] $
