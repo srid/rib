@@ -84,8 +84,8 @@ main = Rib.run [reldir|a|] [reldir|b|] generateSite
       srcs <-
         Rib.buildHtmlMulti [[relfile|*.md|]] M.parse $
           renderPage . Page_Single
-      -- Build an index.html linking to the aforementioned files.
-      Rib.buildHtml [relfile|index.html|] $
+      -- Write an index.html linking to the aforementioned files.
+      Rib.writeHtml [relfile|index.html|] $
         renderPage (Page_Index srcs)
     -- Define your site HTML here
     renderPage :: Page -> Html ()
