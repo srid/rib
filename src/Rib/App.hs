@@ -90,7 +90,6 @@ runWith src dst buildAction = \case
     putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
     void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
       runShake False
-        `catch` \(e :: SomeException) -> putStrLn $ show e
     -- Wait forever, effectively.
     forever $ threadDelay maxBound
   Serve p dw ->
@@ -101,10 +100,14 @@ runWith src dst buildAction = \case
     runShake fullGen
   where
     runShake fullGen =
-      flip shakeForward buildAction $
-        shakeOptions
-          { shakeVerbosity = Verbose,
-            shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
-            shakeLintInside = [""],
-            shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
-          }
+      shakeForward (ribShakeOptions fullGen) buildAction
+        -- Gracefully handle any exceptions when running Shake actions. We want
+        -- Rib to keep running instead of crashing abruptly.
+        `catch` \(e :: SomeException) -> putStrLn $ "[Rib] Shake error: " <> show e
+    ribShakeOptions fullGen =
+      shakeOptions
+        { shakeVerbosity = Verbose,
+          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+          shakeLintInside = [""],
+          shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
+        }

@@ -2,15 +2,16 @@
 
 ## 0.6.0.0 - UNRELEASED
 
+- Advance nixpkgs; require Shake >=0.18.4
 - Significant API simplication: no more type class!
   - Allows user to specify their own markup parser as a Haskell function
   - Dropped namings "Document" and "Markup" in favour of "Source"
-- API: Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
-- Fix #63: create intermediate directories when generating post HTML
-- Advance nixpkgs; require Shake >=0.18.4
-- Fix unnecessary rebuild of all files when only one file changed
-  - Use caching (via Shake's `cacheActionWith`), to avoid writing HTML to disk until it has changed.
-
+  - Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
+- Bug fixes:
+  - #63: create intermediate directories when generating post HTML
+  - #70: Don't crash on Shake errors
+  - Fix unnecessary rebuild of all files when only one file changed
+    - #66: Use caching (via Shake's `cacheActionWith`), to avoid writing HTML to disk until it has changed.
 ## 0.5.0.0
 
 This release comes with a major API refactor. Key changes:
