@@ -10,8 +10,8 @@
 
 module Rib.Parser.MMark
   ( -- * Parsing
+    parse,
     parsePure,
-    parseIO,
 
     -- * Rendering
     render,
@@ -26,6 +26,7 @@ module Rib.Parser.MMark
 where
 
 import Control.Foldl (Fold (..))
+import Development.Shake (readFile')
 import Lucid (Html)
 import Path
 import Rib.Source (SourceReader)
@@ -40,14 +41,21 @@ import Text.URI (URI)
 render :: MMark -> Html ()
 render = MMark.render
 
-parsePure :: FilePath -> Text -> Either Text MMark
+-- | Pure version of `parse`
+parsePure ::
+  -- | Filepath corresponding to the text to be parsed (used in parse errors)
+  FilePath ->
+  -- | Text to be parsed
+  Text ->
+  Either Text MMark
 parsePure k s = case MMark.parse k s of
   Left e -> Left $ toText $ M.errorBundlePretty e
   Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
 
-parseIO :: SourceReader MMark
-parseIO (toFilePath -> f) = do
-  s <- readFileText f
+-- | `SourceReader` for parsing Markdown using mmark
+parse :: SourceReader MMark
+parse (toFilePath -> f) = do
+  s <- toText <$> readFile' f
   pure $ parsePure f s
 
 -- | Get the first image in the document if one exists

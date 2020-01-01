@@ -4,13 +4,14 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 
 -- | Helpers for working with Pandoc documents
 module Rib.Parser.Pandoc
   ( -- * Parsing
     PandocFormat (..),
+    parse,
     parsePure,
-    parseIO,
 
     -- * Rendering
     render,
@@ -28,6 +29,7 @@ where
 
 import Control.Monad.Except
 import Data.Aeson
+import Development.Shake (readFile')
 import Lucid (Html, toHtmlRaw)
 import Path
 import Rib.Source (SourceReader)
@@ -47,17 +49,23 @@ readPandocFormat = \case
   PandocFormat_Markdown -> readMarkdown
   PandocFormat_RST -> readRST
 
+-- | Pure version of `parse`
 parsePure :: PandocFormat -> Text -> Either Text Pandoc
 parsePure fmt s =
   first show $ runExcept $ do
     runPure'
     $ readPandocFormat fmt readerSettings s
 
-parseIO :: PandocFormat -> SourceReader Pandoc
-parseIO fmt f = fmap (first show) $ runExceptT $ do
-  content <- readFileText $ toFilePath f
-  v' <- runIO' $ readPandocFormat fmt readerSettings content
-  liftIO $ walkM includeSources v'
+-- | `SourceReader` for parsing a lightweight markup language using Pandoc
+parse ::
+  -- | The markup format to use when parsing the source. Eg: `PandocFormat_Markdown`
+  PandocFormat ->
+  SourceReader Pandoc
+parse fmt (toFilePath -> f) = do
+  content <- toText <$> readFile' f
+  fmap (first show) $ runExceptT $ do
+    v' <- runIO' $ readPandocFormat fmt readerSettings content
+    liftIO $ walkM includeSources v'
   where
     includeSources = includeCode $ Just $ Format "html5"
 

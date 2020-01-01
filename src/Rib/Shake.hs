@@ -12,6 +12,7 @@ module Rib.Shake
     buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
+    readSource,
 
     -- * Misc
     RibSettings (..),
@@ -62,6 +63,25 @@ buildStaticFiles staticFilePatterns = do
     copyFileChanged' (toFilePath -> old) (toFilePath -> new) =
       copyFileChanged old new
 
+-- | Read and parse an individual source file from the source directory
+readSource ::
+  SourceReader repr ->
+  Path Rel File ->
+  Action (Source repr)
+readSource sourceReader k = do
+  f <- (</> k) <$> ribInputDir
+  -- NOTE: We don't really use cacheActionWith prior to parsing content,
+  -- because the parsed representation (`repr`) may not always have instances
+  -- for Typeable/Binary/Generic (for example, MMark does not expose its
+  -- structure.). Consequently we are forced to cache merely the HTML writing
+  -- stage (see buildHtml').
+  need [toFilePath f]
+  sourceReader f >>= \case
+    Left e ->
+      fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
+    Right v ->
+      pure $ Source k v
+
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
   -- | Source file patterns
@@ -76,20 +96,10 @@ buildHtmlMulti pats parser r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
-    let f = input </> k
-    -- NOTE: We don't really use cacheActionWith prior to parsing content,
-    -- because the parsed representation (`repr`) may not always have instances
-    -- for Typeable/Binary/Generic (for example, MMark does not expose its
-    -- structure.). Consequently we are forced to cache merely the HTML writing
-    -- stage (see buildHtml').
-    need [toFilePath f]
-    readSource parser k f >>= \case
-      Left e ->
-        fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
-      Right src -> do
-        outfile <- liftIO $ replaceExtension ".html" k
-        writeFileCached outfile $ toString $ Lucid.renderText $ r src
-        pure src
+    src <- readSource parser k
+    outfile <- liftIO $ replaceExtension ".html" k
+    writeFileCached outfile $ toString $ Lucid.renderText $ r src
+    pure src
 
 -- | Build a single HTML file with the given HTML value
 --
