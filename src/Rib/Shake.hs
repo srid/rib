@@ -13,6 +13,7 @@ module Rib.Shake
     buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
+    buildHtml_,
     writeHtml,
 
     -- * Misc
@@ -93,35 +94,43 @@ readSource sourceReader k = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  -- | Source file patterns
-  [Path Rel File] ->
   -- | How to parse the source
   SourceReader repr ->
+  -- | Source file patterns
+  [Path Rel File] ->
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   -- | Result
   Action [Source repr]
-buildHtmlMulti pats parser r = do
+buildHtmlMulti parser pats r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
     outfile <- liftIO $ replaceExtension ".html" k
-    buildHtml outfile k parser r
+    buildHtml parser outfile k r
 
 -- | Like `buildHtmlMulti` but operate on a single file.
 --
 -- Also explicitly takes the output file path.
 buildHtml ::
+  SourceReader repr ->
   -- | Path to the HTML file, relative to `ribOutputDir`
   Path Rel File ->
   Path Rel File ->
-  SourceReader repr ->
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml outfile k parser r = do
+buildHtml parser outfile k r = do
   src <- readSource parser k
   writeHtml outfile $ r src
   pure src
+
+buildHtml_ ::
+  SourceReader repr ->
+  Path Rel File ->
+  Path Rel File ->
+  (Source repr -> Html ()) ->
+  Action ()
+buildHtml_ parser outfile k = void . buildHtml parser outfile k
 
 -- | Write a single HTML file with the given HTML value
 --
