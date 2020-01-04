@@ -20,14 +20,15 @@ module Rib.Source
 where
 
 import Development.Shake (Action)
-import Development.Shake.FilePath ((-<.>))
-import Path hiding ((-<.>))
+import Path
 
 -- | A source file on disk
 data Source repr
   = Source
       { -- | Path to the source; relative to the source directory.
         _source_path :: Path Rel File,
+        -- | Relative URL (begins with `/`) to the generated HTML file
+        _source_url :: Text,
         -- | Parsed representation of the source.
         _source_val :: repr
       }
@@ -36,17 +37,11 @@ data Source repr
 sourcePath :: Source repr -> Path Rel File
 sourcePath = _source_path
 
+sourceUrl :: Source repr -> Text
+sourceUrl = _source_url
+
 sourceVal :: Source repr -> repr
 sourceVal = _source_val
-
--- | Return the URL for the given @.html@ file under serve directory
---
--- File path must be relative to the serve directory.
---
--- You may also pass source paths as long as they map directly to destination
--- path except for file extension.
-sourceUrl :: Source repr -> Text
-sourceUrl doc = toText $ toFilePath ([absdir|/|] </> (sourcePath doc)) -<.> ".html"
 
 -- | A function that parses a source representation out of the given file
 type SourceReader repr = forall b. Path b File -> Action (Either Text repr)

@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -77,7 +78,7 @@ readSource ::
   SourceReader repr ->
   -- | Path to the source file relative to `ribInputDir`
   Path Rel File ->
-  Action (Source repr)
+  Action repr
 readSource sourceReader k = do
   f <- (</> k) <$> ribInputDir
   -- NOTE: We don't really use cacheActionWith prior to parsing content,
@@ -90,7 +91,7 @@ readSource sourceReader k = do
     Left e ->
       fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
     Right v ->
-      pure $ Source k v
+      pure v
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
@@ -120,7 +121,8 @@ buildHtml ::
   (Source repr -> Html ()) ->
   Action (Source repr)
 buildHtml parser outfile k r = do
-  src <- readSource parser k
+  let relUrl = toText $ toFilePath ([absdir|/|] </> outfile)
+  src <- Source k relUrl <$> readSource parser k
   writeHtml outfile $ r src
   pure src
 
