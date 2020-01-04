@@ -19,6 +19,7 @@ import Control.Exception (catch)
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
+import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
 import System.Console.CmdArgs

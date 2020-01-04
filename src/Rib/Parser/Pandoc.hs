@@ -32,6 +32,7 @@ import Data.Aeson
 import Development.Shake (readFile')
 import Lucid (Html, toHtmlRaw)
 import Path
+import Relude
 import Rib.Source (SourceReader)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)

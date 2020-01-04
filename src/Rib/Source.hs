@@ -21,6 +21,7 @@ where
 
 import Development.Shake (Action)
 import Path
+import Relude
 
 -- | A source file on disk
 data Source repr

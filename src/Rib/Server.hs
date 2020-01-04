@@ -8,6 +8,7 @@ where
 
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
+import Relude
 import WaiAppStatic.Types (StaticSettings)
 
 -- | WAI Settings suited for serving statically generated websites.

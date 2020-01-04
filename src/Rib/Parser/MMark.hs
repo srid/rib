@@ -29,6 +29,7 @@ import Control.Foldl (Fold (..))
 import Development.Shake (readFile')
 import Lucid (Html)
 import Path
+import Relude
 import Rib.Source (SourceReader)
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark

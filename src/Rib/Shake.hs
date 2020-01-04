@@ -31,6 +31,7 @@ import Lucid (Html)
 import qualified Lucid
 import Path
 import Path.IO
+import Relude
 import Rib.Source
 
 data RibSettings
