@@ -46,7 +46,9 @@ haskellPackages.developPackage {
     relude =
       githubRepo "kowainik/relude" "bfb5f60";
 
-    # Not used in rib; but useful to have for users of the library.
+    # The dependencies below are not used in rib; but useful to have for users
+    # of the library.
+    # TODO: Provide a mechanism for the user to override these.
     dependent-sum =
       let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; in "${dsum}/dependent-sum";
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db";  # 1.0.0.3
@@ -59,6 +61,9 @@ haskellPackages.developPackage {
     atomic-write = githubRepo "stackbuilders/atomic-write" "v0.2.0.7";
     generic-random = githubRepo "lysxia/generic-random" "1.3.0.0";
     prettyprinter = "${pp}/prettyprinter";
+
+    # TOML parser
+    tomland = githubRepo "kowainik/tomland" "d9b7a1d";
   } // source-overrides;
   overrides = self: super: {
     clay = h.dontCheck super.clay;
