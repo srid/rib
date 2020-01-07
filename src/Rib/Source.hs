@@ -19,6 +19,7 @@ module Rib.Source
   )
 where
 
+import qualified Data.Text as T
 import Development.Shake (Action)
 import Path
 import Relude
@@ -26,10 +27,10 @@ import Relude
 -- | A source file on disk
 data Source repr
   = Source
-      { -- | Path to the source; relative to the source directory.
+      { -- | Path to the source; relative to `ribInputDir`
         _source_path :: Path Rel File,
-        -- | Relative URL (begins with `/`) to the generated HTML file
-        _source_url :: Text,
+        -- | Path to the generated HTML file; relative to `ribOutputDir`
+        _source_builtPath :: Path Rel File,
         -- | Parsed representation of the source.
         _source_val :: repr
       }
@@ -38,8 +39,15 @@ data Source repr
 sourcePath :: Source repr -> Path Rel File
 sourcePath = _source_path
 
+-- | Relative URL to the generated source HTML.
 sourceUrl :: Source repr -> Text
-sourceUrl = _source_url
+sourceUrl = stripIndexHtml . relPathToUrl . _source_builtPath
+  where
+    relPathToUrl = toText . toFilePath . ([absdir|/|] </>)
+    stripIndexHtml s =
+      if T.isSuffixOf "index.html" s
+        then T.dropEnd (T.length $ "index.html") s
+        else s
 
 sourceVal :: Source repr -> repr
 sourceVal = _source_val
