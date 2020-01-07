@@ -19,6 +19,7 @@ module Rib.Source
   )
 where
 
+import qualified Data.Text as T
 import Development.Shake (Action)
 import Path
 import Relude
@@ -39,7 +40,12 @@ sourcePath :: Source repr -> Path Rel File
 sourcePath = _source_path
 
 sourceUrl :: Source repr -> Text
-sourceUrl = _source_url
+sourceUrl = stripIndexHtml . _source_url
+  where
+    stripIndexHtml s =
+      if T.isSuffixOf "index.html" s
+        then T.dropEnd (T.length $ "index.html") s
+        else s
 
 sourceVal :: Source repr -> repr
 sourceVal = _source_val
