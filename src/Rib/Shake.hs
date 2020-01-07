@@ -122,8 +122,7 @@ buildHtml ::
   (Source repr -> Html ()) ->
   Action (Source repr)
 buildHtml parser outfile k r = do
-  let relUrl = toText $ toFilePath ([absdir|/|] </> outfile)
-  src <- Source k relUrl <$> readSource parser k
+  src <- Source k outfile <$> readSource parser k
   writeHtml outfile $ r src
   pure src
 
