@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
+-- | Parsing Markdown using the mmark parser.
 module Rib.Parser.MMark
   ( -- * Parsing
     parse,
@@ -44,7 +45,7 @@ render = MMark.render
 
 -- | Pure version of `parse`
 parsePure ::
-  -- | Filepath corresponding to the text to be parsed (used in parse errors)
+  -- | Filepath corresponding to the text to be parsed (used only in parse errors)
   FilePath ->
   -- | Text to be parsed
   Text ->

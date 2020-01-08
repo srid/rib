@@ -5,7 +5,7 @@
 
 -- | CLI interface for Rib.
 --
--- Typically you would call `Rib.App.run` passing your Shake build action.
+-- Mostly you would only need `Rib.App.run`, passing it your Shake build action.
 module Rib.App
   ( App (..),
     run,

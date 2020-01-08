@@ -1,17 +1,18 @@
 # Change Log for rib
 
-## 0.6.0.0 - UNRELEASED
+## 0.6.0.0
 
 - Advance nixpkgs; require Shake >=0.18.4
-- Significant API simplication: no more type class!
-  - Allows user to specify their own markup parser as a Haskell function
-  - Dropped namings "Document" and "Markup" in favour of "Source"
+- Major API simplication: no more type class!
+  - Allow user to specify their own source parser as a Haskell function
+  - Removed types `Document` and `Markup` in favour of `Source`
   - Expose `ribInputDir` and `ribOutputDir` for use in custom Shake actions
 - Bug fixes:
   - #63: create intermediate directories when generating post HTML
   - #70: Don't crash on Shake errors
   - Fix unnecessary rebuild of all files when only one file changed
     - #66: Use caching (via Shake's `cacheActionWith`), to avoid writing HTML to disk until it has changed.
+
 ## 0.5.0.0
 
 This release comes with a major API refactor. Key changes:

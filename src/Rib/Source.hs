@@ -14,8 +14,8 @@ module Rib.Source
 
     -- * Source properties
     sourcePath,
-    sourceVal,
     sourceUrl,
+    sourceVal,
   )
 where
 
@@ -27,15 +27,14 @@ import Relude
 -- | A source file on disk
 data Source repr
   = Source
-      { -- | Path to the source; relative to `ribInputDir`
-        _source_path :: Path Rel File,
-        -- | Path to the generated HTML file; relative to `ribOutputDir`
+      { _source_path :: Path Rel File,
+        -- | Path to the generated HTML file (relative to `Rib.Shake.ribOutputDir`)
         _source_builtPath :: Path Rel File,
-        -- | Parsed representation of the source.
         _source_val :: repr
       }
   deriving (Generic, Functor)
 
+-- | Path to the source file (relative to `Rib.Shake.ribInputDir`)
 sourcePath :: Source repr -> Path Rel File
 sourcePath = _source_path
 
@@ -49,6 +48,7 @@ sourceUrl = stripIndexHtml . relPathToUrl . _source_builtPath
         then T.dropEnd (T.length $ "index.html") s
         else s
 
+-- | Parsed representation of the source.
 sourceVal :: Source repr -> repr
 sourceVal = _source_val
 
