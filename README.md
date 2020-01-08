@@ -11,11 +11,12 @@ Rib is a Haskell library for writing your own **static site generator**.
 
 How does it compare to Hakyll?
 
-- At its core, uses the [Shake](https://shakebuild.com/) build system.
-- Allows writing Haskell DSL to define HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/)).
-- Support for [Pandoc](https://pandoc.org/) (like Hakyll) and [MMark](https://github.com/mmark-md/mmark) (or your custom parser function).
-- Remain as simple as possible to use (see example below).
-- Optional but recommended Nix-based workflow for easily reproducible environment.
+- Uses the [Shake](https://shakebuild.com/) build system at its core.
+- Allows writing Haskell DSL to define HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/))
+- Built-in support for [Pandoc](https://pandoc.org/) and [MMark](https://github.com/mmark-md/mmark), while also supporting custom parsers (eg: [Dhall](https://github.com/srid/website/pull/6), [TOML](https://github.com/srid/website/pull/7))
+- Remain as simple as possible to use (see example below)
+- Nix-based environment for reproducibility
+- `ghcid` and fsnotify for "hot reload"
 
 Rib prioritizes the use of *existing* tools over reinventing them, and enables
 the user to compose them as they wish instead of having to write code to fit a
