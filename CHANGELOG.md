@@ -1,5 +1,7 @@
 # Change Log for rib
 
+## 0.7.0.0
+
 ## 0.6.0.0
 
 - Advance nixpkgs; require Shake >=0.18.4
