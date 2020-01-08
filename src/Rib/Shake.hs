@@ -6,15 +6,17 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Combinators for working with Shake.
---
--- See the source of `Rib.Simple.buildAction` for example usage.
 module Rib.Shake
   ( -- * Basic helpers
-    readSource,
     buildStaticFiles,
     buildHtmlMulti,
     buildHtml,
     buildHtml_,
+
+    -- * Reading only
+    readSource,
+
+    -- * Writing only
     writeHtml,
 
     -- * Misc
@@ -34,6 +36,7 @@ import Path.IO
 import Relude
 import Rib.Source
 
+-- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
   = RibSettings
       { _ribSettings_inputDir :: Path Rel Dir,
@@ -41,6 +44,7 @@ data RibSettings
       }
   deriving (Typeable)
 
+-- | Get rib settings from a shake Action monad.
 ribSettings :: Action RibSettings
 ribSettings = getShakeExtra >>= \case
   Just v -> pure v
@@ -61,7 +65,7 @@ ribOutputDir = do
   liftIO $ createDirIfMissing True output
   return output
 
--- | Shake action to copy static files as is
+-- | Shake action to copy static files as is.
 buildStaticFiles :: [Path Rel File] -> Action ()
 buildStaticFiles staticFilePatterns = do
   input <- ribInputDir
@@ -77,7 +81,7 @@ buildStaticFiles staticFilePatterns = do
 readSource ::
   -- | How to parse the source
   SourceReader repr ->
-  -- | Path to the source file relative to `ribInputDir`
+  -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   Action repr
 readSource sourceReader k = do
@@ -96,9 +100,9 @@ readSource sourceReader k = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  -- | How to parse the source
+  -- | How to parse the source file
   SourceReader repr ->
-  -- | Source file patterns
+  -- | Source file patterns (relative to `ribInputDir`)
   [Path Rel File] ->
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
@@ -116,8 +120,9 @@ buildHtmlMulti parser pats r = do
 -- Also explicitly takes the output file path.
 buildHtml ::
   SourceReader repr ->
-  -- | Path to the HTML file, relative to `ribOutputDir`
+  -- | Path to the output HTML file (relative to `ribOutputDir`)
   Path Rel File ->
+  -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   (Source repr -> Html ()) ->
   Action (Source repr)
@@ -126,6 +131,7 @@ buildHtml parser outfile k r = do
   writeHtml outfile $ r src
   pure src
 
+-- | Like `buildHtml` but discards its result.
 buildHtml_ ::
   SourceReader repr ->
   Path Rel File ->

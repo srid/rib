@@ -48,7 +48,7 @@ parsePure textReader s =
   first show $ runExcept $ do
     runPure' $ textReader readerSettings s
 
--- `SourceReader` for parsing a lightweight markup language using Pandoc
+-- | `SourceReader` for parsing a lightweight markup language using Pandoc
 parse ::
   -- | The pandoc text reader function to use, eg: `readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
@@ -69,6 +69,7 @@ render doc =
     $ fmap toHtmlRaw
     $ writeHtml5String writerSettings doc
 
+-- | Extract the Pandoc metadata as JSON value
 extractMeta :: Pandoc -> Maybe (Either Text Value)
 extractMeta (Pandoc meta _) = flattenMeta meta
 
