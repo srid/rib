@@ -1,5 +1,8 @@
-# Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
-{ pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/af57b17404e.tar.gz") {}
+let
+  # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
+  # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
+  nixpkgsRev = "7e8454fb856";
+in { pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
 , name ? "rib"
@@ -32,9 +35,11 @@ haskellPackages.developPackage {
     rib = ./.;
     # Override haskell packages here:
     clay =
-      githubRepo "sebastiaanvisser/clay" "54dc9ea";
+      githubRepo "sebastiaanvisser/clay" "cc7729b";
+    megaparsec =
+      githubRepo "mrkkrp/megaparsec" "90b4608";
     mmark =
-      githubRepo "mmark-md/mmark" "8f5534d";
+      githubRepo "mmark-md/mmark" "9a6a649";
     mmark-ext =
       githubRepo "mmark-md/mmark-ext" "4d1c40e";
     pandoc-include-code =
@@ -54,7 +59,6 @@ haskellPackages.developPackage {
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db";  # 1.0.0.3
 
     # Dhall, and its dependency overrides
-    # TODO: So many overrides ... might have to provide cachix cache.
     dhall =
       let dhallHaskell = githubRepo "dhall-lang/dhall-haskell" "1.28.0";
       in "${dhallHaskell}/dhall";
@@ -67,6 +71,8 @@ haskellPackages.developPackage {
   } // source-overrides;
   overrides = self: super: {
     clay = h.dontCheck super.clay;
+    mmark = h.dontCheck super.mmark;
+    modern-uri = h.dontCheck super.modern-uri;
     path = h.dontCheck super.path;
     path-io = h.doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
     some = h.doJailbreak super.some;
