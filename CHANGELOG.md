@@ -1,6 +1,11 @@
 # Change Log for rib
 
-## 0.7.0.0
+## 0.7.0.0 (UNRELEASED)
+
+- Dependency upgrades
+  - mmark: 0.0.7.2
+  - megaparsec: 0.8
+  - clay: 0.14
 
 ## 0.6.0.0
 
