@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | CLI interface for Rib.
@@ -48,9 +49,6 @@ data App
 -- | Run Rib using arguments passed in the command line.
 run ::
   -- | Directory from which source content will be read.
-  --
-  -- NOTE: This should ideally *not* be `"."` as our use of watchTree (of
-  -- `runWith`) can interfere with Shake's file scaning.
   Path Rel Dir ->
   -- | The path where static files will be generated.  Rib's server uses this
   -- directory when serving files.
@@ -78,28 +76,34 @@ run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
 
 -- | Like `run` but with an explicitly passed `App` mode
 runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
-runWith src dst buildAction = \case
-  WatchAndGenerate -> withManager $ \mgr -> do
-    -- Begin with a *full* generation as the HTML layout may have been changed.
-    -- TODO: This assumption is not true when running the program from compiled
-    -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
-    -- by being part of the binary. In this scenario, we should not do full
-    -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
-    -- flag to disable this.
-    runShake True
-    -- And then every time a file changes under the current directory
-    putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-    void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
-      runShake False
-    -- Wait forever, effectively.
-    forever $ threadDelay maxBound
-  Serve p dw ->
-    concurrently_
-      (unless dw $ runWith src dst buildAction WatchAndGenerate)
-      (Server.serve p $ toFilePath dst)
-  Generate fullGen -> do
-    runShake fullGen
+runWith src dst buildAction app = do
+  when (src == currentRelDir) $
+    -- Because otherwise our use of `watchTree` can interfere with Shake's file
+    -- scaning.
+    fail "cannot use '.' as source directory."
+  case app of
+    WatchAndGenerate -> withManager $ \mgr -> do
+      -- Begin with a *full* generation as the HTML layout may have been changed.
+      -- TODO: This assumption is not true when running the program from compiled
+      -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
+      -- by being part of the binary. In this scenario, we should not do full
+      -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
+      -- flag to disable this.
+      runShake True
+      -- And then every time a file changes under the current directory
+      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
+      void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
+        runShake False
+      -- Wait forever, effectively.
+      forever $ threadDelay maxBound
+    Serve p dw ->
+      concurrently_
+        (unless dw $ runWith src dst buildAction WatchAndGenerate)
+        (Server.serve p $ toFilePath dst)
+    Generate fullGen -> do
+      runShake fullGen
   where
+    currentRelDir = [reldir|.|]
     runShake fullGen =
       shakeForward (ribShakeOptions fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
