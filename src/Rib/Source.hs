@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
@@ -32,7 +31,7 @@ data Source repr
         _source_builtPath :: Path Rel File,
         _source_val :: repr
       }
-  deriving (Generic, Functor)
+  deriving (Generic, Functor, Show)
 
 -- | Path to the source file (relative to `Rib.Shake.ribInputDir`)
 sourcePath :: Source repr -> Path Rel File
