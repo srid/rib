@@ -73,6 +73,8 @@ haskellPackages.developPackage {
     clay = h.dontCheck super.clay;
     mmark = h.dontCheck super.mmark;
     modern-uri = h.dontCheck super.modern-uri;
+    megaparsec = h.doJailbreak (h.dontCheck super.megaparsec);  # For tomland
+    tomland = h.dontCheck super.tomland;
     path = h.dontCheck super.path;
     path-io = h.doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
     some = h.doJailbreak super.some;
