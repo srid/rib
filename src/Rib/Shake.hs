@@ -94,7 +94,9 @@ readSource sourceReader k = do
   need [toFilePath f]
   sourceReader f >>= \case
     Left e ->
-      fail $ "Error parsing source " <> toFilePath k <> ": " <> show e
+      -- The extra newline is so that it doesn't begin in the middle of a line
+      -- when Shake spits it out.
+      fail $ "\nError parsing source " <> toFilePath k <> ": " <> toString e
     Right v ->
       pure v
 
