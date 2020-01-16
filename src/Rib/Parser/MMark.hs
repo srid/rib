@@ -83,7 +83,8 @@ exts =
     Ext.mathJax (Just '$'),
     Ext.obfuscateEmail "protected-email",
     Ext.punctuationPrettifier,
-    Ext.ghcSyntaxHighlighter,
+    -- For list of parsers supported, see:
+    -- https://github.com/jgm/skylighting/tree/master/skylighting-core/xml
     Ext.skylighting
   ]
 
