@@ -81,7 +81,6 @@ exts =
     Ext.kbd,
     Ext.linkTarget,
     Ext.mathJax (Just '$'),
-    Ext.obfuscateEmail "protected-email",
     Ext.punctuationPrettifier,
     -- For list of parsers supported, see:
     -- https://github.com/jgm/skylighting/tree/master/skylighting-core/xml

@@ -6,8 +6,9 @@
   - mmark: 0.0.7.2
   - megaparsec: 0.8
   - clay: 0.14
-- MMark
-  - Remove `ghcSyntaxHighlighter` extension; we already have `skylighting` (which supports more parsers than Haskell)
+- MMark, extensions removed:
+  - `ghcSyntaxHighlighter`: we already have `skylighting` (which supports more parsers than Haskell)
+  - `obfuscateEmail`: requires JS, which is not documented.
 
 ## 0.6.0.0
 
