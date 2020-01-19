@@ -2,7 +2,8 @@ let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
   nixpkgsRev = "c438ce12a85";
-in { pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
+in { 
+  pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
 , name ? "rib"
@@ -19,14 +20,6 @@ let
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 
-  pp = githubRepo "quchen/prettyprinter" "v1.5.1";
-  ppUnpackSymlinks = hp: pkgs.haskell.lib.overrideCabal hp (drv: {
-    postUnpack = ''
-      cp --remove-destination ${pp}/prettyprinter/misc/version-compatibility-macros.h $sourceRoot/misc/
-      cp --remove-destination ${pp}/prettyprinter/LICENSE.md $sourceRoot/
-      cp --remove-destination ${pp}/prettyprinter/README.md $sourceRoot/
-    '';
-  });
   justBuild = p: h.dontHaddock (h.dontCheck p);
 in
 haskellPackages.developPackage {
@@ -54,33 +47,30 @@ haskellPackages.developPackage {
 
     # The dependencies below are not used in rib; but useful to have for users
     # of the library.
-    # TODO: Provide a mechanism for the user to override these.
+    # TODO: Move these to rib-sample, as a commented out example.
     dependent-sum =
       let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; 
       in "${dsum}/dependent-sum";
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db";  # 1.0.0.3
-
     # TOML parser
     tomland = githubRepo "kowainik/tomland" "d9b7a1d";
   } // source-overrides;
   overrides = self: super: {
+    rib = justBuild super.rib;
     clay = h.dontCheck super.clay;
     mmark = h.dontCheck super.mmark;
     modern-uri = h.dontCheck super.modern-uri;
-    megaparsec = h.doJailbreak (h.dontCheck super.megaparsec);  # For tomland
     tomland = h.dontCheck super.tomland;
     path = h.dontCheck super.path;
-    path-io = h.doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
-    some = h.doJailbreak super.some;
     relude = h.dontCheck super.relude;
-    rib = justBuild super.rib;
+    some = h.doJailbreak super.some;
   };
   modifier =
     let
       platformSpecificDeps =
         if builtins.currentSystem == "x86_64-linux"
         then [pkgs.fsatrace]
-        else []; # fsatrace disabled on macOS, and requires sytem configuration.
+        else []; # fsatrace disabled on macOS, and requires system configuration.
       addExtraDeps =
         (t.flip h.addBuildTools) (with haskellPackages;
           [ cabal-install
