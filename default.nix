@@ -11,16 +11,11 @@ in {
 , ...
 }:
 let
-  haskellPackages =
-    if compiler == "default"
-      then pkgs.haskellPackages
-      else pkgs.haskell.packages.${compiler};
-  t = pkgs.lib.trivial;
-  h = pkgs.haskell.lib;
+  pipe = pkgs.lib.trivial.pipe;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 in
-haskellPackages.developPackage {
+pkgs.haskellPackages.developPackage {
   inherit root name;
   source-overrides = {
     rib = ./.;
@@ -53,27 +48,28 @@ haskellPackages.developPackage {
     # TOML parser
     tomland = githubRepo "kowainik/tomland" "d9b7a1d";
   } // source-overrides;
-  overrides = self: super: {
-    mmark = h.dontCheck super.mmark;  # Test deps use wrong megaparsec version
-    modern-uri = h.dontCheck super.modern-uri;  # Test deps use wrong megaparsec version
+  overrides = self: super: with pkgs.haskell.lib; {
+    mmark = dontCheck super.mmark;  # Test deps use wrong megaparsec version
+    modern-uri = dontCheck super.modern-uri;  # Test deps use wrong megaparsec version
 
-    some = h.doJailbreak super.some;
-    tomland = h.dontCheck super.tomland;
+    some = doJailbreak super.some;
+    tomland = dontCheck super.tomland;
   };
-  modifier =
+  modifier = with pkgs.haskell.lib;
     let
       platformSpecificDeps =
         if builtins.currentSystem == "x86_64-linux"
+        # Shake recommends fsatrace, but it requires system configuration on macOS.
         then [pkgs.fsatrace]
-        else []; # fsatrace disabled on macOS, and requires system configuration.
-      addExtraDeps =
-        (t.flip h.addBuildTools) (with haskellPackages;
+        else [];
+      addExtraDeps = drv:
+        addBuildTools drv (with pkgs.haskellPackages;
           [ cabal-install
             ghcid
           ] ++ platformSpecificDeps
         );
-    in (t.flip t.pipe) [
+    in drv: pipe drv [
       addExtraDeps
-      h.dontHaddock
+      dontHaddock
     ];
 }
