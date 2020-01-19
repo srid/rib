@@ -12,6 +12,7 @@ in {
 }:
 let
   pipe = pkgs.lib.trivial.pipe;
+  optionals = pkgs.lib.lists.optionals;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
 in
@@ -40,19 +41,17 @@ pkgs.haskellPackages.developPackage {
   } // source-overrides;
   modifier = with pkgs.haskell.lib;
     let
-      platformSpecificDeps =
-        if builtins.currentSystem == "x86_64-linux"
-        # Shake recommends fsatrace, but it requires system configuration on macOS.
-        then [pkgs.fsatrace]
-        else [];
-      addExtraDeps = drv:
+      addRibDeps = drv:
         addBuildTools drv (with pkgs.haskellPackages;
           [ cabal-install
             ghcid
-          ] ++ platformSpecificDeps
+          ] 
+          # Shake recommends fsatrace, but it requires system configuration on
+          # macOS.
+          ++ optionals (builtins.currentSystem == "x86_64-linux") [pkgs.fsatrace]
         );
     in drv: pipe drv [
-      addExtraDeps
+      addRibDeps
       dontHaddock
     ];
 }
