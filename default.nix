@@ -1,7 +1,7 @@
 let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "7e8454fb856";
+  nixpkgsRev = "c438ce12a85";
 in { pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , compiler ? "default"
 , root ? ./.
