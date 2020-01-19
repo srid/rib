@@ -19,8 +19,6 @@ let
   h = pkgs.haskell.lib;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
-
-  justBuild = p: h.dontHaddock (h.dontCheck p);
 in
 haskellPackages.developPackage {
   inherit root name;
@@ -56,14 +54,11 @@ haskellPackages.developPackage {
     tomland = githubRepo "kowainik/tomland" "d9b7a1d";
   } // source-overrides;
   overrides = self: super: {
-    rib = justBuild super.rib;
-    clay = h.dontCheck super.clay;
-    mmark = h.dontCheck super.mmark;
-    modern-uri = h.dontCheck super.modern-uri;
-    tomland = h.dontCheck super.tomland;
-    path = h.dontCheck super.path;
-    relude = h.dontCheck super.relude;
+    mmark = h.dontCheck super.mmark;  # Test deps use wrong megaparsec version
+    modern-uri = h.dontCheck super.modern-uri;  # Test deps use wrong megaparsec version
+
     some = h.doJailbreak super.some;
+    tomland = h.dontCheck super.tomland;
   };
   modifier =
     let
