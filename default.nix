@@ -58,14 +58,6 @@ haskellPackages.developPackage {
       let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; in "${dsum}/dependent-sum";
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db";  # 1.0.0.3
 
-    # Dhall, and its dependency overrides
-    dhall =
-      let dhallHaskell = githubRepo "dhall-lang/dhall-haskell" "1.28.0";
-      in "${dhallHaskell}/dhall";
-    atomic-write = githubRepo "stackbuilders/atomic-write" "v0.2.0.7";
-    generic-random = githubRepo "lysxia/generic-random" "1.3.0.0";
-    prettyprinter = "${pp}/prettyprinter";
-
     # TOML parser
     tomland = githubRepo "kowainik/tomland" "d9b7a1d";
   } // source-overrides;
@@ -79,8 +71,6 @@ haskellPackages.developPackage {
     path-io = h.doJailbreak super.path-io;  # Override hardcoded dependency on path ==0.6.*
     some = h.doJailbreak super.some;
     relude = h.dontCheck super.relude;
-    prettyprinter = h.dontCheck (ppUnpackSymlinks super.prettyprinter);
-    dhall = h.dontCheck super.dhall;
     rib = justBuild super.rib;
   };
   modifier =
