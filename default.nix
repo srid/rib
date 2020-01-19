@@ -33,6 +33,7 @@ haskellPackages.developPackage {
   inherit root name;
   source-overrides = {
     rib = ./.;
+
     # Override haskell packages here:
     clay =
       githubRepo "sebastiaanvisser/clay" "cc7729b";
@@ -45,17 +46,18 @@ haskellPackages.developPackage {
     pandoc-include-code =
       githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
     path =
-      githubRepo "commercialhaskell/path" "1d8bdf0";
+      githubRepo "commercialhaskell/path" "4ceb12b";
     path-io =
-      githubRepo "mrkkrp/path-io" "84ce6a2";
+      githubRepo "mrkkrp/path-io" "236825b";
     relude =
-      githubRepo "kowainik/relude" "bfb5f60";
+      githubRepo "kowainik/relude" "ee509c8";
 
     # The dependencies below are not used in rib; but useful to have for users
     # of the library.
     # TODO: Provide a mechanism for the user to override these.
     dependent-sum =
-      let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; in "${dsum}/dependent-sum";
+      let dsum = githubRepo "mokus0/dependent-sum" "5ab6d81"; 
+      in "${dsum}/dependent-sum";
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db";  # 1.0.0.3
 
     # TOML parser
