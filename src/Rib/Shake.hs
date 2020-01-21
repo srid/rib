@@ -138,7 +138,7 @@ buildHtml ::
 buildHtml k parser outfileFn r = do
   v <- readSource parser k
   outfile <- outfileFn k v
-  src <- Source k outfile <$> readSource parser k
+  let src = Source k outfile v
   writeHtml outfile $ r src
   pure src
 
