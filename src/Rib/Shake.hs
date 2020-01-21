@@ -9,7 +9,7 @@
 module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
-    buildHtmlMulti,
+    forEvery,
     buildHtml,
     buildHtml_,
     defOutfileFn,
@@ -101,24 +101,18 @@ readSource sourceReader k = do
     Right v ->
       pure v
 
--- | Convert the given pattern of source files into their HTML.
-buildHtmlMulti ::
+-- | Run the given action when any file matching the patterns changes
+forEvery ::
   -- | Source file patterns (relative to `ribInputDir`)
   [Path Rel File] ->
-  -- | How to parse the source file
-  SourceReader repr ->
-  -- | Output file name to use (relative to `ribOutputDir`)
-  (Path Rel File -> repr -> Action (Path Rel File)) ->
-  -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  -- | Result
-  Action [Source repr]
-buildHtmlMulti pats parser outfileFn r = do
+  (Path Rel File -> Action a) ->
+  Action [a]
+forEvery pats f = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
-  forP fs $ \k -> do
-    buildHtml k parser outfileFn r
+  forP fs f
 
+-- | To be used with `buildHtml`
 defOutfileFn :: forall repr. Path Rel File -> repr -> Action (Path Rel File)
 defOutfileFn k _ = liftIO $ replaceExtension ".html" k
 
