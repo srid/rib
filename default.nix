@@ -2,10 +2,13 @@ let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
   nixpkgsRev = "c438ce12a85";
+
+  inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
+  ribRoot = gitignoreSource ./.;
 in { 
   pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , compiler ? "default"
-, root ? ./.
+, root ? ribRoot
 , name ? "rib"
 , source-overrides ? {}
 , ...
@@ -19,7 +22,7 @@ in
 pkgs.haskellPackages.developPackage {
   inherit root name;
   source-overrides = {
-    rib = ./.;
+    rib = ribRoot;
     clay =
       githubRepo "sebastiaanvisser/clay" "cc7729b";
     megaparsec =
