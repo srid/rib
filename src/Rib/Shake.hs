@@ -12,6 +12,7 @@ module Rib.Shake
     buildHtmlMulti,
     buildHtml,
     buildHtml_,
+    defOutfileFn,
 
     -- * Reading only
     readSource,
@@ -104,18 +105,21 @@ readSource sourceReader k = do
 buildHtmlMulti ::
   -- | How to parse the source file
   SourceReader repr ->
+  (Path Rel File -> repr -> Action (Path Rel File)) ->
   -- | Source file patterns (relative to `ribInputDir`)
   [Path Rel File] ->
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   -- | Result
   Action [Source repr]
-buildHtmlMulti parser pats r = do
+buildHtmlMulti parser outfileFn pats r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
-    outfile <- liftIO $ replaceExtension ".html" k
-    buildHtml parser outfile k r
+    buildHtml parser outfileFn k r
+
+defOutfileFn :: forall repr. Path Rel File -> repr -> Action (Path Rel File)
+defOutfileFn k _ = liftIO $ replaceExtension ".html" k
 
 -- | Like `buildHtmlMulti` but operate on a single file.
 --
@@ -123,12 +127,14 @@ buildHtmlMulti parser pats r = do
 buildHtml ::
   SourceReader repr ->
   -- | Path to the output HTML file (relative to `ribOutputDir`)
-  Path Rel File ->
+  (Path Rel File -> repr -> Action (Path Rel File)) ->
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml parser outfile k r = do
+buildHtml parser outfileFn k r = do
+  v <- readSource parser k
+  outfile <- outfileFn k v
   src <- Source k outfile <$> readSource parser k
   writeHtml outfile $ r src
   pure src
@@ -136,7 +142,7 @@ buildHtml parser outfile k r = do
 -- | Like `buildHtml` but discards its result.
 buildHtml_ ::
   SourceReader repr ->
-  Path Rel File ->
+  (Path Rel File -> repr -> Action (Path Rel File)) ->
   Path Rel File ->
   (Source repr -> Html ()) ->
   Action ()
