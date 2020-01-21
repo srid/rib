@@ -103,20 +103,21 @@ readSource sourceReader k = do
 
 -- | Convert the given pattern of source files into their HTML.
 buildHtmlMulti ::
-  -- | How to parse the source file
-  SourceReader repr ->
-  (Path Rel File -> repr -> Action (Path Rel File)) ->
   -- | Source file patterns (relative to `ribInputDir`)
   [Path Rel File] ->
+  -- | How to parse the source file
+  SourceReader repr ->
+  -- | Output file name to use (relative to `ribOutputDir`)
+  (Path Rel File -> repr -> Action (Path Rel File)) ->
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   -- | Result
   Action [Source repr]
-buildHtmlMulti parser outfileFn pats r = do
+buildHtmlMulti pats parser outfileFn r = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs $ \k -> do
-    buildHtml parser outfileFn k r
+    buildHtml k parser outfileFn r
 
 defOutfileFn :: forall repr. Path Rel File -> repr -> Action (Path Rel File)
 defOutfileFn k _ = liftIO $ replaceExtension ".html" k
@@ -125,14 +126,16 @@ defOutfileFn k _ = liftIO $ replaceExtension ".html" k
 --
 -- Also explicitly takes the output file path.
 buildHtml ::
-  SourceReader repr ->
-  -- | Path to the output HTML file (relative to `ribOutputDir`)
-  (Path Rel File -> repr -> Action (Path Rel File)) ->
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
+  -- | How to parse the source file
+  SourceReader repr ->
+  -- | Output file name to use (relative to `ribOutputDir`)
+  (Path Rel File -> repr -> Action (Path Rel File)) ->
+  -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml parser outfileFn k r = do
+buildHtml k parser outfileFn r = do
   v <- readSource parser k
   outfile <- outfileFn k v
   src <- Source k outfile <$> readSource parser k
@@ -141,12 +144,12 @@ buildHtml parser outfileFn k r = do
 
 -- | Like `buildHtml` but discards its result.
 buildHtml_ ::
+  Path Rel File ->
   SourceReader repr ->
   (Path Rel File -> repr -> Action (Path Rel File)) ->
-  Path Rel File ->
   (Source repr -> Html ()) ->
   Action ()
-buildHtml_ parser outfile k = void . buildHtml parser outfile k
+buildHtml_ k parser outfile = void . buildHtml k parser outfile
 
 -- | Write a single HTML file with the given HTML value
 --
