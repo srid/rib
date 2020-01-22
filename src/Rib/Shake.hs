@@ -9,15 +9,16 @@
 module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
-    buildHtmlMulti,
     buildHtml,
-    buildHtml_,
+    buildHtml',
+    forEvery,
 
     -- * Reading only
     readSource,
 
     -- * Writing only
     writeHtml,
+    writeFileCached,
 
     -- * Misc
     RibSettings (..),
@@ -100,47 +101,47 @@ readSource sourceReader k = do
     Right v ->
       pure v
 
--- | Convert the given pattern of source files into their HTML.
-buildHtmlMulti ::
-  -- | How to parse the source file
-  SourceReader repr ->
+-- | Run the given action when any file matching the patterns changes
+forEvery ::
   -- | Source file patterns (relative to `ribInputDir`)
   [Path Rel File] ->
-  -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  -- | Result
-  Action [Source repr]
-buildHtmlMulti parser pats r = do
+  (Path Rel File -> Action a) ->
+  Action [a]
+forEvery pats f = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
-  forP fs $ \k -> do
-    outfile <- liftIO $ replaceExtension ".html" k
-    buildHtml parser outfile k r
+  forP fs f
 
--- | Like `buildHtmlMulti` but operate on a single file.
---
--- Also explicitly takes the output file path.
+-- | Like buildHtml' with default outfile
 buildHtml ::
-  SourceReader repr ->
-  -- | Path to the output HTML file (relative to `ribOutputDir`)
-  Path Rel File ->
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
+  -- | How to parse the source file
+  SourceReader repr ->
+  -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml parser outfile k r = do
-  src <- Source k outfile <$> readSource parser k
+buildHtml k parser r = buildHtml' k parser replaceExtHtml r
+  where
+    replaceExtHtml _ = liftIO $ replaceExtension ".html" k
+
+-- | Generate a HTML file
+buildHtml' ::
+  -- | Path to the source file (relative to `ribInputDir`)
+  Path Rel File ->
+  -- | How to parse the source file
+  SourceReader repr ->
+  -- | Output file name to use (relative to `ribOutputDir`)
+  (repr -> Action (Path Rel File)) ->
+  -- | How to render the given source to HTML
+  (Source repr -> Html ()) ->
+  Action (Source repr)
+buildHtml' k parser outfileFn r = do
+  v <- readSource parser k
+  outfile <- outfileFn v
+  let src = Source k outfile v
   writeHtml outfile $ r src
   pure src
-
--- | Like `buildHtml` but discards its result.
-buildHtml_ ::
-  SourceReader repr ->
-  Path Rel File ->
-  Path Rel File ->
-  (Source repr -> Html ()) ->
-  Action ()
-buildHtml_ parser outfile k = void . buildHtml parser outfile k
 
 -- | Write a single HTML file with the given HTML value
 --
