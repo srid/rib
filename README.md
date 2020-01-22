@@ -40,9 +40,8 @@ custom framework.
 Here is how your code may look like if you were to generate your static site
 using Rib:
 
-``` haskell
--- | A generated page corresponds to either an index of sources, or an
--- individual source.
+```haskell
+-- | This will be our type representing generated pages.
 --
 -- Each `Source` specifies the parser type to use. Rib provides `MMark` and
 -- `Pandoc`; but you may define your own as well.
@@ -74,8 +73,8 @@ generateSite = do
   -- - File patterns to build
   -- - Function that will generate the HTML (see below)
   srcs <-
-    Rib.buildHtmlMulti MMark.parse [[relfile|*.md|]] $
-      renderPage . Page_Single
+    Rib.forEvery [[relfile|*.md|]] $ \srcPath ->
+      Rib.buildHtml srcPath MMark.parse $ renderPage . Page_Single
   -- Write an index.html linking to the aforementioned files.
   Rib.writeHtml [relfile|index.html|] $
     renderPage (Page_Index srcs)
@@ -88,14 +87,14 @@ renderPage page = with html_ [lang_ "en"] $ do
     title_ $ case page of
       Page_Index _ -> "My website!"
       Page_Single src -> toHtml $ title $ getMeta src
-    style_ [type_ "text/css"] $ Clay.render pageStyle
+    style_ [type_ "text/css"] $ C.render pageStyle
   body_ $ do
     with div_ [id_ "thesite"] $ do
-      with a_ [href_ "/"] "Back to Home"
-      hr_ []
+      with div_ [class_ "header"] $
+        with a_ [href_ "/"] "Back to Home"
       case page of
         Page_Index srcs -> div_ $ forM_ srcs $ \src ->
-          with li_ [class_ "links"] $ do
+          with li_ [class_ "pages"] $ do
             let meta = getMeta src
             b_ $ with a_ [href_ (Rib.sourceUrl src)] $ toHtml $ title meta
             maybe mempty renderMarkdown $ description meta
@@ -110,18 +109,20 @@ renderPage page = with html_ [lang_ "en"] $ do
 -- | Define your site CSS here
 pageStyle :: Css
 pageStyle = "div#thesite" ? do
-  margin (em 4) (pc 20) (em 1) (pc 20)
-  "li.links" ? do
-    listStyleType none
-    marginTop $ em 1
-    "b" ? fontSize (em 1.2)
-    "p" ? sym margin (px 0)
+  C.margin (em 4) (pc 20) (em 1) (pc 20)
+  ".header" ? do
+    C.marginBottom $ em 2
+  "li.pages" ? do
+    C.listStyleType C.none
+    C.marginTop $ em 1
+    "b" ? C.fontSize (em 1.2)
+    "p" ? sym C.margin (px 0)
 
 -- | Metadata in our markdown sources
 data SrcMeta
   = SrcMeta
       { title :: Text,
-        -- | Description is optional, hence it is a `Maybe`
+        -- | Description is optional, hence `Maybe`
         description :: Maybe Text
       }
   deriving (Show, Eq, Generic, FromJSON)
