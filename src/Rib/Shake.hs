@@ -11,7 +11,6 @@ module Rib.Shake
     buildStaticFiles,
     buildHtml,
     buildHtml',
-    defOutfileFn,
     forEvery,
 
     -- * Reading only
@@ -113,10 +112,6 @@ forEvery pats f = do
   fs <- getDirectoryFiles' input pats
   forP fs f
 
--- | To be used with `buildHtml`
-defOutfileFn :: forall repr. Path Rel File -> repr -> Action (Path Rel File)
-defOutfileFn k _ = liftIO $ replaceExtension ".html" k
-
 -- | Like buildHtml' with default outfile
 buildHtml ::
   -- | Path to the source file (relative to `ribInputDir`)
@@ -126,7 +121,9 @@ buildHtml ::
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml k parser r = buildHtml' k parser defOutfileFn r
+buildHtml k parser r = buildHtml' k parser replaceExtHtml r
+  where
+    replaceExtHtml _ = liftIO $ replaceExtension ".html" k
 
 -- | Generate a HTML file
 buildHtml' ::
@@ -135,13 +132,13 @@ buildHtml' ::
   -- | How to parse the source file
   SourceReader repr ->
   -- | Output file name to use (relative to `ribOutputDir`)
-  (Path Rel File -> repr -> Action (Path Rel File)) ->
+  (repr -> Action (Path Rel File)) ->
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   Action (Source repr)
 buildHtml' k parser outfileFn r = do
   v <- readSource parser k
-  outfile <- outfileFn k v
+  outfile <- outfileFn v
   let src = Source k outfile v
   writeHtml outfile $ r src
   pure src
