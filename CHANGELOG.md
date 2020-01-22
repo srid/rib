@@ -13,6 +13,8 @@
   - Introduced `forEvery` to run a Shake action over a pattern of files when they change.
   - Removed `buildHtmlMulti` (use `forEvery` with `buildHtml` instead)
   - Exposed `Rib.Shake.writeFileCached`
+- Bug fixes
+  - #95: Fix Shake error `resource busy (file is locked)`
 
 ## 0.6.0.0
 

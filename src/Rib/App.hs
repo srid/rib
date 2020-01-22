@@ -14,8 +14,8 @@ module Rib.App
   )
 where
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent.Chan
 import Control.Exception (catch)
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
@@ -24,7 +24,8 @@ import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
 import System.Console.CmdArgs
-import System.FSNotify (watchTree, withManager)
+import System.FSNotify (watchTreeChan, withManager)
+import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Application modes
 --
@@ -81,8 +82,10 @@ runWith src dst buildAction app = do
     -- Because otherwise our use of `watchTree` can interfere with Shake's file
     -- scaning.
     fail "cannot use '.' as source directory."
+  -- For saner output
+  hSetBuffering stdout LineBuffering
   case app of
-    WatchAndGenerate -> withManager $ \mgr -> do
+    WatchAndGenerate -> do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
       -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
@@ -91,11 +94,8 @@ runWith src dst buildAction app = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      void $ watchTree mgr (toFilePath src) (const True) $ \_ -> do
+      onTreeChange src $
         runShake False
-      -- Wait forever, effectively.
-      forever $ threadDelay maxBound
     Serve p dw ->
       concurrently_
         (unless dw $ runWith src dst buildAction WatchAndGenerate)
@@ -104,7 +104,10 @@ runWith src dst buildAction app = do
       runShake fullGen
   where
     currentRelDir = [reldir|.|]
-    runShake fullGen =
+    runShake fullGen = do
+      when fullGen
+        $ putStrLn
+        $ "[Rib] Running full generation of " <> toFilePath src
       shakeForward (ribShakeOptions fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
@@ -116,3 +119,12 @@ runWith src dst buildAction app = do
           shakeLintInside = [""],
           shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
         }
+    onTreeChange fp f = do
+      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
+      withManager $ \mgr -> do
+        events <- newChan
+        void $ watchTreeChan mgr (toFilePath fp) (const True) events
+        forever $ do
+          -- TODO: debounce
+          void $ readChan events
+          f
