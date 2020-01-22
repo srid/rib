@@ -9,6 +9,9 @@
 - MMark, extensions removed:
   - `ghcSyntaxHighlighter`: we already have `skylighting` (which supports more parsers than Haskell)
   - `obfuscateEmail`: requires JS, which is not documented.
+- API changes:
+  - Introduced `forEvery` to run a Shake action over a pattern of files when they change.
+  - Removed `buildHtmlMulti` (use `forEvery` with `buildHtml` instead)
 
 ## 0.6.0.0
 

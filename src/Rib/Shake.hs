@@ -9,16 +9,17 @@
 module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
-    forEvery,
     buildHtml,
-    buildHtml_,
+    buildHtml',
     defOutfileFn,
+    forEvery,
 
     -- * Reading only
     readSource,
 
     -- * Writing only
     writeHtml,
+    writeFileCached,
 
     -- * Misc
     RibSettings (..),
@@ -116,10 +117,19 @@ forEvery pats f = do
 defOutfileFn :: forall repr. Path Rel File -> repr -> Action (Path Rel File)
 defOutfileFn k _ = liftIO $ replaceExtension ".html" k
 
--- | Like `buildHtmlMulti` but operate on a single file.
---
--- Also explicitly takes the output file path.
+-- | Like buildHtml' with default outfile
 buildHtml ::
+  -- | Path to the source file (relative to `ribInputDir`)
+  Path Rel File ->
+  -- | How to parse the source file
+  SourceReader repr ->
+  -- | How to render the given source to HTML
+  (Source repr -> Html ()) ->
+  Action (Source repr)
+buildHtml k parser r = buildHtml' k parser defOutfileFn r
+
+-- | Generate a HTML file
+buildHtml' ::
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   -- | How to parse the source file
@@ -129,21 +139,12 @@ buildHtml ::
   -- | How to render the given source to HTML
   (Source repr -> Html ()) ->
   Action (Source repr)
-buildHtml k parser outfileFn r = do
+buildHtml' k parser outfileFn r = do
   v <- readSource parser k
   outfile <- outfileFn k v
   let src = Source k outfile v
   writeHtml outfile $ r src
   pure src
-
--- | Like `buildHtml` but discards its result.
-buildHtml_ ::
-  Path Rel File ->
-  SourceReader repr ->
-  (Path Rel File -> repr -> Action (Path Rel File)) ->
-  (Source repr -> Html ()) ->
-  Action ()
-buildHtml_ k parser outfile = void . buildHtml k parser outfile
 
 -- | Write a single HTML file with the given HTML value
 --
