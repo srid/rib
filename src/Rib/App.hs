@@ -14,9 +14,9 @@ module Rib.App
   )
 where
 
-import Control.Concurrent.Async (concurrently_)
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.Chan
-import Control.Exception (catch)
+import Control.Exception.Safe (catch)
 import Development.Shake
 import Development.Shake.Forward (shakeForward)
 import Path
@@ -85,7 +85,19 @@ runWith src dst buildAction app = do
   -- For saner output
   hSetBuffering stdout LineBuffering
   case app of
-    WatchAndGenerate -> do
+    Generate fullGen ->
+      -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
+      runShake fullGen
+    WatchAndGenerate ->
+      runShakeAndObserve
+    Serve p dw -> do
+      void $ forkIO $ Server.serve p (toFilePath dst)
+      if dw
+        then threadDelay maxBound
+        else runShakeAndObserve
+  where
+    currentRelDir = [reldir|.|]
+    runShakeAndObserve = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
       -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
@@ -96,14 +108,6 @@ runWith src dst buildAction app = do
       -- And then every time a file changes under the current directory
       onTreeChange src $
         runShake False
-    Serve p dw ->
-      concurrently_
-        (unless dw $ runWith src dst buildAction WatchAndGenerate)
-        (Server.serve p $ toFilePath dst)
-    Generate fullGen -> do
-      runShake fullGen
-  where
-    currentRelDir = [reldir|.|]
     runShake fullGen = do
       when fullGen
         $ putStrLn

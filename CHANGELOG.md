@@ -15,6 +15,7 @@
   - Exposed `Rib.Shake.writeFileCached`
 - Bug fixes
   - #95: Fix Shake error `resource busy (file is locked)`
+  - #97: Fix Shake error `AsyncCancelled` when server thread crashes
 
 ## 0.6.0.0
 
