@@ -14,6 +14,7 @@ module Rib.Target
     targetPath,
     targetUrl,
     targetVal,
+    targetSrc,
   )
 where
 
@@ -22,24 +23,28 @@ import Path
 import Relude
 
 -- | A generated file on disk
-data Target a
+data Target src a
   = Target
       { _target_path :: Path Rel File,
         -- ^ Path to the generated HTML file (relative to `Rib.Shake.ribOutputDir`)
+        _target_src :: src,
         _target_val :: a
       }
   deriving (Generic, Functor, Show)
 
 -- | Path to the source file (relative to `Rib.Shake.ribInputDir`)
-targetPath :: Target repr -> Path Rel File
+targetPath :: Target src a -> Path Rel File
 targetPath = _target_path
 
+targetSrc :: Target src a -> src 
+targetSrc = _target_src
+
 -- | Parsed representation of the source.
-targetVal :: Target repr -> repr
+targetVal :: Target src a -> a
 targetVal = _target_val
 
 -- | Relative URL to the generated source HTML.
-targetUrl :: Target repr -> Text
+targetUrl :: Target src a -> Text
 targetUrl = urlForPath . _target_path
 
 -- | Given a path to a HTML file, return its relative URL

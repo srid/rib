@@ -119,10 +119,10 @@ buildHtml ::
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   -- | How to parse the source file
-  SourceReader repr ->
+  SourceReader a ->
   -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  Action (Source repr)
+  (Target (Path Rel File) a -> Html ()) ->
+  Action (Target (Path Rel File) a)
 buildHtml k parser r = buildHtml' k parser replaceExtHtml r
   where
     replaceExtHtml _ = liftIO $ replaceExtension ".html" k
@@ -132,21 +132,21 @@ buildHtml' ::
   -- | Path to the source file (relative to `ribInputDir`)
   Path Rel File ->
   -- | How to parse the source file
-  SourceReader repr ->
+  SourceReader a ->
   -- | Output file name to use (relative to `ribOutputDir`)
-  (repr -> Action (Path Rel File)) ->
+  (a -> Action (Path Rel File)) ->
   -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  Action (Source repr)
+  (Target (Path Rel File) a -> Html ()) ->
+  Action (Target (Path Rel File) a)
 buildHtml' k parser outfileFn r = do
   v <- readSource parser k
   outfile <- outfileFn v
-  let src = Source k outfile v
-  writeHtml outfile $ r src
-  pure src
+  let t = Target outfile k v
+  writeTarget t r
+  pure t
 
 -- | Write the target file
-writeTarget :: Target a -> (Target a -> Html ()) -> Action ()
+writeTarget :: Target src a -> (Target src a -> Html ()) -> Action ()
 writeTarget t r = writeHtml (targetPath t) (r t)
 
 -- | Write a single HTML file with the given HTML value
