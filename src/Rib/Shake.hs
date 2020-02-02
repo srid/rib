@@ -18,6 +18,7 @@ module Rib.Shake
 
     -- * Writing only
     writeHtml,
+    writeTarget,
     writeFileCached,
 
     -- * Misc
@@ -36,6 +37,7 @@ import Path
 import Path.IO
 import Relude
 import Rib.Source
+import Rib.Target
 
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
@@ -142,6 +144,10 @@ buildHtml' k parser outfileFn r = do
   let src = Source k outfile v
   writeHtml outfile $ r src
   pure src
+
+-- | Write the target file
+writeTarget :: Target a -> (Target a -> Html ()) -> Action ()
+writeTarget t r = writeHtml (targetPath t) (r t)
 
 -- | Write a single HTML file with the given HTML value
 --

@@ -26,6 +26,7 @@ library
         Rib
         Rib.App
         Rib.Source
+        Rib.Target
         Rib.Parser.MMark
         Rib.Parser.Pandoc
         Rib.Shake
