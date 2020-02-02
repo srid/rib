@@ -1,7 +1,7 @@
 let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "c438ce12a85";
+  nixpkgsRev = "d5bf8b23592";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   ribRoot = gitignoreSource ./.;
@@ -41,7 +41,12 @@ pkgs.haskellPackages.developPackage {
       githubRepo "mrkkrp/path-io" "236825b";
     relude =
       githubRepo "kowainik/relude" "ee509c8";
+    shake 
+      = githubRepo "ndmitchell/shake" "6936aae";
   } // source-overrides;
+  overrides = self: super: with pkgs.haskell.lib; {
+    shake = dontCheck super.shake;  # Tests fail on 0.18.5
+  };
   modifier = with pkgs.haskell.lib;
     let
       addRibDeps = drv:
