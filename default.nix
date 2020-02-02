@@ -44,6 +44,9 @@ pkgs.haskellPackages.developPackage {
     shake 
       = githubRepo "ndmitchell/shake" "6936aae";
   } // source-overrides;
+  overrides = self: super: with pkgs.haskell.lib; {
+    shake = dontCheck super.shake;  # Tests fail on 0.18.5
+  };
   modifier = with pkgs.haskell.lib;
     let
       addRibDeps = drv:
