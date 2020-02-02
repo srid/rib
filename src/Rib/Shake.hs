@@ -9,16 +9,15 @@
 module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
-    buildHtml,
-    buildHtml',
     forEvery,
 
     -- * Reading only
     readSource,
+    loadTarget,
 
     -- * Writing only
-    writeHtml,
     writeTarget,
+    writeHtml,
     writeFileCached,
 
     -- * Misc
@@ -114,36 +113,18 @@ forEvery pats f = do
   fs <- getDirectoryFiles' input pats
   forP fs f
 
--- | Like buildHtml' with default outfile
-buildHtml ::
+-- | Load the source file corresponding to a target file
+loadTarget :: 
   -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
+  Path Rel File -> 
   -- | How to parse the source file
-  SourceReader a ->
-  -- | How to render the given source to HTML
-  (Target (Path Rel File) a -> Html ()) ->
+  SourceReader a -> 
+  -- | Output file path (relative to `ribOutputDir`)
+  Path Rel File -> 
+  -- | The target object
   Action (Target (Path Rel File) a)
-buildHtml k parser r = buildHtml' k parser replaceExtHtml r
-  where
-    replaceExtHtml _ = liftIO $ replaceExtension ".html" k
-
--- | Generate a HTML file
-buildHtml' ::
-  -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
-  -- | How to parse the source file
-  SourceReader a ->
-  -- | Output file name to use (relative to `ribOutputDir`)
-  (a -> Action (Path Rel File)) ->
-  -- | How to render the given source to HTML
-  (Target (Path Rel File) a -> Html ()) ->
-  Action (Target (Path Rel File) a)
-buildHtml' k parser outfileFn r = do
-  v <- readSource parser k
-  outfile <- outfileFn v
-  let t = mkTargetWithSource k outfile v
-  writeTarget t r
-  pure t
+loadTarget srcPath parser tgtPath =
+  mkTargetWithSource srcPath tgtPath <$> readSource parser srcPath
 
 -- | Write the target file
 writeTarget :: Target src a -> (Target src a -> Html ()) -> Action ()
