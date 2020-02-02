@@ -3,11 +3,7 @@ module Rib
   ( module Rib.App,
     module Rib.Shake,
     module Rib.Target,
-    Source,
     SourceReader,
-    sourcePath,
-    sourceVal,
-    sourceUrl,
     MMark,
     Pandoc,
   )
