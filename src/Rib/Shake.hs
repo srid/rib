@@ -141,7 +141,7 @@ buildHtml' ::
 buildHtml' k parser outfileFn r = do
   v <- readSource parser k
   outfile <- outfileFn v
-  let t = Target outfile k v
+  let t = mkTargetWithSource k outfile v
   writeTarget t r
   pure t
 

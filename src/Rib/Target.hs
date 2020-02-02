@@ -8,7 +8,9 @@
 
 module Rib.Target
   ( -- * Target type
-    Target (..),
+    Target,
+    mkTarget,
+    mkTargetWithSource,
 
     -- * Target properties
     targetPath,
@@ -25,18 +27,24 @@ import Relude
 -- | A generated file on disk
 data Target src a
   = Target
-      { _target_path :: Path Rel File,
-        -- ^ Path to the generated HTML file (relative to `Rib.Shake.ribOutputDir`)
-        _target_src :: src,
+      { _target_src :: src,
+        -- | Path to the generated HTML file (relative to `Rib.Shake.ribOutputDir`)
+        _target_path :: Path Rel File,
         _target_val :: a
       }
   deriving (Generic, Functor, Show)
+
+mkTarget :: Path Rel File -> a -> Target () a
+mkTarget = Target ()
+
+mkTargetWithSource :: src -> Path Rel File -> a -> Target src a
+mkTargetWithSource = Target
 
 -- | Path to the source file (relative to `Rib.Shake.ribInputDir`)
 targetPath :: Target src a -> Path Rel File
 targetPath = _target_path
 
-targetSrc :: Target src a -> src 
+targetSrc :: Target src a -> src
 targetSrc = _target_src
 
 -- | Parsed representation of the source.
@@ -56,4 +64,3 @@ urlForPath = stripIndexHtml . relPathToUrl
       if T.isSuffixOf "index.html" s
         then T.dropEnd (T.length $ "index.html") s
         else s
-
