@@ -109,9 +109,7 @@ runWith src dst buildAction app = do
       onTreeChange src $
         runShake False
     runShake fullGen = do
-      when fullGen
-        $ putStrLn
-        $ "[Rib] Running full generation of " <> toFilePath src
+      putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
       shakeForward (ribShakeOptions fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
