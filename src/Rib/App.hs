@@ -14,7 +14,8 @@ module Rib.App
   )
 where
 
-import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (race_)
 import Control.Concurrent.Chan
 import Control.Exception.Safe (catch)
 import Development.Shake
@@ -91,10 +92,10 @@ runWith src dst buildAction app = do
     WatchAndGenerate ->
       runShakeAndObserve
     Serve p dw -> do
-      void $ forkIO $ Server.serve p (toFilePath dst)
-      if dw
-        then threadDelay maxBound
-        else runShakeAndObserve
+      race_ (Server.serve p $ toFilePath dst) $ do
+        if dw
+          then threadDelay maxBound
+          else runShakeAndObserve
   where
     currentRelDir = [reldir|.|]
     runShakeAndObserve = do
