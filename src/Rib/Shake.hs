@@ -9,14 +9,14 @@
 module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
-    buildHtml,
-    buildHtml',
     forEvery,
 
     -- * Reading only
     readSource,
+    loadTarget,
 
     -- * Writing only
+    writeTarget,
     writeHtml,
     writeFileCached,
 
@@ -36,6 +36,7 @@ import Path
 import Path.IO
 import Relude
 import Rib.Source
+import Rib.Target
 
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
@@ -112,36 +113,22 @@ forEvery pats f = do
   fs <- getDirectoryFiles' input pats
   forP fs f
 
--- | Like buildHtml' with default outfile
-buildHtml ::
+-- | Load the source file corresponding to a target file
+loadTarget :: 
   -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
+  Path Rel File -> 
   -- | How to parse the source file
-  SourceReader repr ->
-  -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  Action (Source repr)
-buildHtml k parser r = buildHtml' k parser replaceExtHtml r
-  where
-    replaceExtHtml _ = liftIO $ replaceExtension ".html" k
+  SourceReader a -> 
+  -- | Output file path (relative to `ribOutputDir`)
+  Path Rel File -> 
+  -- | The target object
+  Action (Target (Path Rel File) a)
+loadTarget srcPath parser tgtPath =
+  mkTargetWithSource srcPath tgtPath <$> readSource parser srcPath
 
--- | Generate a HTML file
-buildHtml' ::
-  -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
-  -- | How to parse the source file
-  SourceReader repr ->
-  -- | Output file name to use (relative to `ribOutputDir`)
-  (repr -> Action (Path Rel File)) ->
-  -- | How to render the given source to HTML
-  (Source repr -> Html ()) ->
-  Action (Source repr)
-buildHtml' k parser outfileFn r = do
-  v <- readSource parser k
-  outfile <- outfileFn v
-  let src = Source k outfile v
-  writeHtml outfile $ r src
-  pure src
+-- | Write the target file
+writeTarget :: Target src a -> (Target src a -> Html ()) -> Action ()
+writeTarget t r = writeHtml (targetPath t) (r t)
 
 -- | Write a single HTML file with the given HTML value
 --
