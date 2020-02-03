@@ -46,6 +46,7 @@ pkgs.haskellPackages.developPackage {
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
+    dhall = dontCheck super.dhall;  # Until https://github.com/srid/rib/issues/100
   };
   modifier = with pkgs.haskell.lib;
     let
