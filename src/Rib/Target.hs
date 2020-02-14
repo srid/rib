@@ -17,6 +17,8 @@ module Rib.Target
     targetUrl,
     targetVal,
     targetSrc,
+
+    urlForPath
   )
 where
 
