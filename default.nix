@@ -48,7 +48,7 @@ pkgs.haskellPackages.developPackage {
     # For dhall
     dhall = dhallSrc + "/dhall";
     generic-random = githubRepo "Lysxia/generic-random" "1a091b6";
-    prettyprinter = (import <nixpkgs> {}).runCommand "prettyprinter" {}
+    prettyprinter = pkgs.runCommand "prettyprinter" {}
     ''
       cp -r -L ${prettyprinterSrc}/prettyprinter $out
     '';
