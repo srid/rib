@@ -7,6 +7,8 @@
   - megaparsec: 0.8
   - clay: 0.14
   - shake: 0.8.15
+- New features:
+  - Added Dhall parser, `Rib.Parser.Dhall`
 - MMark, extensions removed:
   - `ghcSyntaxHighlighter`: we already have `skylighting` (which supports more parsers than Haskell)
   - `obfuscateEmail`: requires JS, which is not documented.
