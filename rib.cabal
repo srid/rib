@@ -27,6 +27,7 @@ library
         Rib.App
         Rib.Source
         Rib.Target
+        Rib.Parser.Dhall
         Rib.Parser.MMark
         Rib.Parser.Pandoc
         Rib.Shake
@@ -47,6 +48,7 @@ library
         clay >=0.14 && <0.15,
         cmdargs >=0.10.20 && <0.11,
         containers >=0.6.0 && <0.7,
+        dhall,
         directory >= 1.0 && <2.0,
         exceptions,
         foldl,

@@ -18,6 +18,8 @@ let
   optionals = pkgs.lib.lists.optionals;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
+  dhallSrc = githubRepo "dhall-lang/dhall-haskell" "3ed23be15682fab70c1b3e78f262a822cddb6ae1";
+  prettyprinterSrc = githubRepo "quchen/prettyprinter" "320538b";
 in
 pkgs.haskellPackages.developPackage {
   inherit root name;
@@ -43,6 +45,13 @@ pkgs.haskellPackages.developPackage {
       githubRepo "kowainik/relude" "ee509c8";
     shake 
       = githubRepo "ndmitchell/shake" "6936aae";
+    # For dhall
+    dhall = dhallSrc + "/dhall";
+    generic-random = githubRepo "Lysxia/generic-random" "1a091b6";
+    prettyprinter = (import <nixpkgs> {}).runCommand "prettyprinter" {}
+    ''
+      cp -r -L ${prettyprinterSrc}/prettyprinter $out
+    '';
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
