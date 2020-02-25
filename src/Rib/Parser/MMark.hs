@@ -13,6 +13,8 @@ module Rib.Parser.MMark
   ( -- * Parsing
     parse,
     parsePure,
+    parseWith,
+    parsePureWith,
 
     -- * Rendering
     render,
@@ -43,6 +45,18 @@ import Text.URI (URI)
 render :: MMark -> Html ()
 render = MMark.render
 
+-- | Like `parsePure` but takes a custom list of MMark extensions
+parsePureWith ::
+  [MMark.Extension] ->
+  -- | Filepath corresponding to the text to be parsed (used only in parse errors)
+  FilePath ->
+  -- | Text to be parsed
+  Text ->
+  Either Text MMark
+parsePureWith exts k s = case MMark.parse k s of
+  Left e -> Left $ toText $ M.errorBundlePretty e
+  Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
+
 -- | Pure version of `parse`
 parsePure ::
   -- | Filepath corresponding to the text to be parsed (used only in parse errors)
@@ -50,13 +64,17 @@ parsePure ::
   -- | Text to be parsed
   Text ->
   Either Text MMark
-parsePure k s = case MMark.parse k s of
-  Left e -> Left $ toText $ M.errorBundlePretty e
-  Right doc -> Right $ MMark.useExtensions exts $ useTocExt doc
+parsePure = parsePureWith defaultExts
 
 -- | `SourceReader` for parsing Markdown using mmark
 parse :: SourceReader MMark
 parse (toFilePath -> f) = do
+  s <- toText <$> readFile' f
+  pure $ parsePure f s
+
+-- | Like `parse` but takes a custom list of MMark extensions
+parseWith :: [MMark.Extension] -> SourceReader MMark
+parseWith exts (toFilePath -> f) = do
   s <- toText <$> readFile' f
   pure $ parsePure f s
 
@@ -74,8 +92,8 @@ getFirstImg = flip MMark.runScanner $ Fold f Nothing id
       Ext.Paragraph xs -> toList xs
       _ -> []
 
-exts :: [MMark.Extension]
-exts =
+defaultExts :: [MMark.Extension]
+defaultExts =
   [ Ext.fontAwesome,
     Ext.footnotes,
     Ext.kbd,

@@ -17,6 +17,7 @@
   - Introduced `Target` type, and `loadTarget`/`writeTarget` functions.
   - Introduced `forEvery` to run a Shake action over a pattern of files when they change.
   - Exposed `Rib.Shake.writeFileCached`
+  - Added `MMark.parseWith` (and `parsePureWith`), to specify a custom list of mmark extensions
 - Bug fixes
   - #95: Fix Shake error `resource busy (file is locked)`
   - #97: Fix Shake error `AsyncCancelled` when server thread crashes
