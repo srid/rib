@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -76,7 +77,7 @@ parse (toFilePath -> f) = do
 parseWith :: [MMark.Extension] -> SourceReader MMark
 parseWith exts (toFilePath -> f) = do
   s <- toText <$> readFile' f
-  pure $ parsePure f s
+  pure $ parsePureWith exts f s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI
