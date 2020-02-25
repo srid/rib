@@ -9,8 +9,8 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest]
     steps:
-    - uses: actions/checkout@v1
-    - uses: cachix/install-nix-action@v6
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@releases/v7  # v7 is not released yet; will it fix macOS build issues?
     - uses: cachix/cachix-action@v3  # This also runs nix-build.
       with:
         name: srid
