@@ -1,7 +1,7 @@
 let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
-  # Look for the "Last updated" hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "d5bf8b23592";
+  # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
+  nixpkgsRev = "1fe82110feb";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   ribRoot = gitignoreSource ./.;
@@ -18,7 +18,7 @@ let
   optionals = pkgs.lib.lists.optionals;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
-  dhallSrc = githubRepo "dhall-lang/dhall-haskell" "3ed23be15682fab70c1b3e78f262a822cddb6ae1";
+  dhallSrc = githubRepo "dhall-lang/dhall-haskell" "8761fab";
   prettyprinterSrc = githubRepo "quchen/prettyprinter" "320538b";
 in
 pkgs.haskellPackages.developPackage {
