@@ -16,6 +16,7 @@ module Rib.Parser.MMark
     parsePure,
     parseWith,
     parsePureWith,
+    defaultExts,
 
     -- * Rendering
     render,
