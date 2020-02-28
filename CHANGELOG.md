@@ -18,7 +18,7 @@
   - TODO: Introduced `Route` module
   - Introduced `Rib.Shake.forEvery` to run a Shake action over a pattern of files when they change.
   - Exposed `Rib.Shake.writeFileCached`
-  - `MMark.parse` and `Pandoc.parse` now automatically append path to `ribInputDir`
+  - `MMark.parse` and `Pandoc.parse` now automatically append path to `ribInputDir` and do not return Either.
   - Added `MMark.parseWith` (and `parsePureWith`), to specify a custom list of mmark extensions
 - Bug fixes
   - #95: Fix Shake error `resource busy (file is locked)`

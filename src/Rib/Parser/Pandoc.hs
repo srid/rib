@@ -27,7 +27,7 @@ module Rib.Parser.Pandoc
   )
 where
 
-import Control.Monad.Except
+import Control.Monad.Except (MonadError, liftEither, runExcept)
 import Data.Aeson
 import Development.Shake (Action, readFile')
 import Lucid (Html, toHtmlRaw)
@@ -43,9 +43,9 @@ import Text.Pandoc.Walk (query, walkM)
 parsePure ::
   (ReaderOptions -> Text -> PandocPure Pandoc) ->
   Text ->
-  Either Text Pandoc
+  Pandoc
 parsePure textReader s =
-  first show $ runExcept $ do
+  either (error . show) id $ runExcept $ do
     runPure' $ textReader readerSettings s
 
 -- | Parse a lightweight markup language using Pandoc
@@ -53,13 +53,14 @@ parse ::
   -- | The pandoc text reader function to use, eg: `readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
   Path Rel File ->
-  Action (Either Text Pandoc)
-parse textReader f = do
-  inputDir <- ribInputDir
-  content <- toText <$> readFile' (toFilePath $ inputDir </> f)
-  fmap (first show) $ runExceptT $ do
-    v' <- runIO' $ textReader readerSettings content
-    liftIO $ walkM includeSources v'
+  Action Pandoc
+parse textReader f =
+  either fail pure =<< do
+    inputDir <- ribInputDir
+    content <- toText <$> readFile' (toFilePath $ inputDir </> f)
+    fmap (first show) $ runExceptT $ do
+      v' <- runIO' $ textReader readerSettings content
+      liftIO $ walkM includeSources v'
   where
     includeSources = includeCode $ Just $ Format "html5"
 

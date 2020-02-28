@@ -70,15 +70,16 @@ parsePure ::
 parsePure = parsePureWith defaultExts
 
 -- | Parse Markdown using mmark
-parse :: Path Rel File -> Action (Either Text MMark)
+parse :: Path Rel File -> Action MMark
 parse = parseWith defaultExts
 
 -- | Like `parse` but takes a custom list of MMark extensions
-parseWith :: [MMark.Extension] -> Path Rel File -> Action (Either Text MMark)
-parseWith exts f = do
-  inputDir <- ribInputDir
-  s <- toText <$> readFile' (toFilePath $ inputDir </> f)
-  pure $ parsePureWith exts (toFilePath f) s
+parseWith :: [MMark.Extension] -> Path Rel File -> Action MMark
+parseWith exts f =
+  either (fail . toString) pure =<< do
+    inputDir <- ribInputDir
+    s <- toText <$> readFile' (toFilePath $ inputDir </> f)
+    pure $ parsePureWith exts (toFilePath f) s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI
