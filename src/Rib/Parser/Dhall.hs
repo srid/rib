@@ -24,9 +24,9 @@ parse ::
   [Path Rel File] ->
   Path Rel File ->
   Action a
-parse (map toFilePath -> deps) (toFilePath -> f) = do
-  inputDir <- toFilePath <$> ribInputDir
+parse (map toFilePath -> deps) f = do
+  inputDir <- ribInputDir
   need deps
-  s <- toText <$> readFile' f
-  liftIO $ withCurrentDirectory inputDir $
+  s <- toText <$> readFile' (toFilePath $ inputDir </> f)
+  liftIO $ withCurrentDirectory (toFilePath inputDir) $
     input auto s

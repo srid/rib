@@ -33,6 +33,7 @@ import Development.Shake (Action, readFile')
 import Lucid (Html, toHtmlRaw)
 import Path
 import Relude
+import Rib.Shake (ribInputDir)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import qualified Text.Pandoc.Readers
@@ -53,8 +54,9 @@ parse ::
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
   Path Rel File ->
   Action (Either Text Pandoc)
-parse textReader (toFilePath -> f) = do
-  content <- toText <$> readFile' f
+parse textReader f = do
+  inputDir <- ribInputDir
+  content <- toText <$> readFile' (toFilePath $ inputDir </> f)
   fmap (first show) $ runExceptT $ do
     v' <- runIO' $ textReader readerSettings content
     liftIO $ walkM includeSources v'

@@ -36,6 +36,7 @@ import Development.Shake
 import Lucid (Html)
 import Path
 import Relude
+import Rib.Shake (ribInputDir)
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
@@ -70,15 +71,14 @@ parsePure = parsePureWith defaultExts
 
 -- | Parse Markdown using mmark
 parse :: Path Rel File -> Action (Either Text MMark)
-parse (toFilePath -> f) = do
-  s <- toText <$> readFile' f
-  pure $ parsePure f s
+parse = parseWith defaultExts
 
 -- | Like `parse` but takes a custom list of MMark extensions
 parseWith :: [MMark.Extension] -> Path Rel File -> Action (Either Text MMark)
-parseWith exts (toFilePath -> f) = do
-  s <- toText <$> readFile' f
-  pure $ parsePureWith exts f s
+parseWith exts f = do
+  inputDir <- ribInputDir
+  s <- toText <$> readFile' (toFilePath $ inputDir </> f)
+  pure $ parsePureWith exts (toFilePath f) s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI
