@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -29,7 +30,6 @@ module Rib.Shake
 where
 
 import Development.Shake
-import Development.Shake.Forward
 import Lucid (Html)
 import qualified Lucid
 import Path
@@ -114,13 +114,13 @@ forEvery pats f = do
   forP fs f
 
 -- | Load the source file corresponding to a target file
-loadTarget :: 
+loadTarget ::
   -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File -> 
+  Path Rel File ->
   -- | How to parse the source file
-  SourceReader a -> 
+  SourceReader a ->
   -- | Output file path (relative to `ribOutputDir`)
-  Path Rel File -> 
+  Path Rel File ->
   -- | The target object
   Action (Target (Path Rel File) a)
 loadTarget srcPath parser tgtPath =
@@ -137,15 +137,14 @@ writeTarget t r = writeHtml (targetPath t) (r t)
 writeHtml :: Path Rel File -> Html () -> Action ()
 writeHtml f = writeFileCached f . toString . Lucid.renderText
 
--- | Like writeFile' but uses `cacheAction`.
+-- | Write the given file unless it has not changed.
 --
 -- Also, always writes under ribOutputDir
 writeFileCached :: Path Rel File -> String -> Action ()
-writeFileCached k s = do
+writeFileCached !k !s = do
   f <- fmap (toFilePath . (</> k)) ribOutputDir
-  let cacheClosure = (f, s)
-      cacheKey = ("writeFileCached" :: Text, f)
-  cacheActionWith cacheKey cacheClosure $ do
+  currentS <- liftIO $ forgivingAbsence $ readFile f
+  unless (Just s == currentS) $ do
     writeFile' f $! s
     -- Use a character (like +) that contrasts with what Shake uses (#) for
     -- logging modified files being read.
