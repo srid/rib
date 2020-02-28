@@ -32,10 +32,10 @@ where
 
 import Control.Foldl (Fold (..))
 import Development.Shake (readFile')
+import Development.Shake
 import Lucid (Html)
 import Path
 import Relude
-import Rib.Source (SourceReader)
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
@@ -68,14 +68,14 @@ parsePure ::
   Either Text MMark
 parsePure = parsePureWith defaultExts
 
--- | `SourceReader` for parsing Markdown using mmark
-parse :: SourceReader MMark
+-- | Parse Markdown using mmark
+parse :: Path Rel File -> Action (Either Text MMark)
 parse (toFilePath -> f) = do
   s <- toText <$> readFile' f
   pure $ parsePure f s
 
 -- | Like `parse` but takes a custom list of MMark extensions
-parseWith :: [MMark.Extension] -> SourceReader MMark
+parseWith :: [MMark.Extension] -> Path Rel File -> Action (Either Text MMark)
 parseWith exts (toFilePath -> f) = do
   s <- toText <$> readFile' f
   pure $ parsePureWith exts f s

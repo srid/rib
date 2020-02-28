@@ -29,11 +29,10 @@ where
 
 import Control.Monad.Except
 import Data.Aeson
-import Development.Shake (readFile')
+import Development.Shake (Action, readFile')
 import Lucid (Html, toHtmlRaw)
 import Path
 import Relude
-import Rib.Source (SourceReader)
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import qualified Text.Pandoc.Readers
@@ -48,11 +47,12 @@ parsePure textReader s =
   first show $ runExcept $ do
     runPure' $ textReader readerSettings s
 
--- | `SourceReader` for parsing a lightweight markup language using Pandoc
+-- | Parse a lightweight markup language using Pandoc
 parse ::
   -- | The pandoc text reader function to use, eg: `readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
-  SourceReader Pandoc
+  Path Rel File ->
+  Action (Either Text Pandoc)
 parse textReader (toFilePath -> f) = do
   content <- toText <$> readFile' f
   fmap (first show) $ runExceptT $ do
