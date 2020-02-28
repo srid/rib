@@ -25,11 +25,10 @@ library
     exposed-modules:
         Rib
         Rib.App
-        Rib.Source
-        Rib.Target
         Rib.Parser.Dhall
         Rib.Parser.MMark
         Rib.Parser.Pandoc
+        Rib.Route
         Rib.Shake
         Rib.Extra.CSS
     other-modules:

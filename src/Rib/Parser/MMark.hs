@@ -32,10 +32,11 @@ where
 
 import Control.Foldl (Fold (..))
 import Development.Shake (readFile')
+import Development.Shake
 import Lucid (Html)
 import Path
 import Relude
-import Rib.Source (SourceReader)
+import Rib.Shake (ribInputDir)
 import Text.MMark (MMark, projectYaml)
 import qualified Text.MMark as MMark
 import qualified Text.MMark.Extension as Ext
@@ -68,17 +69,17 @@ parsePure ::
   Either Text MMark
 parsePure = parsePureWith defaultExts
 
--- | `SourceReader` for parsing Markdown using mmark
-parse :: SourceReader MMark
-parse (toFilePath -> f) = do
-  s <- toText <$> readFile' f
-  pure $ parsePure f s
+-- | Parse Markdown using mmark
+parse :: Path Rel File -> Action MMark
+parse = parseWith defaultExts
 
 -- | Like `parse` but takes a custom list of MMark extensions
-parseWith :: [MMark.Extension] -> SourceReader MMark
-parseWith exts (toFilePath -> f) = do
-  s <- toText <$> readFile' f
-  pure $ parsePureWith exts f s
+parseWith :: [MMark.Extension] -> Path Rel File -> Action MMark
+parseWith exts f =
+  either (fail . toString) pure =<< do
+    inputDir <- ribInputDir
+    s <- toText <$> readFile' (toFilePath $ inputDir </> f)
+    pure $ parsePureWith exts (toFilePath f) s
 
 -- | Get the first image in the document if one exists
 getFirstImg :: MMark -> Maybe URI

@@ -15,18 +15,18 @@ import Dhall (FromDhall, auto, input)
 import Path
 import Relude
 import Rib.Shake (ribInputDir)
-import Rib.Source (SourceReader)
 import System.Directory
 
--- | `SourceReader` for parsing Dhall files
+-- | Parse Dhall files
 parse ::
   FromDhall a =>
   -- | Dependent .dhall files, which must trigger a rebuild
   [Path Rel File] ->
-  SourceReader a
-parse (map toFilePath -> deps) (toFilePath -> f) = do
-  inputDir <- toFilePath <$> ribInputDir
+  Path Rel File ->
+  Action a
+parse (map toFilePath -> deps) f = do
+  inputDir <- ribInputDir
   need deps
-  s <- toText <$> readFile' f
-  liftIO $ withCurrentDirectory inputDir $
-    Right <$> input auto s
+  s <- toText <$> readFile' (toFilePath $ inputDir </> f)
+  liftIO $ withCurrentDirectory (toFilePath inputDir) $
+    input auto s

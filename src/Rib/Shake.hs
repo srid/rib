@@ -12,13 +12,7 @@ module Rib.Shake
     buildStaticFiles,
     forEvery,
 
-    -- * Reading only
-    readSource,
-    loadTarget,
-
     -- * Writing only
-    writeTarget,
-    writeHtml,
     writeFileCached,
 
     -- * Misc
@@ -30,13 +24,9 @@ module Rib.Shake
 where
 
 import Development.Shake
-import Lucid (Html)
-import qualified Lucid
 import Path
 import Path.IO
 import Relude
-import Rib.Source
-import Rib.Target
 
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
@@ -79,29 +69,6 @@ buildStaticFiles staticFilePatterns = do
     copyFileChanged' (toFilePath -> old) (toFilePath -> new) =
       copyFileChanged old new
 
--- | Read and parse an individual source file
-readSource ::
-  -- | How to parse the source
-  SourceReader repr ->
-  -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
-  Action repr
-readSource sourceReader k = do
-  f <- (</> k) <$> ribInputDir
-  -- NOTE: We don't really use cacheActionWith prior to parsing content,
-  -- because the parsed representation (`repr`) may not always have instances
-  -- for Typeable/Binary/Generic (for example, MMark does not expose its
-  -- structure.). Consequently we are forced to cache merely the HTML writing
-  -- stage (see buildHtml').
-  need [toFilePath f]
-  sourceReader f >>= \case
-    Left e ->
-      -- The extra newline is so that it doesn't begin in the middle of a line
-      -- when Shake spits it out.
-      fail $ "\nError parsing source " <> toFilePath k <> ": " <> toString e
-    Right v ->
-      pure v
-
 -- | Run the given action when any file matching the patterns changes
 forEvery ::
   -- | Source file patterns (relative to `ribInputDir`)
@@ -112,30 +79,6 @@ forEvery pats f = do
   input <- ribInputDir
   fs <- getDirectoryFiles' input pats
   forP fs f
-
--- | Load the source file corresponding to a target file
-loadTarget ::
-  -- | Path to the source file (relative to `ribInputDir`)
-  Path Rel File ->
-  -- | How to parse the source file
-  SourceReader a ->
-  -- | Output file path (relative to `ribOutputDir`)
-  Path Rel File ->
-  -- | The target object
-  Action (Target (Path Rel File) a)
-loadTarget srcPath parser tgtPath =
-  mkTargetWithSource srcPath tgtPath <$> readSource parser srcPath
-
--- | Write the target file
-writeTarget :: Target src a -> (Target src a -> Html ()) -> Action ()
-writeTarget t r = writeHtml (targetPath t) (r t)
-
--- | Write a single HTML file with the given HTML value
---
--- The HTML text value will be cached, so subsequent writes of the same value
--- will be skipped.
-writeHtml :: Path Rel File -> Html () -> Action ()
-writeHtml f = writeFileCached f . toString . Lucid.renderText
 
 -- | Write the given file unless it has not changed.
 --
