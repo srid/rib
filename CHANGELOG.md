@@ -14,8 +14,8 @@
   - `ghcSyntaxHighlighter`: we already have `skylighting` (which supports more parsers than Haskell)
   - `obfuscateEmail`: requires JS, which is not documented.
 - API changes:
-  - Removed `buildHtmlMulti`, `buildHtml`, `readSource` functions and `Source` type.
-  - TODO: Introduced `Route` module
+  - Introduced `Route` functionality for simpler management of static routes.
+    - Removed `buildHtmlMulti`, `buildHtml`, `readSource` functions and `Source` type.
   - Introduced `Rib.Shake.forEvery` to run a Shake action over a pattern of files when they change.
   - Exposed `Rib.Shake.writeFileCached`
   - `MMark.parse` and `Pandoc.parse` now automatically append path to `ribInputDir` and do not return Either.

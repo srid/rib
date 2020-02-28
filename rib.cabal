@@ -28,6 +28,7 @@ library
         Rib.Parser.Dhall
         Rib.Parser.MMark
         Rib.Parser.Pandoc
+        Rib.Route
         Rib.Shake
         Rib.Extra.CSS
     other-modules:
@@ -48,6 +49,7 @@ library
         cmdargs >=0.10.20 && <0.11,
         containers >=0.6.0 && <0.7,
         dhall,
+        dependent-sum,
         directory >= 1.0 && <2.0,
         exceptions,
         foldl,

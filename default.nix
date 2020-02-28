@@ -19,6 +19,7 @@ let
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
   dhallSrc = githubRepo "dhall-lang/dhall-haskell" "8761fab";
+  dsumSrc = githubRepo "mokus0/dependent-sum" "5ab6d81";
   prettyprinterSrc = githubRepo "quchen/prettyprinter" "320538b";
 in
 pkgs.haskellPackages.developPackage {
@@ -52,6 +53,10 @@ pkgs.haskellPackages.developPackage {
     ''
       cp -r -L ${prettyprinterSrc}/prettyprinter $out
     '';
+    # dependent-sum
+    dependent-sum = dsumSrc + "/dependent-sum";
+    dependent-sum-template = dsumSrc + "/dependent-sum-template";
+    some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db"; # "1998df3";
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
