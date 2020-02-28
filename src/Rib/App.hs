@@ -114,7 +114,9 @@ runWith src dst buildAction app = do
       shakeForward (ribShakeOptions fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
-        `catch` \(e :: SomeException) -> putStrLn $ "[Rib] Shake error: " <> show e
+        `catch` \(e :: ShakeException) ->
+          putStrLn $
+            "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
     ribShakeOptions fullGen =
       shakeOptions
         { shakeVerbosity = Verbose,
