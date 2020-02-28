@@ -9,6 +9,7 @@
   - shake: 0.8.15
 - New features:
   - Added Dhall parser, `Rib.Parser.Dhall`
+  - Add `Rib.Extra` containing useful but non-essential features
 - MMark, extensions removed:
   - `ghcSyntaxHighlighter`: we already have `skylighting` (which supports more parsers than Haskell)
   - `obfuscateEmail`: requires JS, which is not documented.
