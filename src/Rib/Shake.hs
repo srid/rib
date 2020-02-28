@@ -11,7 +11,6 @@ module Rib.Shake
   ( -- * Basic helpers
     buildStaticFiles,
     forEvery,
-    urlForPath,
 
     -- * Writing only
     writeFileCached,
@@ -24,7 +23,6 @@ module Rib.Shake
   )
 where
 
-import qualified Data.Text as T
 import Development.Shake
 import Path
 import Path.IO
@@ -94,17 +92,6 @@ writeFileCached !k !s = do
     -- Use a character (like +) that contrasts with what Shake uses (#) for
     -- logging modified files being read.
     putInfo $ "+ " <> f
-
--- | Given a path to a HTML file, return its relative URL
--- TODO: remove after pulling in Route.hs
-urlForPath :: Path Rel File -> Text
-urlForPath = stripIndexHtml . relPathToUrl
-  where
-    relPathToUrl = toText . toFilePath . ([absdir|/|] </>)
-    stripIndexHtml s =
-      if T.isSuffixOf "index.html" s
-        then T.dropEnd (T.length $ "index.html") s
-        else s
 
 -- | Like `getDirectoryFiles` but works with `Path`
 getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]

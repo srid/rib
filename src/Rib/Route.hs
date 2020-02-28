@@ -1,6 +1,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Rib.Route
@@ -20,11 +21,10 @@ import Data.Kind
 import Data.Some
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
 import Development.Shake (Action, liftIO)
 import Path
 import Relude
-import Rib.Shake (urlForPath, writeFileCached)
+import Rib.Shake (writeFileCached)
 
 type R f = DSum f Identity
 
@@ -45,8 +45,17 @@ class IsRoute (r :: Type -> Type) where
 -- | Get the URL to a route
 routeUrl :: IsRoute r => Some r -> Text
 routeUrl = urlForPath . either (error . toText . displayException) id . routeFile
+  where
+    urlForPath :: Path Rel File -> Text
+    urlForPath = stripIndexHtml . relPathToUrl
+      where
+        relPathToUrl = toText . toFilePath . ([absdir|/|] </>)
+        stripIndexHtml s =
+          if T.isSuffixOf "index.html" s
+            then T.dropEnd (T.length $ "index.html") s
+            else s
 
-writeRoute :: IsRoute r => r a -> TL.Text -> Action ()
+writeRoute :: (IsRoute r, ToString s) => r a -> s -> Action ()
 writeRoute r content = do
   fp <- liftIO $ routeFile $ Some r
-  writeFileCached fp $ T.unpack $ TL.toStrict $ content
+  writeFileCached fp $ toString $ content
