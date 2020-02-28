@@ -22,6 +22,7 @@
 - Bug fixes
   - #95: Fix Shake error `resource busy (file is locked)`
   - #97: Fix Shake error `AsyncCancelled` when server thread crashes
+  - #96 & #108: Drop problematic use of Shake `cacheActionWith`
 
 ## 0.6.0.0
 
