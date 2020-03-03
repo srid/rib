@@ -37,7 +37,7 @@ pkgs.haskellPackages.developPackage {
     mmark-ext =
       githubRepo "mmark-md/mmark-ext" "4d1c40e";
     pandoc-include-code =
-      githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
+      githubRepo "owickstrom/pandoc-include-code" "bc0430f";
     path =
       githubRepo "commercialhaskell/path" "4ceb12b";
     path-io =

@@ -3,6 +3,7 @@
 ## 0.8.0.0 (UNRELEASED)
 
 - Dependency upgrades
+  - pandoc-include-code: 0.5.0.0
 
 ## 0.7.0.0
 
