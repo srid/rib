@@ -51,7 +51,8 @@ pkgs.haskellPackages.developPackage {
     generic-random = githubRepo "Lysxia/generic-random" "1a091b6";
     prettyprinter = pkgs.runCommand "prettyprinter" {}
     ''
-      cp -r -L ${prettyprinterSrc}/prettyprinter $out
+      mkdir $out
+      cp -r -L ${prettyprinterSrc}/prettyprinter/* $out/
     '';
     # dependent-sum
     dependent-sum = dsumSrc + "/dependent-sum";
