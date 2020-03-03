@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## 0.7.0.0 (UNRELEASED)
+## 0.7.0.0
 
 - Dependency upgrades
   - mmark: 0.0.7.2

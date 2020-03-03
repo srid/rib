@@ -7,7 +7,7 @@
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/218047-Rib)
 
-Rib is a Haskell library for writing your own **static site generator**.
+Rib is a Haskell **static site generator** that aims to reuse existing libraries instead of reinventing the wheel.
 
 How does it compare to Hakyll?
 
