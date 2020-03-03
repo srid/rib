@@ -215,11 +215,11 @@ Clone the sample repository locally, install [Nix](https://nixos.org/nix/) and
 run your site as follows:
 
 ```shell
-nix-shell --run 'ghcid -T main'
+nix-shell --run 'ghcid -T :main'
 ```
 
 (Note even though the author recommends it Nix is strictly not required; you may
-simply run `ghcid -T main` instead of the above command if you do not wish to
+simply run `ghcid -T :main` instead of the above command if you do not wish to
 use Nix.)
 
 Running this command gives you a local HTTP server at http://localhost:8080/

@@ -1,5 +1,11 @@
 # Change Log for rib
 
+## 0.8.0.0 (UNRELEASED)
+
+- Dependency upgrades
+  - pandoc-include-code: 0.5.0.0
+  - pandoc-types: 1.20
+
 ## 0.7.0.0
 
 - Dependency upgrades

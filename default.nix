@@ -1,7 +1,7 @@
 let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "1fe82110feb";
+  nixpkgsRev = "24c765c744b";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   ribRoot = gitignoreSource ./.;
@@ -37,7 +37,7 @@ pkgs.haskellPackages.developPackage {
     mmark-ext =
       githubRepo "mmark-md/mmark-ext" "4d1c40e";
     pandoc-include-code =
-      githubRepo "owickstrom/pandoc-include-code" "7e4d9d9";
+      githubRepo "owickstrom/pandoc-include-code" "bc0430f";
     path =
       githubRepo "commercialhaskell/path" "4ceb12b";
     path-io =
@@ -51,7 +51,8 @@ pkgs.haskellPackages.developPackage {
     generic-random = githubRepo "Lysxia/generic-random" "1a091b6";
     prettyprinter = pkgs.runCommand "prettyprinter" {}
     ''
-      cp -r -L ${prettyprinterSrc}/prettyprinter $out
+      mkdir $out
+      cp -r -L ${prettyprinterSrc}/prettyprinter/* $out/
     '';
     # dependent-sum
     dependent-sum = dsumSrc + "/dependent-sum";

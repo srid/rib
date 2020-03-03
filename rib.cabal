@@ -1,6 +1,6 @@
 cabal-version: 2.2
 name: rib
-version: 0.7.0.0
+version: 0.8.0.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -60,8 +60,8 @@ library
         modern-uri,
         mtl >=2.2.2 && <2.3,
         pandoc >=2.7 && <3,
-        pandoc-include-code >=1.4.0 && <1.5,
-        pandoc-types >=1.17.5 && <1.18,
+        pandoc-include-code >=1.5 && <1.6,
+        pandoc-types >=1.20,
         path >= 0.7.0,
         path-io >= 1.6.0,
         relude >= 0.6 && < 0.7,

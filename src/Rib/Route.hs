@@ -16,9 +16,8 @@ where
 
 import Control.Monad.Catch
 import Data.Kind
-import Data.Text (Text)
 import qualified Data.Text as T
-import Development.Shake (Action, liftIO)
+import Development.Shake (Action)
 import Path
 import Relude
 import Rib.Shake (writeFileCached)
