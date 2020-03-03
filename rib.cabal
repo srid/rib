@@ -61,7 +61,7 @@ library
         mtl >=2.2.2 && <2.3,
         pandoc >=2.7 && <3,
         pandoc-include-code >=1.5 && <1.6,
-        pandoc-types >=1.17.5 && <1.18,
+        pandoc-types >=1.20,
         path >= 0.7.0,
         path-io >= 1.6.0,
         relude >= 0.6 && < 0.7,
