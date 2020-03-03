@@ -43,7 +43,7 @@ library
     build-depends:
         aeson >=1.4.2 && <1.5,
         async,
-        base-noprelude >=4.13 && <5,
+        base-noprelude >=4.7 && <5,
         binary >=0.8.6 && <0.9,
         clay >=0.14 && <0.15,
         cmdargs >=0.10.20 && <0.11,
