@@ -7,7 +7,7 @@
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/218047-Rib)
 
-Rib is a Haskell library for writing your own **static site generator**.
+Rib is a Haskell **static site generator** that aims to reuse existing libraries instead of reinventing the wheel.
 
 How does it compare to Hakyll?
 
@@ -41,68 +41,107 @@ Here is how your code may look like if you were to generate your static site
 using Rib:
 
 ```haskell
--- | This will be our type representing generated pages.
+-- | Route corresponding to each generated static page.
 --
--- Each `Source` specifies the parser type to use. Rib provides `MMark` and
--- `Pandoc`; but you may define your own as well.
-data Page
-  = Page_Index [Source MMark]
-  | Page_Single (Source MMark)
+-- The `a` parameter specifies the data (typically Markdown document) used to
+-- generated the final page text.
+data Route a where
+  Route_Index :: Route ()
+  Route_Article :: ArticleRoute a -> Route a
+
+-- | You may even have sub routes.
+data ArticleRoute a where
+  ArticleRoute_Index :: ArticleRoute [(Route MMark, MMark)]
+  ArticleRoute_Article :: Path Rel File -> ArticleRoute MMark
+
+-- | The `IsRoute` instance allows us to determine the target .html path for
+-- each route. This affects what `routeUrl` will return.
+instance IsRoute Route where
+  routeFile = \case
+    Route_Index ->
+      pure [relfile|index.html|]
+    Route_Article r ->
+      fmap ([reldir|article|] </>) $ case r of
+        ArticleRoute_Article srcPath ->
+          replaceExtension ".html" srcPath
+        ArticleRoute_Index ->
+          pure [relfile|index.html|]
+
+-- | The "Config" type generated from the Dhall type.
+--
+-- Use `Rib.Parser.Dhall` to parse it (see below).
+makeHaskellTypes
+  [ SingleConstructor "Config" "Config" "./src-dhall/Config.dhall"
+  ]
 
 -- | Main entry point to our generator.
 --
 -- `Rib.run` handles CLI arguments, and takes three parameters here.
 --
--- 1. Directory `a`, from which static files will be read.
--- 2. Directory `b`, under which target files will be generated.
+-- 1. Directory `content`, from which static files will be read.
+-- 2. Directory `dest`, under which target files will be generated.
 -- 3. Shake action to run.
 --
--- In the shake build action you would expect to use the utility functions
+-- In the shake action you would expect to use the utility functions
 -- provided by Rib to do the actual generation of your static site.
 main :: IO ()
-main = Rib.run [reldir|a|] [reldir|b|] generateSite
+main = Rib.run [reldir|content|] [reldir|dest|] generateSite
 
 -- | Shake action for generating the static site
 generateSite :: Action ()
 generateSite = do
   -- Copy over the static files
   Rib.buildStaticFiles [[relfile|static/**|]]
+  -- Read the site config
+  config :: Config <-
+    Dhall.parse
+      [[relfile|src-dhall/Config.dhall|]]
+      [relfile|config.dhall|]
+  let writeHtmlRoute :: Route a -> a -> Action ()
+      writeHtmlRoute r = writeRoute r . Lucid.renderText . renderPage config r
   -- Build individual sources, generating .html for each.
-  -- The function `buildHtmlMulti` takes the following arguments:
-  -- - Function that will parse the file (here we use mmark)
-  -- - File patterns to build
-  -- - Function that will generate the HTML (see below)
-  srcs <-
-    Rib.forEvery [[relfile|*.md|]] $ \srcPath ->
-      Rib.buildHtml srcPath MMark.parse $ renderPage . Page_Single
-  -- Write an index.html linking to the aforementioned files.
-  Rib.writeHtml [relfile|index.html|] $
-    renderPage (Page_Index srcs)
+  articles <-
+    Rib.forEvery [[relfile|*.md|]] $ \srcPath -> do
+      let r = Route_Article $ ArticleRoute_Article srcPath
+      doc <- MMark.parse srcPath
+      writeHtmlRoute r doc
+      pure (r, doc)
+  writeHtmlRoute (Route_Article ArticleRoute_Index) articles
+  writeHtmlRoute Route_Index ()
 
 -- | Define your site HTML here
-renderPage :: Page -> Html ()
-renderPage page = with html_ [lang_ "en"] $ do
+renderPage :: Config -> Route a -> a -> Html ()
+renderPage config route val = with html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
-    title_ $ case page of
-      Page_Index _ -> "My website!"
-      Page_Single src -> toHtml $ title $ getMeta src
+    title_ $ routeTitle
     style_ [type_ "text/css"] $ C.render pageStyle
   body_ $ do
     with div_ [id_ "thesite"] $ do
       with div_ [class_ "header"] $
         with a_ [href_ "/"] "Back to Home"
-      case page of
-        Page_Index srcs -> div_ $ forM_ srcs $ \src ->
-          with li_ [class_ "pages"] $ do
-            let meta = getMeta src
-            b_ $ with a_ [href_ (Rib.sourceUrl src)] $ toHtml $ title meta
-            maybe mempty renderMarkdown $ description meta
-        Page_Single src ->
+      h1_ routeTitle
+      case route of
+        Route_Index ->
+          p_ $ do
+            "This site is work in progress. Meanwhile visit the "
+            with a_ [href_ $ routeUrl $ Route_Article ArticleRoute_Index] "articles"
+            " page."
+        Route_Article ArticleRoute_Index ->
+          div_ $ forM_ val $ \(r, src) ->
+            with li_ [class_ "pages"] $ do
+              let meta = getMeta src
+              b_ $ with a_ [href_ (Rib.routeUrl r)] $ toHtml $ title meta
+              maybe mempty renderMarkdown $ description meta
+        Route_Article (ArticleRoute_Article _) ->
           with article_ [class_ "post"] $ do
-            h1_ $ toHtml $ title $ getMeta src
-            MMark.render $ Rib.sourceVal src
+            MMark.render val
   where
+    routeTitle :: Html ()
+    routeTitle = case route of
+      Route_Index -> toHtml $ siteTitle config
+      Route_Article (ArticleRoute_Article _) -> toHtml $ title $ getMeta val
+      Route_Article ArticleRoute_Index -> "Articles"
     renderMarkdown =
       MMark.render . either (error . T.unpack) id . MMark.parsePure "<none>"
 
@@ -128,15 +167,15 @@ data SrcMeta
   deriving (Show, Eq, Generic, FromJSON)
 
 -- | Get metadata from Markdown's YAML block
-getMeta :: Source MMark -> SrcMeta
-getMeta src = case MMark.projectYaml (Rib.sourceVal src) of
+getMeta :: MMark -> SrcMeta
+getMeta src = case MMark.projectYaml src of
   Nothing -> error "No YAML metadata"
   Just val -> case fromJSON val of
     Aeson.Error e -> error $ "JSON error: " <> e
     Aeson.Success v -> v
 ```
 
-(View full [`Main.hs`](https://github.com/srid/rib-sample/blob/master/Main.hs) at rib-sample)
+(View full [`Main.hs`](https://github.com/srid/rib-sample/blob/master/src/Main.hs) at rib-sample)
 
 ## Getting Started
 

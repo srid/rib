@@ -3,7 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
--- | Parsing Dhall files
+-- | Parser for Dhall files.
 module Rib.Parser.Dhall
   ( -- * Parsing
     parse,
@@ -17,11 +17,14 @@ import Relude
 import Rib.Shake (ribInputDir)
 import System.Directory
 
--- | Parse Dhall files
+-- | Parse a Dhall file as Haskell type.
+--
+-- Use `Dhall.TH.makeHaskellTypes` to create the Haskell type first.
 parse ::
   FromDhall a =>
   -- | Dependent .dhall files, which must trigger a rebuild
   [Path Rel File] ->
+  -- | The Dhall file to parse. Relative to `ribInputDir`.
   Path Rel File ->
   Action a
 parse (map toFilePath -> deps) f = do

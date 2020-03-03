@@ -19,7 +19,7 @@ nix-shell --arg rib ../rib --run 'ghcid -T main'
 
 1. Create a `release-x.y` branch
 1. Finalize ChangeLog.md
-1. Run `cabal haddock` and sanity check the haddocks
+1. Run `nix-shell --run 'cabal haddock'` and sanity check the haddocks
 1. Commit all changes, and push a release PR.
 1. Generated sdist using `cabal sdist`
 1. [Upload a package candidate](https://hackage.haskell.org/packages/candidates/upload)

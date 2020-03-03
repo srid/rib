@@ -5,6 +5,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- | Type-safe routes
 module Rib.Route
   ( IsRoute (..),
     routeUrl,
@@ -26,6 +27,8 @@ import Rib.Shake (writeFileCached)
 --
 -- The GADT type parameter represents the data used to render that particular route.
 class IsRoute (r :: Type -> Type) where
+  -- | Return the filepath (relative `Rib.Shake.ribInputDir`) where the
+  -- generated content for this route should be written.
   routeFile :: MonadThrow m => r a -> m (Path Rel File)
 
 data UrlType = Relative | Absolute
@@ -37,9 +40,11 @@ path2Url fp = toText . toFilePath . \case
   Absolute ->
     [absdir|/|] </> fp
 
+-- | The absolute URL to this route (relative to site root)
 routeUrl :: IsRoute r => r a -> Text
 routeUrl = routeUrl' Absolute
 
+-- | The relative URL to this route
 routeUrlRel :: IsRoute r => r a -> Text
 routeUrlRel = routeUrl' Relative
 
@@ -52,6 +57,7 @@ routeUrl' urlType = stripIndexHtml . flip path2Url urlType . either (error . toT
         then T.dropEnd (T.length $ "index.html") s
         else s
 
+-- | Write the content `s` to the file corresponding to the given route.
 writeRoute :: (IsRoute r, ToString s) => r a -> s -> Action ()
 writeRoute r content = do
   fp <- liftIO $ routeFile r

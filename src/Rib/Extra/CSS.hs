@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | Extra CSS functionality
+-- | Some commonly useful CSS styles
 module Rib.Extra.CSS where
 
 import Clay
