@@ -31,8 +31,7 @@ module Rib.Parser.MMark
 where
 
 import Control.Foldl (Fold (..))
-import Development.Shake (readFile')
-import Development.Shake
+import Development.Shake (Action, readFile')
 import Lucid (Html)
 import Path
 import Relude
