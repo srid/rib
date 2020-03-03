@@ -1,5 +1,9 @@
 # Change Log for rib
 
+## 0.8.0.0 (UNRELEASED)
+
+- Dependency upgrades
+
 ## 0.7.0.0
 
 - Dependency upgrades

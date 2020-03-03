@@ -1,7 +1,7 @@
 let
   # Use https://howoldis.herokuapp.com/ to find the next hash to update nixpkgs to.
   # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "1fe82110feb";
+  nixpkgsRev = "24c765c744b";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   ribRoot = gitignoreSource ./.;
