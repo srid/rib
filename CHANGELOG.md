@@ -3,6 +3,7 @@
 ## 0.8.0.0 (UNRELEASED)
 
 - Dependency upgrades
+  - GHC 8.8
   - pandoc-include-code: 0.5.0.0
   - pandoc-types: 1.20
 
