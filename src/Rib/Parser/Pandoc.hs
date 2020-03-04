@@ -105,7 +105,7 @@ getH1 (Pandoc _ bs) = fmap renderPandocInlines $ flip query bs $ \case
 getToC :: Pandoc -> Html ()
 getToC (Pandoc _ bs) = renderPandocBlocks [toc]
   where
-    toc = toTableOfContents def bs
+    toc = toTableOfContents writerSettings bs
 
 -- | Get the first image in the document if one exists
 getFirstImg ::
