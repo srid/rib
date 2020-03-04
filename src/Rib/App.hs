@@ -47,13 +47,13 @@ data Command
       }
   deriving (Show, Eq, Generic)
 
--- | optparse-applicative parser for Rib subcommands
+-- | Commandline parser `Parser` for the Rib CLI
 commandParser :: Parser Command
 commandParser =
   hsubparser $
     mconcat
       [ command "generate" $ info generateCommand $ progDesc "Run one-off generation of static files",
-        command "watch" $ info watchCommand $ progDesc "Generate on every source content change",
+        command "watch" $ info watchCommand $ progDesc "Watch the source directory, and generate when it changes",
         command "serve" $ info serveCommand $ progDesc "Like watch, but also starts a HTTP server"
       ]
   where
@@ -82,8 +82,7 @@ run src dst buildAction = runWith src dst buildAction =<< execParser opts
       info
         (commandParser <**> helper)
         ( fullDesc
-            <> progDesc "Rib command line entry point"
-            <> header "Rib - Haskell static site generator"
+            <> progDesc "Rib static site generator CLI"
         )
 
 -- | Like `run` but with an explicitly passed `Command`
