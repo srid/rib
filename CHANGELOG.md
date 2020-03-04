@@ -8,6 +8,7 @@
   - pandoc-types: 1.20
 - New features:
   - API exposes the CLI parser (`optparse-applicative`) for user-level composition
+  - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
 
 ## 0.7.0.0
 
