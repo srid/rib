@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -8,7 +8,8 @@
 --
 -- Mostly you would only need `Rib.App.run`, passing it your Shake build action.
 module Rib.App
-  ( App (..),
+  ( Command (..),
+    commandParser,
     run,
     runWith,
   )
@@ -18,27 +19,25 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
 import Control.Concurrent.Chan
 import Control.Exception.Safe (catch)
-import Development.Shake
+import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
+import Options.Applicative
 import Path
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.Console.CmdArgs
 import System.FSNotify (watchTreeChan, withManager)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
--- | Application modes
---
--- The mode in which to run the Rib CLI
-data App
+-- | Rib CLI commands
+data Command
   = -- | Generate static files once.
     Generate
       { -- | Force a full generation of /all/ files even if they were not modified
         full :: Bool
       }
   | -- | Watch for changes in the input directory and run `Generate`
-    WatchAndGenerate
+    Watch
   | -- | Run a HTTP server serving content from the output directory
     Serve
       { -- | Port to bind the server
@@ -46,7 +45,26 @@ data App
         -- | Unless set run `WatchAndGenerate` automatically
         dontWatch :: Bool
       }
-  deriving (Data, Typeable, Show, Eq)
+  deriving (Show, Eq, Generic)
+
+-- | Commandline parser `Parser` for the Rib CLI
+commandParser :: Parser Command
+commandParser =
+  hsubparser $
+    mconcat
+      [ command "generate" $ info generateCommand $ progDesc "Run one-off generation of static files",
+        command "watch" $ info watchCommand $ progDesc "Watch the source directory, and generate when it changes",
+        command "serve" $ info serveCommand $ progDesc "Like watch, but also starts a HTTP server"
+      ]
+  where
+    generateCommand =
+      Generate <$> switch (long "full" <> help "Do a full generation (toggles shakeRebuild)")
+    watchCommand =
+      pure Watch
+    serveCommand =
+      Serve
+        <$> option auto (long "port" <> short 'p' <> help "HTTP server port" <> showDefault <> value 8080 <> metavar "PORT")
+        <*> switch (long "no-watch" <> help "Serve only; don't watch and regenerate")
 
 -- | Run Rib using arguments passed in the command line.
 run ::
@@ -58,38 +76,29 @@ run ::
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
-run src dst buildAction = runWith src dst buildAction =<< cmdArgs ribCli
+run src dst buildAction = runWith src dst buildAction =<< execParser opts
   where
-    ribCli =
-      modes
-        [ Serve
-            { port = 8080 &= help "Port to bind to",
-              dontWatch = False &= help "Do not watch in addition to serving generated files"
-            }
-            &= help "Serve the generated site"
-            &= auto,
-          WatchAndGenerate
-            &= help "Watch for changes and generate",
-          Generate
-            { full = False &= help "Force a full generation of all files"
-            }
-            &= help "Generate the site"
-        ]
+    opts =
+      info
+        (commandParser <**> helper)
+        ( fullDesc
+            <> progDesc "Rib static site generator CLI"
+        )
 
--- | Like `run` but with an explicitly passed `App` mode
-runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> App -> IO ()
-runWith src dst buildAction app = do
+-- | Like `run` but with an explicitly passed `Command`
+runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> Command -> IO ()
+runWith src dst buildAction ribCmd = do
   when (src == currentRelDir) $
     -- Because otherwise our use of `watchTree` can interfere with Shake's file
     -- scaning.
     fail "cannot use '.' as source directory."
   -- For saner output
   hSetBuffering stdout LineBuffering
-  case app of
+  case ribCmd of
     Generate fullGen ->
       -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
       runShake fullGen
-    WatchAndGenerate ->
+    Watch ->
       runShakeAndObserve
     Serve p dw -> do
       race_ (Server.serve p $ toFilePath dst) $ do
