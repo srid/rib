@@ -6,6 +6,8 @@
   - GHC 8.8
   - pandoc-include-code: 0.5.0.0
   - pandoc-types: 1.20
+- New features:
+  - API exposes the CLI parser (`optparse-applicative`) for user-level composition
 
 ## 0.7.0.0
 
