@@ -1,7 +1,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -52,9 +52,14 @@ routeUrl' :: IsRoute r => UrlType -> r a -> Text
 routeUrl' urlType = stripIndexHtml . flip path2Url urlType . either (error . toText . displayException) id . routeFile
   where
     stripIndexHtml s =
-      if "/index.html" `T.isSuffixOf` s || s == "index.html"
-        then T.dropEnd (T.length $ "index.html") s
-        else s
+      -- Because path2Url can return relative URL, we must account for there
+      -- not being a / at the beginning.
+      if  | "/index.html" `T.isSuffixOf` s ->
+            T.dropEnd (T.length "index.html") s
+          | s == "index.html" ->
+            "."
+          | otherwise ->
+            s
 
 -- | Write the content `s` to the file corresponding to the given route.
 writeRoute :: (IsRoute r, ToString s) => r a -> s -> Action ()
