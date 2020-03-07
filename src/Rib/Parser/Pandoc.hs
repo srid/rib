@@ -19,6 +19,7 @@ module Rib.Parser.Pandoc
     -- * Extracting information
     extractMeta,
     getH1,
+    getToC,
     getFirstImg,
 
     -- * Re-exports
@@ -38,6 +39,7 @@ import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import qualified Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
+import Text.Pandoc.Writers.Shared (toTableOfContents)
 
 -- | Pure version of `parse`
 parsePure ::
@@ -87,17 +89,23 @@ runIO' = liftEither <=< liftIO . runIO
 -- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
 renderPandocInlines :: [Inline] -> Html ()
 renderPandocInlines =
-  toHtmlRaw
-    . render
-    . Pandoc mempty
-    . pure
-    . Plain
+  renderPandocBlocks . pure . Plain
+
+renderPandocBlocks :: [Block] -> Html ()
+renderPandocBlocks =
+  toHtmlRaw . render . Pandoc mempty
 
 -- | Get the top-level heading as Lucid HTML
 getH1 :: Pandoc -> Maybe (Html ())
 getH1 (Pandoc _ bs) = fmap renderPandocInlines $ flip query bs $ \case
   Header 1 _ xs -> Just xs
   _ -> Nothing
+
+-- | Get the document table of contents
+getToC :: Pandoc -> Html ()
+getToC (Pandoc _ bs) = renderPandocBlocks [toc]
+  where
+    toc = toTableOfContents writerSettings bs
 
 -- | Get the first image in the document if one exists
 getFirstImg ::
