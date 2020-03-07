@@ -52,7 +52,7 @@ routeUrl' :: IsRoute r => UrlType -> r a -> Text
 routeUrl' urlType = stripIndexHtml . flip path2Url urlType . either (error . toText . displayException) id . routeFile
   where
     stripIndexHtml s =
-      if T.isSuffixOf "index.html" s
+      if "/index.html" `T.isSuffixOf` s || s == "index.html"
         then T.dropEnd (T.length $ "index.html") s
         else s
 
