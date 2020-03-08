@@ -272,4 +272,6 @@ which adds to the simplicity of the entire thing.
   
 * [zulip-archive](https://github.com/srid/zulip-archive): Zulip chat archive viewer ([running here](https://funprog.srid.ca/)).
 
-* Author's own website. Live at https://www.srid.ca/ 
+* [open-editions.org](https://github.com/open-editions/open-editions.org) ([running here](https://open-editions.org/)).
+
+* Rib powers the Zettelkasten system [neuron](https://github.com/srid/neuron#neuron), which in turn is used for the author's own website (running at [srid.ca](https://www.srid.ca/)). 
