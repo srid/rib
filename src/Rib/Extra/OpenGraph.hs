@@ -13,8 +13,9 @@ import Lucid.Base (makeAttribute)
 import Relude
 import qualified Text.URI as URI
 
--- TODO: This should be Haskell library of its own?
-
+-- The OpenGraph metadata
+--
+-- This type can be directly rendered to HTML using `toHTML`.
 data OpenGraph
   = OpenGraph
       { _openGraph_title :: Text,
