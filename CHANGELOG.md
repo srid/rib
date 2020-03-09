@@ -10,6 +10,7 @@
   - API exposes the CLI parser (`optparse-applicative`) for user-level composition
   - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
   - `Rib.Extra.CSS`: add `googleFonts` and `stylesheet`
+  - Add `Rib.Extra.OpenGraph` for Open Graph protocol
 - Bug fixes:
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
 
