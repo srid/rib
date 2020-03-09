@@ -8,14 +8,16 @@ module Rib.Extra.OpenGraph where
 import Lucid
 import Lucid.Base (makeAttribute)
 import Relude
+import qualified Text.URI as URI
 
 data OpenGraph
   = OpenGraph
-      { _openGraph_author :: Text,
+      { _openGraph_title :: Text,
+        _openGraph_author :: Text,
         _openGraph_description :: Maybe Text,
         _openGraph_siteName :: Text,
         _openGraph_type :: Text, -- TODO: ADT
-        _openGraph_image :: Maybe Text
+        _openGraph_image :: Maybe URI.URI
       }
   deriving (Eq, Show)
 
@@ -24,9 +26,11 @@ instance ToHtml OpenGraph where
   toHtml OpenGraph {..} = do
     meta' "author" _openGraph_author
     meta' "description" `mapM_` _openGraph_description
+    metaOg "title" _openGraph_title
     metaOg "site_name" _openGraph_siteName
     metaOg "type" _openGraph_type
-    metaOg "image" `mapM_` _openGraph_image
+    -- TODO: This cannot be relative URL. Perhaps we should enforce it?
+    metaOg "image" `mapM_` fmap URI.render _openGraph_image
     where
       -- Open graph meta element
       metaOg k v =
