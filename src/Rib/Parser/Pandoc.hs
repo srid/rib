@@ -31,7 +31,7 @@ where
 import Control.Monad.Except (MonadError, liftEither, runExcept)
 import Data.Aeson
 import Development.Shake (Action, readFile')
-import Lucid (Html, toHtmlRaw)
+import Lucid (HtmlT, toHtmlRaw)
 import Path
 import Relude
 import Rib.Shake (ribInputDir)
@@ -67,7 +67,7 @@ parse textReader f =
     includeSources = includeCode $ Just $ Format "html5"
 
 -- | Render a Pandoc document to HTML
-render :: Pandoc -> Html ()
+render :: Monad m => Pandoc -> HtmlT m ()
 render doc =
   either error id $ first show $ runExcept $ do
     runPure'
@@ -87,22 +87,22 @@ runIO' = liftEither <=< liftIO . runIO
 -- | Render a list of Pandoc `Text.Pandoc.Inline` values as Lucid HTML
 --
 -- Useful when working with `Text.Pandoc.Meta` values from the document metadata.
-renderPandocInlines :: [Inline] -> Html ()
+renderPandocInlines :: Monad m => [Inline] -> HtmlT m ()
 renderPandocInlines =
   renderPandocBlocks . pure . Plain
 
-renderPandocBlocks :: [Block] -> Html ()
+renderPandocBlocks :: Monad m => [Block] -> HtmlT m ()
 renderPandocBlocks =
   toHtmlRaw . render . Pandoc mempty
 
 -- | Get the top-level heading as Lucid HTML
-getH1 :: Pandoc -> Maybe (Html ())
+getH1 :: Monad m => Pandoc -> Maybe (HtmlT m ())
 getH1 (Pandoc _ bs) = fmap renderPandocInlines $ flip query bs $ \case
   Header 1 _ xs -> Just xs
   _ -> Nothing
 
 -- | Get the document table of contents
-getToC :: Pandoc -> Html ()
+getToC :: Monad m => Pandoc -> HtmlT m ()
 getToC (Pandoc _ bs) = renderPandocBlocks [toc]
   where
     toc = toTableOfContents writerSettings bs

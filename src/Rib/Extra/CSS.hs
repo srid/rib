@@ -29,12 +29,12 @@ mozillaKbdStyle = do
   whiteSpace nowrap
 
 -- | Include the specified Google Fonts
-googleFonts :: [Text] -> Html ()
+googleFonts :: Monad m => [Text] -> HtmlT m ()
 googleFonts fs =
   let fsEncoded = T.intercalate "|" $ T.replace " " "+" <$> fs
       fsUrl = "https://fonts.googleapis.com/css?family=" <> fsEncoded <> "&display=swap"
    in stylesheet fsUrl
 
 -- | Include the specified stylesheet URL
-stylesheet :: Text -> Html ()
+stylesheet :: Monad m => Text -> HtmlT m ()
 stylesheet x = link_ [rel_ "stylesheet", href_ x]
