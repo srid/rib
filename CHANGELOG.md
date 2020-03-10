@@ -8,9 +8,10 @@
   - pandoc-types: 1.20
 - New features:
   - API exposes the CLI parser (`optparse-applicative`) for user-level composition
-  - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
-  - `Rib.Extra.CSS`: add `googleFonts` and `stylesheet`
   - Add `Rib.Extra.OpenGraph` for Open Graph protocol
+  - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
+  - Add `Rib.Parser.MMark.getFirstParagraphText`
+  - `Rib.Extra.CSS`: add `googleFonts` and `stylesheet`
 - Bug fixes and misc changes:
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
   - Lucid rendering functions (like `MMark.render`) are now polymorphic in their monad.

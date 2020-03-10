@@ -23,6 +23,7 @@ module Rib.Parser.MMark
 
     -- * Extracting information
     getFirstImg,
+    getFirstParagraphText,
     projectYaml,
 
     -- * Re-exports
@@ -96,6 +97,18 @@ getFirstImg = flip MMark.runScanner $ Fold f Nothing id
       Ext.Naked xs -> toList xs
       Ext.Paragraph xs -> toList xs
       _ -> []
+
+-- | Get the first paragraph text of a MMark document.
+--
+-- Useful to determine "preview" of your notes.
+getFirstParagraphText :: MMark -> Maybe Text
+getFirstParagraphText =
+  flip MMark.runScanner $ Fold f Nothing id
+  where
+    f acc blk = acc <|> (Ext.asPlainText <$> getPara blk)
+    getPara = \case
+      Ext.Paragraph xs -> Just xs
+      _ -> Nothing
 
 defaultExts :: [MMark.Extension]
 defaultExts =
