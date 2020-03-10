@@ -32,7 +32,7 @@ where
 
 import Control.Foldl (Fold (..))
 import Development.Shake (Action, readFile')
-import Lucid (Html)
+import Lucid.Base (HtmlT (..))
 import Path
 import Relude
 import Rib.Shake (ribInputDir)
@@ -44,8 +44,11 @@ import qualified Text.Megaparsec as M
 import Text.URI (URI)
 
 -- | Render a MMark document as HTML
-render :: MMark -> Html ()
-render = MMark.render
+render :: Monad m => MMark -> HtmlT m ()
+render = liftHtml . MMark.render
+  where
+    liftHtml :: Monad m => HtmlT Identity () -> HtmlT m ()
+    liftHtml = HtmlT . pure . runIdentity . runHtmlT
 
 -- | Like `parsePure` but takes a custom list of MMark extensions
 parsePureWith ::

@@ -11,8 +11,9 @@
   - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
   - `Rib.Extra.CSS`: add `googleFonts` and `stylesheet`
   - Add `Rib.Extra.OpenGraph` for Open Graph protocol
-- Bug fixes:
+- Bug fixes and misc changes:
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
+  - Lucid rendering functions (like `MMark.render`) are now polymorphic in their monad.
 
 ## 0.7.0.0
 
