@@ -15,6 +15,7 @@
 - Bug fixes and misc changes:
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
   - Lucid rendering functions (like `MMark.render`) are now polymorphic in their monad.
+  - #122: Fix Pandoc parser never returning metadata
 
 ## 0.7.0.0
 
