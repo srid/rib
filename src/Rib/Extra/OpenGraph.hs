@@ -6,8 +6,8 @@
 -- | Meta tags for The Open Graph protocol: https://ogp.me/
 module Rib.Extra.OpenGraph
   ( OpenGraph (..),
-    OGType(..),
-    Article(..),
+    OGType (..),
+    Article (..),
   )
 where
 
@@ -62,16 +62,15 @@ instance ToHtml OGType where
       metaOg "type" "article"
       toHtml article
 
-
 -- TODO: _article_profile :: [Profile]
 data Article
   = Article
-    { _article_section :: Maybe Text
-    , _article_modifiedTime :: Maybe UTCTime
-    , _article_publishedTime :: Maybe UTCTime
-    , _article_expirationTime :: Maybe UTCTime
-    , _article_tag :: [Text]
-    }
+      { _article_section :: Maybe Text,
+        _article_modifiedTime :: Maybe UTCTime,
+        _article_publishedTime :: Maybe UTCTime,
+        _article_expirationTime :: Maybe UTCTime,
+        _article_tag :: [Text]
+      }
   deriving (Eq, Show)
 
 instance ToHtml Article where
@@ -85,10 +84,6 @@ instance ToHtml Article where
     where
       metaOgTime k t =
         metaOg k $ toText $ formatShow iso8601Format t
-
-
-
--- UTILS
 
 -- Open graph meta element
 metaOg :: Applicative m => Text -> Text -> HtmlT m ()
