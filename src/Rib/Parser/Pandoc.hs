@@ -140,7 +140,7 @@ writerSettings = def {writerExtensions = exts}
 --
 -- Renders Pandoc text objects into plain strings along the way.
 flattenMeta :: Meta -> Maybe (Either Text Value)
-flattenMeta (Meta meta) = fmap toJSON . traverse go <$> guarded null meta
+flattenMeta (Meta meta) = fmap toJSON . traverse go <$> guarded (not . null) meta
   where
     go :: MetaValue -> Either Text Value
     go (MetaMap m) = toJSON <$> traverse go m
