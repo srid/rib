@@ -53,6 +53,7 @@ instance ToHtml OpenGraph where
 -- TODO: Remaining ADT values & sub-fields
 data OGType
   = OGType_Article Article
+  | OGType_Website
   deriving (Eq, Show)
 
 instance ToHtml OGType where
@@ -61,6 +62,8 @@ instance ToHtml OGType where
     OGType_Article article -> do
       metaOg "type" "article"
       toHtml article
+    OGType_Website -> do
+      metaOg "type" "website"
 
 -- TODO: _article_profile :: [Profile]
 data Article
