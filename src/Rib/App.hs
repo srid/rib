@@ -68,11 +68,12 @@ commandParser =
 
 -- | Run Rib using arguments passed in the command line.
 run ::
+  Typeable b =>
   -- | Directory from which source content will be read.
-  Path Rel Dir ->
+  Path b Dir ->
   -- | The path where static files will be generated.  Rib's server uses this
   -- directory when serving files.
-  Path Rel Dir ->
+  Path b Dir ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
@@ -86,7 +87,7 @@ run src dst buildAction = runWith src dst buildAction =<< execParser opts
         )
 
 -- | Like `run` but with an explicitly passed `Command`
-runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> Command -> IO ()
+runWith :: Typeable b => Path b Dir -> Path b Dir -> Action () -> Command -> IO ()
 runWith src dst buildAction ribCmd = do
   when (src == currentRelDir) $
     -- Because otherwise our use of `watchTree` can interfere with Shake's file

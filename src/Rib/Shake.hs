@@ -29,15 +29,15 @@ import Path.IO
 import Relude
 
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
-data RibSettings
+data RibSettings b
   = RibSettings
-      { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir
+      { _ribSettings_inputDir :: Path b Dir,
+        _ribSettings_outputDir :: Path b Dir
       }
   deriving (Typeable)
 
 -- | Get rib settings from a shake Action monad.
-ribSettings :: Action RibSettings
+ribSettings :: Typeable b => Action (RibSettings b)
 ribSettings = getShakeExtra >>= \case
   Just v -> pure v
   Nothing -> fail "RibSettings not initialized"
@@ -94,6 +94,6 @@ writeFileCached !k !s = do
     putInfo $ "+ " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
-getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
+getDirectoryFiles' :: Typeable b => Path b Dir -> [Path Rel File] -> Action [Path Rel File]
 getDirectoryFiles' (toFilePath -> dir) (fmap toFilePath -> pat) =
   traverse (liftIO . parseRelFile) =<< getDirectoryFiles dir pat
