@@ -245,4 +245,6 @@ which adds to the simplicity of the entire thing.
 
 * [open-editions.org](https://github.com/open-editions/open-editions.org) ([running here](https://open-editions.org/)).
 
-* Rib powers the Zettelkasten system [neuron](https://github.com/srid/neuron#neuron), which in turn is used for the author's own website (running at [srid.ca](https://www.srid.ca/)). 
+* Rib powers the Zettelkasten system [neuron](https://github.com/srid/neuron#neuron)
+  * Example: [www.srid.ca](https://www.srid.ca/)
+  * Example: [neuron.srid.ca](https://neuron.srid.ca/)
