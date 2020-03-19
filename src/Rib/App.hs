@@ -23,6 +23,7 @@ import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
 import Path
+import Path.IO (canonicalizePath)
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
@@ -121,18 +122,19 @@ runWith src dst buildAction ribCmd = do
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-      shakeForward (ribShakeOptions fullGen) buildAction
+      settings <- RibSettings <$> canonicalizePath src <*> canonicalizePath dst
+      shakeForward (ribShakeOptions settings fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
         `catch` \(e :: ShakeException) ->
           putStrLn $
             "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
-    ribShakeOptions fullGen =
+    ribShakeOptions settings fullGen =
       shakeOptions
         { shakeVerbosity = Verbose,
           shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
           shakeLintInside = [""],
-          shakeExtra = addShakeExtra (RibSettings src dst) (shakeExtra shakeOptions)
+          shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
     onTreeChange fp f = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
