@@ -31,8 +31,8 @@ import Relude
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
   = RibSettings
-      { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir
+      { _ribSettings_inputDir :: Path Abs Dir,
+        _ribSettings_outputDir :: Path Abs Dir
       }
   deriving (Typeable)
 
@@ -45,13 +45,13 @@ ribSettings = getShakeExtra >>= \case
 -- | Input directory containing source files
 --
 -- This is same as the first argument to `Rib.App.run`
-ribInputDir :: Action (Path Rel Dir)
+ribInputDir :: Action (Path Abs Dir)
 ribInputDir = _ribSettings_inputDir <$> ribSettings
 
 -- Output directory containing generated files
 --
 -- This is same as the second argument to `Rib.App.run`
-ribOutputDir :: Action (Path Rel Dir)
+ribOutputDir :: Action (Path Abs Dir)
 ribOutputDir = do
   output <- _ribSettings_outputDir <$> ribSettings
   liftIO $ createDirIfMissing True output
@@ -94,6 +94,6 @@ writeFileCached !k !s = do
     putInfo $ "+ " <> f
 
 -- | Like `getDirectoryFiles` but works with `Path`
-getDirectoryFiles' :: Path b Dir -> [Path Rel File] -> Action [Path Rel File]
+getDirectoryFiles' :: Typeable b => Path b Dir -> [Path Rel File] -> Action [Path Rel File]
 getDirectoryFiles' (toFilePath -> dir) (fmap toFilePath -> pat) =
   traverse (liftIO . parseRelFile) =<< getDirectoryFiles dir pat
