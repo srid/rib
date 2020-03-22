@@ -194,7 +194,7 @@ nix-shell --run 'ghcid -T ":main serve"'
 simply run `ghcid -T ":main serve"` instead of the above command if you do not wish to
 use Nix.)
 
-Running this command gives you a local HTTP server at http://localhost:8080/
+Running this command gives you a local HTTP server at http://127.0.0.1:8080/
 (serving the generated files) that automatically reloads when either the content
 (`content/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other
 words.
@@ -219,7 +219,7 @@ installed.
    The "serve" subcommand will run the Shake build action passed as argument on 
    every file change and spin up a HTTP server.
    
-Run that command, and visit http://localhost:8080 to view your site.
+Run that command, and visit http://127.0.0.1:8080 to view your site.
 
 ### Editing workflow
 
