@@ -34,5 +34,6 @@ serve port path = do
   where
     app = staticApp $ staticSiteServerSettings path
     settings =
-      Warp.setPort port $
-        Warp.defaultSettings
+      Warp.setHost "127.0.0.1"
+        $ Warp.setPort port
+        $ Warp.defaultSettings
