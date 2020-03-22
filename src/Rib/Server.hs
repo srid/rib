@@ -29,11 +29,12 @@ serve ::
   FilePath ->
   IO ()
 serve port path = do
-  putStrLn $ "[Rib] Serving at http://localhost:" <> show port
+  putStrLn $ "[Rib] Serving at http://" <> show host <> ":" <> show port
   Warp.runSettings settings app
   where
     app = staticApp $ staticSiteServerSettings path
+    host = "127.0.0.1"
     settings =
-      Warp.setHost "127.0.0.1"
+      Warp.setHost host
         $ Warp.setPort port
         $ Warp.defaultSettings
