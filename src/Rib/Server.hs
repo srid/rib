@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 -- | Serve generated static files with HTTP
 module Rib.Server
@@ -29,4 +30,9 @@ serve ::
   IO ()
 serve port path = do
   putStrLn $ "[Rib] Serving at http://localhost:" <> show port
-  Warp.run port $ staticApp $ staticSiteServerSettings path
+  Warp.runSettings settings app
+  where
+    app = staticApp $ staticSiteServerSettings path
+    settings =
+      Warp.setPort port $
+        Warp.defaultSettings
