@@ -11,6 +11,7 @@ in {
 , root ? ribRoot
 , name ? "rib"
 , source-overrides ? {}
+, additional-packages ? _: []
 , ...
 }:
 let
@@ -70,6 +71,8 @@ pkgs.haskellPackages.developPackage {
           [ cabal-install
             ghcid
           ] 
+          # TODO: additional packages should be available in `nix-build` as well.
+          ++ additional-packages pkgs
           # Shake recommends fsatrace, but it requires system configuration on
           # macOS.
           ++ optionals (builtins.currentSystem == "x86_64-linux") [pkgs.fsatrace]
