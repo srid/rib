@@ -11,6 +11,7 @@ in {
 , root ? ribRoot
 , name ? "rib"
 , source-overrides ? {}
+, overrides ? self: super: {}
 , additional-packages ? _: []
 , ...
 }:
@@ -63,7 +64,7 @@ pkgs.haskellPackages.developPackage {
   overrides = self: super: with pkgs.haskell.lib; {
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
     dhall = dontCheck super.dhall;  # Until https://github.com/srid/rib/issues/100
-  };
+  } // (overrides self super);
   modifier = with pkgs.haskell.lib;
     let
       addRibDeps = drv:
