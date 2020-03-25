@@ -72,7 +72,10 @@ pkgs.haskellPackages.developPackage {
           [ cabal-install
             ghcid
           ] 
-          # TODO: additional packages should be available in `nix-build` as well.
+          # Additional packages would be available in `nix-build` as well, only
+          # as long as the built executable references it. When using as a
+          # Haskell library, however, you will have to override the package and
+          # add it to propagateBuildInputs (see neuron for an example).
           ++ additional-packages pkgs
           # Shake recommends fsatrace, but it requires system configuration on
           # macOS.
