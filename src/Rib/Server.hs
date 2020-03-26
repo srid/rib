@@ -27,6 +27,7 @@ staticSiteServerSettings root =
 --
 -- Binds the server to host 127.0.0.1.
 serve ::
+  Typeable b =>
   RibSettings ->
   -- | Port number to bind to
   Int ->
