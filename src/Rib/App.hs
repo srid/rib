@@ -23,12 +23,11 @@ import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
 import Path
-import Path.IO (canonicalizePath)
+import Path.IO
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
 import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
-import System.FilePath (makeRelative)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -123,7 +122,10 @@ runWith src dst buildAction ribCmd = do
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-      settings <- RibSettings <$> canonicalizePath src <*> canonicalizePath dst
+      settings <-
+        RibSettings
+          <$> (makeRelativeToCurrentDir =<< canonicalizePath src)
+          <*> (makeRelativeToCurrentDir =<< canonicalizePath dst)
       shakeForward (ribShakeOptions settings fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
@@ -159,8 +161,8 @@ runWith src dst buildAction ribCmd = do
           f
       where
         logEvent e = do
-          let file = makeRelative (toFilePath src) (eventPath e)
-          putStrLn $ eventLogPrefix e <> " " <> file
+          file <- makeRelativeToCurrentDir =<< parseAbsFile (eventPath e)
+          putStrLn $ eventLogPrefix e <> " " <> toFilePath file
         eventLogPrefix = \case
           -- Single character log prefix to indicate file actions is a convention in Rib.
           Added _ _ _ -> "A"
