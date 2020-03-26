@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -31,8 +32,9 @@ import Relude
 -- | RibSettings is initialized with the values passed to `Rib.App.run`
 data RibSettings
   = RibSettings
-      { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir
+      { _ribSettings_inputDir :: Path Abs Dir,
+        _ribSettings_outputDir :: Path Abs Dir,
+        _ribSettings_workingDir :: Path Abs Dir
       }
   deriving (Typeable)
 
@@ -44,18 +46,23 @@ ribSettings = getShakeExtra >>= \case
 
 -- | Input directory containing source files
 --
--- This is same as the first argument to `Rib.App.run`
+-- This is same as the first argument to `Rib.App.run`, but relative to the
+-- working directory.
 ribInputDir :: Action (Path Rel Dir)
-ribInputDir = _ribSettings_inputDir <$> ribSettings
+ribInputDir = do
+  RibSettings {..} <- ribSettings
+  liftIO $ makeRelative _ribSettings_workingDir _ribSettings_inputDir
 
 -- Output directory containing generated files
 --
--- This is same as the second argument to `Rib.App.run`
+-- This is same as the second argument to `Rib.App.run`, but relative to the
+-- working directory.
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
-  output <- _ribSettings_outputDir <$> ribSettings
-  liftIO $ createDirIfMissing True output
-  return output
+  RibSettings {..} <- ribSettings
+  outputDir <- liftIO $ makeRelative _ribSettings_workingDir _ribSettings_outputDir
+  liftIO $ createDirIfMissing True outputDir
+  return outputDir
 
 -- | Shake action to copy static files as is.
 buildStaticFiles :: [Path Rel File] -> Action ()

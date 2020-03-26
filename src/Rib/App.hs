@@ -25,6 +25,7 @@ import Options.Applicative
 import Path
 import Path.IO
 import Relude
+import Rib.Logging (formatPath)
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
 import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
@@ -118,14 +119,16 @@ runWith src dst buildAction ribCmd = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      onTreeChange src $
+      workDir <- getCurrentDir
+      onTreeChange workDir src $
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
       settings <-
         RibSettings
-          <$> (makeRelativeToCurrentDir =<< canonicalizePath src)
-          <*> (makeRelativeToCurrentDir =<< canonicalizePath dst)
+          <$> makeAbsolute src
+          <*> makeAbsolute dst
+          <*> getCurrentDir
       shakeForward (ribShakeOptions settings fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
@@ -139,7 +142,7 @@ runWith src dst buildAction ribCmd = do
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
-    onTreeChange fp f = do
+    onTreeChange workDir fp f = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
@@ -161,8 +164,9 @@ runWith src dst buildAction ribCmd = do
           f
       where
         logEvent e = do
-          file <- makeRelativeToCurrentDir =<< parseAbsFile (eventPath e)
-          putStrLn $ eventLogPrefix e <> " " <> toFilePath file
+          absFile <- parseAbsFile $ eventPath e
+          file <- formatPath workDir absFile
+          putStrLn $ eventLogPrefix e <> " " <> toString file
         eventLogPrefix = \case
           -- Single character log prefix to indicate file actions is a convention in Rib.
           Added _ _ _ -> "A"
