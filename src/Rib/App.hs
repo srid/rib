@@ -27,8 +27,8 @@ import Path.IO (canonicalizePath)
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.Directory (makeRelativeToCurrentDirectory)
 import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
+import System.FilePath (makeRelative)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -141,14 +141,8 @@ runWith src dst buildAction ribCmd = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
-        let readEvent = do
-              e <- readChan events
-              -- TODO: Ideally make relative to src
-              file <- makeRelativeToCurrentDirectory (eventPath e)
-              putStrLn $
-                "[Rib] "
-                  <> eventDescription e
-                  <> file
+        let readEvent =
+              logEvent =<< readChan events
             debounce millies = do
               -- race the readEvent against the timelimit.
               race readEvent (threadDelay (1000 * millies)) >>= \case
@@ -164,8 +158,12 @@ runWith src dst buildAction ribCmd = do
           debounce 100
           f
       where
-        eventDescription = \case
-          Added _ _ _ -> "File was added: "
-          Modified _ _ _ -> "File was modified: "
-          Removed _ _ _ -> "File was removed: "
-          Unknown _ _ _ -> "Unknown action was performed on file: "
+        logEvent e = do
+          let file = makeRelative (toFilePath src) (eventPath e)
+          putStrLn $ eventLogPrefix e <> " " <> file
+        eventLogPrefix = \case
+          -- Single character log prefix to indicate file actions is a convention in Rib.
+          Added _ _ _ -> "A"
+          Modified _ _ _ -> "M"
+          Removed _ _ _ -> "D"
+          Unknown _ _ _ -> "?"
