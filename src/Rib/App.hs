@@ -16,7 +16,7 @@ module Rib.App
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race_)
+import Control.Concurrent.Async (race_, race)
 import Control.Concurrent.Chan
 import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
@@ -27,7 +27,8 @@ import Path.IO (canonicalizePath)
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.FSNotify (watchTreeChan, withManager)
+import System.Directory (makeRelativeToCurrentDirectory)
+import System.FSNotify (watchTreeChan, withManager, Event(..), eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -140,8 +141,33 @@ runWith src dst buildAction ribCmd = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
+        let
+          readEvent = do
+            e <- readChan events
+            -- TODO: Ideally make relative to src
+            file <- makeRelativeToCurrentDirectory (eventPath e)
+            putStrLn $ "[Rib] "
+              <> eventDescription e
+              <> file
+
+          debounce millies = do
+            -- race the readEvent against the timelimit.
+            race readEvent (threadDelay (1000 * millies)) >>= \case
+              Left () ->
+                -- if the read event finishes first try again.
+                debounce millies
+              Right ()  ->
+                -- otherwise continue
+                return ()
+
         void $ watchTreeChan mgr (toFilePath fp) (const True) events
         forever $ do
-          -- TODO: debounce
-          void $ readChan events
+          readEvent
+          debounce 100
           f
+      where
+        eventDescription = \case
+          Added    _ _ _ -> "File was added: "
+          Modified _ _ _ -> "File was modified: "
+          Removed  _ _ _ -> "File was removed: "
+          Unknown  _ _ _ -> "Unknown action was performed on file: "
