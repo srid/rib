@@ -23,12 +23,11 @@ import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
 import Path
-import Path.IO (canonicalizePath)
+import Path.IO
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
-import System.FilePath (makeRelative)
+import System.FSNotify (Event (..), eventIsDirectory, eventPath, watchTreeChan, withManager)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -70,12 +69,11 @@ commandParser =
 
 -- | Run Rib using arguments passed in the command line.
 run ::
-  Typeable b =>
   -- | Directory from which source content will be read.
-  Path b Dir ->
+  Path Rel Dir ->
   -- | The path where static files will be generated.  Rib's server uses this
   -- directory when serving files.
-  Path b Dir ->
+  Path Rel Dir ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
@@ -89,7 +87,7 @@ run src dst buildAction = runWith src dst buildAction =<< execParser opts
         )
 
 -- | Like `run` but with an explicitly passed `Command`
-runWith :: Typeable b => Path b Dir -> Path b Dir -> Action () -> Command -> IO ()
+runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> Command -> IO ()
 runWith src dst buildAction ribCmd = do
   when (src == currentRelDir) $
     -- Because otherwise our use of `watchTree` can interfere with Shake's file
@@ -119,11 +117,12 @@ runWith src dst buildAction ribCmd = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      onTreeChange src $
+      workDir <- getCurrentDir
+      onTreeChange workDir src $
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-      settings <- RibSettings <$> canonicalizePath src <*> canonicalizePath dst
+      let settings = RibSettings src dst
       shakeForward (ribShakeOptions settings fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
@@ -137,7 +136,7 @@ runWith src dst buildAction ribCmd = do
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
-    onTreeChange fp f = do
+    onTreeChange workDir fp f = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
@@ -159,8 +158,11 @@ runWith src dst buildAction ribCmd = do
           f
       where
         logEvent e = do
-          let file = makeRelative (toFilePath src) (eventPath e)
-          putStrLn $ eventLogPrefix e <> " " <> file
+          eventRelPath <-
+            if eventIsDirectory e
+              then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
+              else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
+          putStrLn $ eventLogPrefix e <> " " <> eventRelPath
         eventLogPrefix = \case
           -- Single character log prefix to indicate file actions is a convention in Rib.
           Added _ _ _ -> "A"

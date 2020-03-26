@@ -16,7 +16,6 @@
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
   - Lucid rendering functions (like `MMark.render`) are now polymorphic in their monad.
   - #122: Fix Pandoc parser never returning metadata
-  - `run` and `runWith` now accept absolute paths (`Path b Dir`).
   - #127: Rib's HTTP server now binds to `127.0.0.1`.
   - default.nix: Takes `overrides` and `additional-packages` as extra arguments
   - #130: Prevent unnecessary re-running of Shake action by debouncing fsnotify events
