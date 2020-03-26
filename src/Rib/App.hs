@@ -25,9 +25,8 @@ import Options.Applicative
 import Path
 import Path.IO
 import Relude
-import Rib.Logging (formatPath)
+import Rib.Logging
 import qualified Rib.Server as Server
-import Rib.Shake (RibSettings (..))
 import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
@@ -104,12 +103,18 @@ runWith src dst buildAction ribCmd = do
     Watch ->
       runShakeAndObserve
     Serve p dw -> do
-      race_ (Server.serve p $ toFilePath dst) $ do
+      settings <- mkRibSettings
+      race_ (Server.serve settings p dst) $ do
         if dw
           then threadDelay maxBound
           else runShakeAndObserve
   where
     currentRelDir = [reldir|.|]
+    mkRibSettings = do
+      RibSettings
+        <$> makeAbsolute src
+        <*> makeAbsolute dst
+        <*> getCurrentDir
     runShakeAndObserve = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
@@ -119,17 +124,14 @@ runWith src dst buildAction ribCmd = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      workDir <- getCurrentDir
-      onTreeChange workDir src $
+      settings <- mkRibSettings
+      onTreeChange settings src $
         runShake False
     runShake fullGen = do
-      putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-      settings <-
-        RibSettings
-          <$> makeAbsolute src
-          <*> makeAbsolute dst
-          <*> getCurrentDir
-      shakeForward (ribShakeOptions settings fullGen) buildAction
+      ribSettings <- mkRibSettings
+      srcP <- prettyPrintPathDir ribSettings src
+      putStrLn $ "[Rib] Generating " <> toString srcP <> " (full=" <> show fullGen <> ")"
+      shakeForward (ribShakeOptions ribSettings fullGen) buildAction
         -- Gracefully handle any exceptions when running Shake actions. We want
         -- Rib to keep running instead of crashing abruptly.
         `catch` \(e :: ShakeException) ->
@@ -142,8 +144,9 @@ runWith src dst buildAction ribCmd = do
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
-    onTreeChange workDir fp f = do
-      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
+    onTreeChange ribSettings fp f = do
+      srcP <- prettyPrintPathDir ribSettings src
+      putStrLn $ "[Rib] Watching " <> toString srcP <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
         let readEvent =
@@ -165,7 +168,7 @@ runWith src dst buildAction ribCmd = do
       where
         logEvent e = do
           absFile <- parseAbsFile $ eventPath e
-          file <- formatPath workDir absFile
+          file <- prettyPrintPathFile ribSettings absFile
           putStrLn $ eventLogPrefix e <> " " <> toString file
         eventLogPrefix = \case
           -- Single character log prefix to indicate file actions is a convention in Rib.

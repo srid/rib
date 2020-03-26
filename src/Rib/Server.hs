@@ -9,7 +9,9 @@ where
 
 import Network.Wai.Application.Static (defaultFileServerSettings, ssListing, staticApp)
 import qualified Network.Wai.Handler.Warp as Warp
+import Path
 import Relude
+import Rib.Logging
 import WaiAppStatic.Types (StaticSettings)
 
 -- | WAI Settings suited for serving statically generated websites.
@@ -25,16 +27,18 @@ staticSiteServerSettings root =
 --
 -- Binds the server to host 127.0.0.1.
 serve ::
+  RibSettings ->
   -- | Port number to bind to
   Int ->
   -- | Directory to serve.
-  FilePath ->
+  Path b Dir ->
   IO ()
-serve port path = do
-  putStrLn $ "[Rib] Serving " <> path <> " at http://" <> host <> ":" <> show port
+serve ribSettings port path = do
+  pathS <- prettyPrintPathDir ribSettings path
+  putStrLn $ "[Rib] Serving " <> toString pathS <> " at http://" <> host <> ":" <> show port
   Warp.runSettings settings app
   where
-    app = staticApp $ staticSiteServerSettings path
+    app = staticApp $ staticSiteServerSettings $ toFilePath path
     host = "127.0.0.1"
     settings =
       Warp.setHost (fromString host)
