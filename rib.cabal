@@ -54,6 +54,7 @@ library
         exceptions,
         foldl,
         fsnotify >=0.3.0 && <0.4,
+        filepath,
         lucid >=2.9.11 && <2.10,
         megaparsec >= 8.0,
         mmark >= 0.0.7.2,

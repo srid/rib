@@ -16,7 +16,7 @@ module Rib.App
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race_)
+import Control.Concurrent.Async (race, race_)
 import Control.Concurrent.Chan
 import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
@@ -27,7 +27,8 @@ import Path.IO (canonicalizePath)
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.FSNotify (watchTreeChan, withManager)
+import System.FSNotify (Event (..), eventPath, watchTreeChan, withManager)
+import System.FilePath (makeRelative)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -140,8 +141,29 @@ runWith src dst buildAction ribCmd = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       withManager $ \mgr -> do
         events <- newChan
+        let readEvent =
+              logEvent =<< readChan events
+            debounce millies = do
+              -- race the readEvent against the timelimit.
+              race readEvent (threadDelay (1000 * millies)) >>= \case
+                Left () ->
+                  -- if the read event finishes first try again.
+                  debounce millies
+                Right () ->
+                  -- otherwise continue
+                  return ()
         void $ watchTreeChan mgr (toFilePath fp) (const True) events
         forever $ do
-          -- TODO: debounce
-          void $ readChan events
+          readEvent
+          debounce 100
           f
+      where
+        logEvent e = do
+          let file = makeRelative (toFilePath src) (eventPath e)
+          putStrLn $ eventLogPrefix e <> " " <> file
+        eventLogPrefix = \case
+          -- Single character log prefix to indicate file actions is a convention in Rib.
+          Added _ _ _ -> "A"
+          Modified _ _ _ -> "M"
+          Removed _ _ _ -> "D"
+          Unknown _ _ _ -> "?"

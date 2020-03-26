@@ -18,6 +18,8 @@
   - #122: Fix Pandoc parser never returning metadata
   - `run` and `runWith` now accept absolute paths (`Path b Dir`).
   - #127: Rib's HTTP server now binds to `127.0.0.1`.
+  - default.nix: Takes `overrides` and `additional-packages` as extra arguments
+  - #130: Prevent unnecessary re-running of Shake action by debouncing fsnotify events
 
 ## 0.7.0.0
 

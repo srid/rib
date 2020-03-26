@@ -11,6 +11,8 @@ in {
 , root ? ribRoot
 , name ? "rib"
 , source-overrides ? {}
+, overrides ? self: super: {}
+, additional-packages ? _: []
 , ...
 }:
 let
@@ -62,7 +64,7 @@ pkgs.haskellPackages.developPackage {
   overrides = self: super: with pkgs.haskell.lib; {
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
     dhall = dontCheck super.dhall;  # Until https://github.com/srid/rib/issues/100
-  };
+  } // (overrides self super);
   modifier = with pkgs.haskell.lib;
     let
       addRibDeps = drv:
@@ -70,6 +72,11 @@ pkgs.haskellPackages.developPackage {
           [ cabal-install
             ghcid
           ] 
+          # Additional packages would be available in `nix-build` as well, only
+          # as long as the built executable references it. When using as a
+          # Haskell library, however, you will have to override the package and
+          # add it to propagateBuildInputs (see neuron for an example).
+          ++ additional-packages pkgs
           # Shake recommends fsatrace, but it requires system configuration on
           # macOS.
           ++ optionals (builtins.currentSystem == "x86_64-linux") [pkgs.fsatrace]
