@@ -6,9 +6,7 @@
 
 -- | Logging utilities
 module Rib.Logging
-  ( -- * Basic
-    formatPath,
-    prettyPrintPathFile,
+  ( prettyPrintPathFile,
     prettyPrintPathDir,
     RibSettings (..),
   )
@@ -28,20 +26,16 @@ data RibSettings
       }
   deriving (Typeable)
 
-prettyPrintPathFile :: MonadThrow m => RibSettings -> Path b File -> m Text
-prettyPrintPathFile RibSettings {..} fp =
-  toText . toFilePath <$> makeRelative _ribSettings_workingDir fp
+prettyPrintPathFile :: (MonadIO m, MonadThrow m) => RibSettings -> Path b File -> m Text
+prettyPrintPathFile RibSettings {..} fp = do
+  fpAbs <- makeAbsolute fp
+  if (toFilePath _ribSettings_workingDir) `isPrefixOf` (toFilePath fpAbs)
+    then toText . toFilePath <$> makeRelative _ribSettings_workingDir fp
+    else toText . toFilePath <$> pure fp
 
-prettyPrintPathDir :: MonadThrow m => RibSettings -> Path b Dir -> m Text
-prettyPrintPathDir RibSettings {..} fp =
-  toText . toFilePath <$> makeRelative _ribSettings_workingDir fp
-
--- | Format a file path before printing it to the user
---
--- Returns the relative path to the base directory.
---
--- TODO: If the path is under the given base directory, return it as relative
--- to that base. Otherwise return the absolute path.
-formatPath :: MonadThrow m => Path Abs Dir -> Path b File -> m Text
-formatPath baseDir fp =
-  toText . toFilePath <$> makeRelative baseDir fp
+prettyPrintPathDir :: (MonadIO m, MonadThrow m) => RibSettings -> Path b Dir -> m Text
+prettyPrintPathDir RibSettings {..} fp = do
+  fpAbs <- makeAbsolute fp
+  if (toFilePath _ribSettings_workingDir) `isPrefixOf` (toFilePath fpAbs)
+    then toText . toFilePath <$> makeRelative _ribSettings_workingDir fp
+    else toText . toFilePath <$> pure fp

@@ -39,19 +39,17 @@ ribSettings = getShakeExtra >>= \case
 --
 -- This is same as the first argument to `Rib.App.run`, but relative to the
 -- working directory.
-ribInputDir :: Action (Path Rel Dir)
-ribInputDir = do
-  RibSettings {..} <- ribSettings
-  liftIO $ makeRelative _ribSettings_workingDir _ribSettings_inputDir
+ribInputDir :: Action (Path Abs Dir)
+ribInputDir =
+  _ribSettings_inputDir <$> ribSettings
 
 -- Output directory containing generated files
 --
 -- This is same as the second argument to `Rib.App.run`, but relative to the
 -- working directory.
-ribOutputDir :: Action (Path Rel Dir)
+ribOutputDir :: Action (Path Abs Dir)
 ribOutputDir = do
-  RibSettings {..} <- ribSettings
-  outputDir <- liftIO $ makeRelative _ribSettings_workingDir _ribSettings_outputDir
+  outputDir <- _ribSettings_outputDir <$> ribSettings
   liftIO $ createDirIfMissing True outputDir
   return outputDir
 
