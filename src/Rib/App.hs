@@ -22,10 +22,12 @@ import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
 import Path
+import Path.IO
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
 import Rib.Watch (onTreeChange)
+import System.FSNotify (Event (..), eventIsDirectory, eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -116,7 +118,9 @@ runWith src dst buildAction ribCmd = do
       runShake True
       -- And then every time a file changes under the current directory
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      onTreeChange src $ \_events ->
+      workDir <- getCurrentDir
+      onTreeChange src $ \events -> do
+        logEvent workDir `mapM_` events
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
@@ -135,3 +139,15 @@ runWith src dst buildAction ribCmd = do
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
+    logEvent workDir e = do
+      eventRelPath <-
+        if eventIsDirectory e
+          then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
+          else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
+      putStrLn $ eventLogPrefix e <> " " <> eventRelPath
+    eventLogPrefix = \case
+      -- Single character log prefix to indicate file actions is a convention in Rib.
+      Added _ _ _ -> "A"
+      Modified _ _ _ -> "M"
+      Removed _ _ _ -> "D"
+      Unknown _ _ _ -> "?"
