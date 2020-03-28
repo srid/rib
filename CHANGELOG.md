@@ -20,6 +20,7 @@
   - Allow directory listings in HTTP server
   - default.nix: Takes `overrides` and `additional-packages` as extra arguments
   - #130: Prevent unnecessary re-running of Shake action by debouncing fsnotify events
+  - #136: Move `.shake` database directory under `ribInputDir`
 
 ## 0.7.0.0
 
