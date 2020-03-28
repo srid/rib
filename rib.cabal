@@ -25,6 +25,7 @@ library
     exposed-modules:
         Rib
         Rib.App
+        Rib.Watch
         Rib.Parser.Dhall
         Rib.Parser.MMark
         Rib.Parser.Pandoc

@@ -16,18 +16,16 @@ module Rib.App
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race, race_)
-import Control.Concurrent.Chan
+import Control.Concurrent.Async (race_)
 import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
 import Path
-import Path.IO
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.FSNotify (Event (..), eventIsDirectory, eventPath, watchTreeChan, withManager)
+import Rib.Watch (onTreeChange)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -117,8 +115,8 @@ runWith src dst buildAction ribCmd = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      workDir <- getCurrentDir
-      onTreeChange workDir src $
+      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
+      onTreeChange src $ \_events ->
         runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
@@ -132,40 +130,8 @@ runWith src dst buildAction ribCmd = do
     ribShakeOptions settings fullGen =
       shakeOptions
         { shakeVerbosity = Verbose,
+          shakeFiles = toFilePath $ src </> [reldir|.shake|],
           shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
-    onTreeChange workDir fp f = do
-      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      withManager $ \mgr -> do
-        events <- newChan
-        let readEvent =
-              logEvent =<< readChan events
-            debounce millies = do
-              -- race the readEvent against the timelimit.
-              race readEvent (threadDelay (1000 * millies)) >>= \case
-                Left () ->
-                  -- if the read event finishes first try again.
-                  debounce millies
-                Right () ->
-                  -- otherwise continue
-                  return ()
-        void $ watchTreeChan mgr (toFilePath fp) (const True) events
-        forever $ do
-          readEvent
-          debounce 100
-          f
-      where
-        logEvent e = do
-          eventRelPath <-
-            if eventIsDirectory e
-              then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
-              else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
-          putStrLn $ eventLogPrefix e <> " " <> eventRelPath
-        eventLogPrefix = \case
-          -- Single character log prefix to indicate file actions is a convention in Rib.
-          Added _ _ _ -> "A"
-          Modified _ _ _ -> "M"
-          Removed _ _ _ -> "D"
-          Unknown _ _ _ -> "?"
