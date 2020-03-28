@@ -108,6 +108,10 @@ runWith src dst buildAction ribCmd = do
           else runShakeAndObserve
   where
     currentRelDir = [reldir|.|]
+    -- Keep shake database directory under the src directory instead of the
+    -- (default) current working directory, which may not always be a project
+    -- root (as in the case of neuron).
+    shakeDatabaseDir :: Path Rel Dir = src </> [reldir|.shake|]
     runShakeAndObserve = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
@@ -118,10 +122,7 @@ runWith src dst buildAction ribCmd = do
       runShake True
       -- And then every time a file changes under the current directory
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      workDir <- getCurrentDir
-      onTreeChange src $ \events -> do
-        logEvent workDir `mapM_` events
-        runShake False
+      onSrcChange $ runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
       let settings = RibSettings src dst
@@ -134,11 +135,21 @@ runWith src dst buildAction ribCmd = do
     ribShakeOptions settings fullGen =
       shakeOptions
         { shakeVerbosity = Verbose,
-          shakeFiles = toFilePath $ src </> [reldir|.shake|],
+          shakeFiles = toFilePath shakeDatabaseDir,
           shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
+    onSrcChange f = do
+      workDir <- getCurrentDir
+      -- Ignore changes to the shake database directory, which is kept under src.
+      ignoreDir <- makeAbsolute shakeDatabaseDir
+      onTreeChange src $ \allEvents -> do
+        let events = filter (not . (toFilePath ignoreDir `isPrefixOf`) . eventPath) allEvents
+        unless (null events) $ do
+          -- Log the changed events for diagnosis.
+          logEvent workDir `mapM_` events
+          f
     logEvent workDir e = do
       eventRelPath <-
         if eventIsDirectory e
