@@ -16,8 +16,7 @@ module Rib.App
 where
 
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race, race_)
-import Control.Concurrent.Chan
+import Control.Concurrent.Async (race_)
 import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
@@ -27,7 +26,8 @@ import Path.IO
 import Relude
 import qualified Rib.Server as Server
 import Rib.Shake (RibSettings (..))
-import System.FSNotify (Event (..), eventIsDirectory, eventPath, watchTreeChan, withManager)
+import Rib.Watch (onTreeChange)
+import System.FSNotify (Event (..), eventIsDirectory, eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
@@ -108,6 +108,10 @@ runWith src dst buildAction ribCmd = do
           else runShakeAndObserve
   where
     currentRelDir = [reldir|.|]
+    -- Keep shake database directory under the src directory instead of the
+    -- (default) current working directory, which may not always be a project
+    -- root (as in the case of neuron).
+    shakeDatabaseDir :: Path Rel Dir = src </> [reldir|.shake|]
     runShakeAndObserve = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
@@ -117,9 +121,8 @@ runWith src dst buildAction ribCmd = do
       -- flag to disable this.
       runShake True
       -- And then every time a file changes under the current directory
-      workDir <- getCurrentDir
-      onTreeChange workDir src $
-        runShake False
+      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
+      onSrcChange $ runShake False
     runShake fullGen = do
       putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
       let settings = RibSettings src dst
@@ -132,40 +135,30 @@ runWith src dst buildAction ribCmd = do
     ribShakeOptions settings fullGen =
       shakeOptions
         { shakeVerbosity = Verbose,
+          shakeFiles = toFilePath shakeDatabaseDir,
           shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
-    onTreeChange workDir fp f = do
-      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      withManager $ \mgr -> do
-        events <- newChan
-        let readEvent =
-              logEvent =<< readChan events
-            debounce millies = do
-              -- race the readEvent against the timelimit.
-              race readEvent (threadDelay (1000 * millies)) >>= \case
-                Left () ->
-                  -- if the read event finishes first try again.
-                  debounce millies
-                Right () ->
-                  -- otherwise continue
-                  return ()
-        void $ watchTreeChan mgr (toFilePath fp) (const True) events
-        forever $ do
-          readEvent
-          debounce 100
+    onSrcChange f = do
+      workDir <- getCurrentDir
+      -- Ignore changes to the shake database directory, which is kept under src.
+      ignoreDir <- makeAbsolute shakeDatabaseDir
+      onTreeChange src $ \allEvents -> do
+        let events = filter (not . (toFilePath ignoreDir `isPrefixOf`) . eventPath) allEvents
+        unless (null events) $ do
+          -- Log the changed events for diagnosis.
+          logEvent workDir `mapM_` events
           f
-      where
-        logEvent e = do
-          eventRelPath <-
-            if eventIsDirectory e
-              then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
-              else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
-          putStrLn $ eventLogPrefix e <> " " <> eventRelPath
-        eventLogPrefix = \case
-          -- Single character log prefix to indicate file actions is a convention in Rib.
-          Added _ _ _ -> "A"
-          Modified _ _ _ -> "M"
-          Removed _ _ _ -> "D"
-          Unknown _ _ _ -> "?"
+    logEvent workDir e = do
+      eventRelPath <-
+        if eventIsDirectory e
+          then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
+          else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
+      putStrLn $ eventLogPrefix e <> " " <> eventRelPath
+    eventLogPrefix = \case
+      -- Single character log prefix to indicate file actions is a convention in Rib.
+      Added _ _ _ -> "A"
+      Modified _ _ _ -> "M"
+      Removed _ _ _ -> "D"
+      Unknown _ _ _ -> "?"
