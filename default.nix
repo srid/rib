@@ -20,7 +20,7 @@ let
   optionals = pkgs.lib.lists.optionals;
   githubRepo = fq: rev:
     builtins.fetchTarball ("https://github.com/" + fq + "/archive/" + rev + ".tar.gz");
-  dhallSrc = githubRepo "dhall-lang/dhall-haskell" "8761fab";
+  dhallSrc = githubRepo "dhall-lang/dhall-haskell" "63ee183";
   dsumSrc = githubRepo "mokus0/dependent-sum" "5ab6d81";
   prettyprinterSrc = githubRepo "quchen/prettyprinter" "320538b";
 in
