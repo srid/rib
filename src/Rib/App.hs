@@ -142,10 +142,12 @@ runWith src dst buildAction ribCmd = do
         }
     onSrcChange f = do
       workDir <- getCurrentDir
-      -- Ignore changes to the shake database directory, which is kept under src.
-      ignoreDir <- makeAbsolute shakeDatabaseDir
+      -- Top-level directories to ignore from notifications
+      dirBlacklist <- traverse makeAbsolute [shakeDatabaseDir, src </> [reldir|.git|]]
+      let isBlacklisted :: FilePath -> Bool
+          isBlacklisted p = or $ flip fmap dirBlacklist $ \b -> toFilePath b `isPrefixOf` p
       onTreeChange src $ \allEvents -> do
-        let events = filter (not . (toFilePath ignoreDir `isPrefixOf`) . eventPath) allEvents
+        let events = filter (not . isBlacklisted . eventPath) allEvents
         unless (null events) $ do
           -- Log the changed events for diagnosis.
           logEvent workDir `mapM_` events
