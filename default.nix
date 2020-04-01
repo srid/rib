@@ -62,6 +62,7 @@ pkgs.haskellPackages.developPackage {
     some = githubRepo "phadej/some" "7e2a9ef5352097954a3a416a5ef12bc35b0d53db"; # "1998df3";
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
+    clay = dontCheck super.clay;    # Might fail on Windows Subsystem for Linux
     shake = dontCheck super.shake;  # Tests fail on 0.18.5
     dhall = dontCheck super.dhall;  # Until https://github.com/srid/rib/issues/100
   } // (overrides self super);
