@@ -59,7 +59,7 @@ library
         lucid >=2.9.11 && <2.10,
         megaparsec >= 8.0,
         mmark >= 0.0.7.2,
-        mmark-ext,
+        mmark-ext >= 0.2.1.0,
         modern-uri,
         mtl >=2.2.2 && <2.3,
         optparse-applicative >= 0.15,

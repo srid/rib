@@ -7,6 +7,7 @@
   - pandoc-include-code: 0.5.0.0
   - pandoc-types: 1.20
   - dhall: 1.30
+  - clay: 0.13.3 (This is a downgrade, as 0.14 is not released yet)
 - New features:
   - API exposes the CLI parser (`optparse-applicative`) for user-level composition
   - Add `Rib.Extra.OpenGraph` for Open Graph protocol
