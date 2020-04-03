@@ -94,7 +94,7 @@ runWith src dst buildAction ribCmd = do
     -- scaning.
     fail "cannot use '.' as source directory."
   -- For saner output
-  hSetBuffering stdout LineBuffering
+  flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
   case ribCmd of
     Generate fullGen ->
       -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
