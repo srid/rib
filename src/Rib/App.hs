@@ -32,7 +32,10 @@ import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
 data Command
-  = -- | Generate static files once.
+  = -- Run an one-off generation with silent logging
+    -- TODO: Eventually replace this with proper logging mechanism.
+    OneOff
+  | -- | Generate the site once.
     Generate
       { -- | Force a full generation of /all/ files even if they were not modified
         full :: Bool
@@ -96,9 +99,11 @@ runWith src dst buildAction ribCmd = do
   -- For saner output
   flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
   case ribCmd of
+    OneOff ->
+      runShake False buildAction
     Generate fullGen ->
       -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
-      runShake fullGen
+      runShakeBuild fullGen
     Watch ->
       runShakeAndObserve
     Serve p dw -> do
@@ -119,15 +124,16 @@ runWith src dst buildAction ribCmd = do
       -- by being part of the binary. In this scenario, we should not do full
       -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
       -- flag to disable this.
-      runShake True
+      runShakeBuild True
       -- And then every time a file changes under the current directory
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      onSrcChange $ runShake False
-    runShake fullGen = do
+      onSrcChange $ runShakeBuild False
+    runShakeBuild fullGen = do
+      runShake fullGen $ do
+        putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
+        buildAction
+    runShake fullGen shakeAction = do
       let settings = RibSettings src dst
-          shakeAction = do
-            putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-            buildAction
       shakeForward (ribShakeOptions settings fullGen) shakeAction
         `catch` handleShakeException
     handleShakeException (e :: ShakeException) =
