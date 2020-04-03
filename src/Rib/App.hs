@@ -124,9 +124,11 @@ runWith src dst buildAction ribCmd = do
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
       onSrcChange $ runShake False
     runShake fullGen = do
-      putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
       let settings = RibSettings src dst
-      shakeForward (ribShakeOptions settings fullGen) buildAction
+          shakeAction = do
+            putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
+            buildAction
+      shakeForward (ribShakeOptions settings fullGen) shakeAction
         `catch` handleShakeException
     handleShakeException (e :: ShakeException) =
       -- Gracefully handle any exceptions when running Shake actions. We want
