@@ -98,50 +98,57 @@ runWith src dst buildAction ribCmd = do
     fail "cannot use '.' as source directory."
   -- For saner output
   flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
+  let ribSettings =
+        case ribCmd of
+          OneOff ->
+            RibSettings src dst Verbose False
+          Generate fullGen ->
+            RibSettings src dst Verbose fullGen
+          _ ->
+            RibSettings src dst Verbose False
   case ribCmd of
     OneOff ->
-      runShake False buildAction
-    Generate fullGen ->
+      runShake ribSettings buildAction
+    Generate _ ->
       -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
-      runShakeBuild fullGen
+      runShakeBuild ribSettings
     Watch ->
-      runShakeAndObserve
+      runShakeAndObserve ribSettings
     Serve p dw -> do
       race_ (Server.serve p $ toFilePath dst) $ do
         if dw
           then threadDelay maxBound
-          else runShakeAndObserve
+          else runShakeAndObserve ribSettings
   where
     currentRelDir = [reldir|.|]
     -- Keep shake database directory under the src directory instead of the
     -- (default) current working directory, which may not always be a project
     -- root (as in the case of neuron).
     shakeDatabaseDir :: Path Rel Dir = src </> [reldir|.shake|]
-    runShakeAndObserve = do
+    runShakeAndObserve ribSettings = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
       -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
       -- by being part of the binary. In this scenario, we should not do full
       -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
       -- flag to disable this.
-      runShakeBuild True
+      runShakeBuild $ ribSettings {_ribSettings_fullGen = True}
       -- And then every time a file changes under the current directory
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      onSrcChange $ runShakeBuild False
-    runShakeBuild fullGen = do
-      runShake fullGen $ do
-        putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
+      onSrcChange $ runShakeBuild ribSettings
+    runShakeBuild ribSettings = do
+      runShake ribSettings $ do
+        putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show (_ribSettings_fullGen ribSettings) <> ")"
         buildAction
-    runShake fullGen shakeAction = do
-      let settings :: RibSettings = RibSettings src dst Verbose fullGen
-      shakeForward (ribShakeOptions settings) shakeAction
+    runShake ribSettings shakeAction = do
+      shakeForward (shakeOptionsFrom ribSettings) shakeAction
         `catch` handleShakeException
     handleShakeException (e :: ShakeException) =
       -- Gracefully handle any exceptions when running Shake actions. We want
       -- Rib to keep running instead of crashing abruptly.
       putStrLn $
         "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
-    ribShakeOptions settings =
+    shakeOptionsFrom settings =
       shakeOptions
         { shakeVerbosity = _ribSettings_verbosity settings,
           shakeFiles = toFilePath shakeDatabaseDir,
