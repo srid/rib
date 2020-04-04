@@ -12,6 +12,7 @@ module Rib.Settings
   )
 where
 
+import Development.Shake (Verbosity)
 import Path
 import Relude
 
@@ -19,6 +20,10 @@ import Relude
 data RibSettings
   = RibSettings
       { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir
+        _ribSettings_outputDir :: Path Rel Dir,
+        _ribSettings_verbosity :: Verbosity,
+        -- | Whether we must try to generate all files even if they have not
+        -- been modified since last generation.
+        _ribSettings_fullGen :: Bool
       }
   deriving (Typeable)

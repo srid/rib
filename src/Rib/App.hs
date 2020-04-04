@@ -133,19 +133,19 @@ runWith src dst buildAction ribCmd = do
         putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
         buildAction
     runShake fullGen shakeAction = do
-      let settings = RibSettings src dst
-      shakeForward (ribShakeOptions settings fullGen) shakeAction
+      let settings :: RibSettings = RibSettings src dst Verbose fullGen
+      shakeForward (ribShakeOptions settings) shakeAction
         `catch` handleShakeException
     handleShakeException (e :: ShakeException) =
       -- Gracefully handle any exceptions when running Shake actions. We want
       -- Rib to keep running instead of crashing abruptly.
       putStrLn $
         "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
-    ribShakeOptions settings fullGen =
+    ribShakeOptions settings =
       shakeOptions
-        { shakeVerbosity = Verbose,
+        { shakeVerbosity = _ribSettings_verbosity settings,
           shakeFiles = toFilePath shakeDatabaseDir,
-          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+          shakeRebuild = bool [] [(RebuildNow, "**")] (_ribSettings_fullGen settings),
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
