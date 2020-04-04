@@ -101,7 +101,7 @@ runWith src dst buildAction ribCmd = do
   let ribSettings =
         case ribCmd of
           OneOff ->
-            RibSettings src dst Verbose False
+            RibSettings src dst Silent False
           Generate fullGen ->
             RibSettings src dst Verbose fullGen
           _ ->
