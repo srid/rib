@@ -31,6 +31,7 @@ library
         Rib.Parser.Pandoc
         Rib.Route
         Rib.Shake
+        Rib.Settings
         Rib.Extra.CSS
         Rib.Extra.OpenGraph
     other-modules:

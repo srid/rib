@@ -16,7 +16,6 @@ module Rib.Shake
     writeFileCached,
 
     -- * Misc
-    RibSettings (..),
     ribInputDir,
     ribOutputDir,
     getDirectoryFiles',
@@ -27,14 +26,7 @@ import Development.Shake
 import Path
 import Path.IO
 import Relude
-
--- | RibSettings is initialized with the values passed to `Rib.App.run`
-data RibSettings
-  = RibSettings
-      { _ribSettings_inputDir :: Path Rel Dir,
-        _ribSettings_outputDir :: Path Rel Dir
-      }
-  deriving (Typeable)
+import Rib.Settings
 
 -- | Get rib settings from a shake Action monad.
 ribSettings :: Action RibSettings

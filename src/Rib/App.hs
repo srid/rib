@@ -25,7 +25,7 @@ import Path
 import Path.IO
 import Relude
 import qualified Rib.Server as Server
-import Rib.Shake (RibSettings (..))
+import Rib.Settings (RibSettings (..))
 import Rib.Watch (onTreeChange)
 import System.FSNotify (Event (..), eventIsDirectory, eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
