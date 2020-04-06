@@ -25,14 +25,17 @@ import Path
 import Path.IO
 import Relude
 import qualified Rib.Server as Server
-import Rib.Shake (RibSettings (..))
+import Rib.Settings (RibSettings (..))
 import Rib.Watch (onTreeChange)
 import System.FSNotify (Event (..), eventIsDirectory, eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Rib CLI commands
 data Command
-  = -- | Generate static files once.
+  = -- Run an one-off generation with silent logging
+    -- TODO: Eventually replace this with proper logging mechanism.
+    OneOff
+  | -- | Generate the site once.
     Generate
       { -- | Force a full generation of /all/ files even if they were not modified
         full :: Bool
@@ -94,49 +97,62 @@ runWith src dst buildAction ribCmd = do
     -- scaning.
     fail "cannot use '.' as source directory."
   -- For saner output
-  hSetBuffering stdout LineBuffering
+  flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
+  let ribSettings =
+        case ribCmd of
+          OneOff ->
+            RibSettings src dst Silent False
+          Generate fullGen ->
+            RibSettings src dst Verbose fullGen
+          _ ->
+            RibSettings src dst Verbose False
   case ribCmd of
-    Generate fullGen ->
+    OneOff ->
+      runShake ribSettings buildAction
+    Generate _ ->
       -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
-      runShake fullGen
+      runShakeBuild ribSettings
     Watch ->
-      runShakeAndObserve
+      runShakeAndObserve ribSettings
     Serve p dw -> do
       race_ (Server.serve p $ toFilePath dst) $ do
         if dw
           then threadDelay maxBound
-          else runShakeAndObserve
+          else runShakeAndObserve ribSettings
   where
     currentRelDir = [reldir|.|]
     -- Keep shake database directory under the src directory instead of the
     -- (default) current working directory, which may not always be a project
     -- root (as in the case of neuron).
     shakeDatabaseDir :: Path Rel Dir = src </> [reldir|.shake|]
-    runShakeAndObserve = do
+    runShakeAndObserve ribSettings = do
       -- Begin with a *full* generation as the HTML layout may have been changed.
       -- TODO: This assumption is not true when running the program from compiled
       -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
       -- by being part of the binary. In this scenario, we should not do full
       -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
       -- flag to disable this.
-      runShake True
+      runShakeBuild $ ribSettings {_ribSettings_fullGen = True}
       -- And then every time a file changes under the current directory
       putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      onSrcChange $ runShake False
-    runShake fullGen = do
-      putStrLn $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show fullGen <> ")"
-      let settings = RibSettings src dst
-      shakeForward (ribShakeOptions settings fullGen) buildAction
-        -- Gracefully handle any exceptions when running Shake actions. We want
-        -- Rib to keep running instead of crashing abruptly.
-        `catch` \(e :: ShakeException) ->
-          putStrLn $
-            "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
-    ribShakeOptions settings fullGen =
+      onSrcChange $ runShakeBuild ribSettings
+    runShakeBuild ribSettings = do
+      runShake ribSettings $ do
+        putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show (_ribSettings_fullGen ribSettings) <> ")"
+        buildAction
+    runShake ribSettings shakeAction = do
+      shakeForward (shakeOptionsFrom ribSettings) shakeAction
+        `catch` handleShakeException
+    handleShakeException (e :: ShakeException) =
+      -- Gracefully handle any exceptions when running Shake actions. We want
+      -- Rib to keep running instead of crashing abruptly.
+      putStrLn $
+        "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
+    shakeOptionsFrom settings =
       shakeOptions
-        { shakeVerbosity = Verbose,
+        { shakeVerbosity = _ribSettings_verbosity settings,
           shakeFiles = toFilePath shakeDatabaseDir,
-          shakeRebuild = bool [] [(RebuildNow, "**")] fullGen,
+          shakeRebuild = bool [] [(RebuildNow, "**")] (_ribSettings_fullGen settings),
           shakeLintInside = [""],
           shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
         }
