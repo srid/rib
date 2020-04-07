@@ -12,6 +12,7 @@ module Rib.App
     commandParser,
     run,
     runWith,
+    runConfig,
   )
 where
 
@@ -82,6 +83,30 @@ run src dst buildAction = runWith src dst buildAction =<< execParser opts
     opts =
       info
         (commandParser <**> helper)
+        ( fullDesc
+            <> progDesc "Rib static site generator CLI"
+        )
+
+-- | Run Rib using arguments passed in the command line, enabling the 
+-- user to add their own config.
+runConfig ::
+  -- | Directory from which source content will be read.
+  Path Rel Dir ->
+  -- | The path where static files will be generated.  Rib's server uses this
+  -- directory when serving files.
+  Path Rel Dir ->
+  -- | A parser of a config file
+  Parser c -> 
+  -- | Shake build rules for building the static site
+  (c -> Action ()) ->
+  IO ()
+runConfig src dst configParser buildAction = do 
+  (cfg, _cmd) <- execParser opts
+  runWith src dst (buildAction cfg) _cmd
+  where
+    opts =
+      info
+        (((,) <$> configParser <*> commandParser) <**> helper)
         ( fullDesc
             <> progDesc "Rib static site generator CLI"
         )
