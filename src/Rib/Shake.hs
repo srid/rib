@@ -40,7 +40,7 @@ ribSettings = getShakeExtra >>= \case
 ribInputDir :: Action (Path Rel Dir)
 ribInputDir = _ribSettings_inputDir <$> ribSettings
 
--- Output directory containing generated files
+-- | Output directory where files are generated
 --
 -- This is same as the second argument to `Rib.App.run`
 ribOutputDir :: Action (Path Rel Dir)
@@ -72,7 +72,7 @@ forEvery pats f = do
   fs <- getDirectoryFiles' input pats
   forP fs f
 
--- | Write the given file unless it has not changed.
+-- | Write the given file but only when it has been modified.
 --
 -- Also, always writes under ribOutputDir
 writeFileCached :: Path Rel File -> String -> Action ()

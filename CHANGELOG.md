@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## 0.8.0.0 (UNRELEASED)
+## 0.8.0.0
 
 - Dependency upgrades
   - GHC 8.8
@@ -10,19 +10,19 @@
   - clay: 0.13.3 (This is a downgrade, as 0.14 is not released yet)
 - New features:
   - API exposes the CLI parser (`optparse-applicative`) for user-level composition
-  - Add `Rib.Extra.OpenGraph` for Open Graph protocol
   - Add `Rib.Parser.Pandoc.getToC` returning rendered Table of contents for a Pandoc document
   - Add `Rib.Parser.MMark.getFirstParagraphText`
-  - `Rib.Extra.CSS`: add `googleFonts` and `stylesheet`
+  - Add `Rib.Extra.OpenGraph` for Open Graph protocol
+  - Add to `Rib.Extra.CSS`, `googleFonts` and `stylesheet`
 - Bug fixes and misc changes:
   - `routeUrl`: Fix incorrect substitution of "foo-index.html" with "foo-"
   - Lucid rendering functions (like `MMark.render`) are now polymorphic in their monad.
   - #122: Fix Pandoc parser never returning metadata
   - #127: Rib's HTTP server now binds to `127.0.0.1`.
   - Allow directory listings in HTTP server
-  - default.nix: Takes `overrides` and `additional-packages` as extra arguments
   - #130: Prevent unnecessary re-running of Shake action by debouncing fsnotify events
   - #136: Move `.shake` database directory under `ribInputDir`
+  - default.nix: Takes `overrides` and `additional-packages` as extra arguments
 
 ## 0.7.0.0
 

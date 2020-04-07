@@ -9,11 +9,11 @@
 
 Rib is a Haskell **static site generator** that aims to reuse existing libraries instead of reinventing the wheel.
 
-How does it compare to Hakyll?
+How does it compare to the popular static site generator Hakyll?
 
 - Uses the [Shake](https://shakebuild.com/) build system at its core.
-- Allows writing Haskell DSL to define HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/))
-- Built-in support for [Pandoc](https://pandoc.org/) and [MMark](https://github.com/mmark-md/mmark), while also supporting custom parsers (eg: [Dhall](https://github.com/srid/website/pull/6), [TOML](https://github.com/srid/website/pull/7))
+- Write HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/)) in Haskell.
+- Built-in support for [Pandoc](https://pandoc.org/) and [MMark](https://github.com/mmark-md/mmark).
 - Remain as simple as possible to use (see example below)
 - Nix-based environment for reproducibility
 - `ghcid` and fsnotify for "hot reload"
@@ -45,8 +45,8 @@ using Rib:
 -- The `a` parameter specifies the data (typically Markdown document) used to
 -- generate the final page text.
 data Route a where
-  Route_Index :: Route [(Route MMark, MMark)]
-  Route_Article :: Path Rel File -> Route MMark
+  Route_Index :: Route [(Route Pandoc, Pandoc)]
+  Route_Article :: Path Rel File -> Route Pandoc
 
 -- | The `IsRoute` instance allows us to determine the target .html path for
 -- each route. This affects what `routeUrl` will return.
@@ -69,7 +69,8 @@ instance IsRoute Route where
 -- In the shake action you would expect to use the utility functions
 -- provided by Rib to do the actual generation of your static site.
 main :: IO ()
-main = Rib.run [reldir|content|] [reldir|dest|] generateSite
+main = withUtf8 $ do
+  Rib.run [reldir|content|] [reldir|dest|] generateSite
 
 -- | Shake action for generating the static site
 generateSite :: Action ()
@@ -82,7 +83,7 @@ generateSite = do
   articles <-
     Rib.forEvery [[relfile|*.md|]] $ \srcPath -> do
       let r = Route_Article srcPath
-      doc <- MMark.parse srcPath
+      doc <- Pandoc.parse Pandoc.readMarkdown srcPath
       writeHtmlRoute r doc
       pure (r, doc)
   writeHtmlRoute Route_Index articles
@@ -107,7 +108,7 @@ renderPage route val = html_ [lang_ "en"] $ do
             renderMarkdown `mapM_` description meta
       Route_Article _ ->
         article_ $
-          MMark.render val
+          Pandoc.render val
   where
     routeTitle :: Html ()
     routeTitle = case route of
@@ -115,7 +116,7 @@ renderPage route val = html_ [lang_ "en"] $ do
       Route_Article _ -> toHtml $ title $ getMeta val
     renderMarkdown :: Text -> Html ()
     renderMarkdown =
-      MMark.render . either (error . T.unpack) id . MMark.parsePure "<none>"
+      Pandoc.render . Pandoc.parsePure Pandoc.readMarkdown
 
 -- | Define your site CSS here
 pageStyle :: Css
@@ -137,14 +138,6 @@ data SrcMeta
         description :: Maybe Text
       }
   deriving (Show, Eq, Generic, FromJSON)
-
--- | Get metadata from Markdown's YAML block
-getMeta :: MMark -> SrcMeta
-getMeta src = case MMark.projectYaml src of
-  Nothing -> error "No YAML metadata"
-  Just val -> case fromJSON val of
-    Aeson.Error e -> error $ "JSON error: " <> e
-    Aeson.Success v -> v
 ```
 
 (View full [`Main.hs`](https://github.com/srid/rib-sample/blob/master/src/Main.hs) at rib-sample)
@@ -183,18 +176,18 @@ HTML layout and CSS style defined in `Main.hs`.
 
 Now let's run them all. 
 
-Clone the sample repository locally, install [Nix](https://nixos.org/nix/) and
-run your site as follows:
+Clone the sample repository locally, install [Nix](https://nixos.org/nix/) (as
+described in its README) and run your site as follows:
 
 ```shell
 nix-shell --run 'ghcid -T ":main serve"'
 ```
 
-(Note even though the author recommends it Nix is strictly not required; you may
+(Note that even though the author recommends it Nix is strictly not required; you may
 simply run `ghcid -T ":main serve"` instead of the above command if you do not wish to
 use Nix.)
 
-Running this command gives you a local HTTP server at http://127.0.0.1:8080/
+Running this command gives you a local HTTP server at http://127.0.0.1:8080
 (serving the generated files) that automatically reloads when either the content
 (`content/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other
 words.
@@ -248,3 +241,4 @@ which adds to the simplicity of the entire thing.
 * Rib powers the Zettelkasten system [neuron](https://github.com/srid/neuron#neuron)
   * Example: [www.srid.ca](https://www.srid.ca/)
   * Example: [neuron.srid.ca](https://neuron.srid.ca/)
+  * Example: [haskell.srid.ca](https://haskell.srid.ca/)

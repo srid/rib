@@ -5,11 +5,16 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- | Type-safe routes
+-- | Type-safe routes for static sites.
 module Rib.Route
-  ( IsRoute (..),
+  ( -- * Defining routes
+    IsRoute (..),
+
+    -- * Rendering routes
     routeUrl,
     routeUrlRel,
+
+    -- * Writing routes
     writeRoute,
   )
 where
@@ -22,11 +27,11 @@ import Path
 import Relude
 import Rib.Shake (writeFileCached)
 
--- | A route is a GADT representing individual routes.
+-- | A route is a GADT which represents the individual routes in a static site.
 --
--- The GADT type parameter represents the data used to render that particular route.
+-- `r` represents the data used to render that particular route.
 class IsRoute (r :: Type -> Type) where
-  -- | Return the filepath (relative `Rib.Shake.ribInputDir`) where the
+  -- | Return the filepath (relative to `Rib.Shake.ribInputDir`) where the
   -- generated content for this route should be written.
   routeFile :: MonadThrow m => r a -> m (Path Rel File)
 
@@ -62,6 +67,9 @@ routeUrl' urlType = stripIndexHtml . flip path2Url urlType . either (error . toT
             s
 
 -- | Write the content `s` to the file corresponding to the given route.
+--
+-- This is similar to `Rib.Shake.writeFileCached`, but takes a route instead of
+-- a filepath as its argument.
 writeRoute :: (IsRoute r, ToString s) => r a -> s -> Action ()
 writeRoute r content = do
   fp <- liftIO $ routeFile r

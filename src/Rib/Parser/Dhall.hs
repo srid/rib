@@ -3,7 +3,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
--- | Parser for Dhall files.
+-- | Parser for Dhall configuration files.
+--
+-- Use `Dhall.TH.makeHaskellTypes` to create the Haskell type first. And then
+-- call `parse` from your Shake action.
 module Rib.Parser.Dhall
   ( -- * Parsing
     parse,
@@ -18,8 +21,6 @@ import Rib.Shake (ribInputDir)
 import System.Directory
 
 -- | Parse a Dhall file as Haskell type.
---
--- Use `Dhall.TH.makeHaskellTypes` to create the Haskell type first.
 parse ::
   FromDhall a =>
   -- | Dependent .dhall files, which must trigger a rebuild
