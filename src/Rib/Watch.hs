@@ -4,7 +4,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
--- Filesystem watch
+-- | Filesystem watching using fsnotify
 module Rib.Watch
   ( onTreeChange,
   )
@@ -17,9 +17,11 @@ import Path
 import Relude
 import System.FSNotify (Event (..), watchTreeChan, withManager)
 
--- | Recursively monitor the contents of `fp` and invoke `f` for every event.
+-- | Recursively monitor the contents of the given path and invoke the given IO
+-- action for every event triggered.
 --
--- If multiple events fire rapidly, accumulate them in a list and call `f` once.
+-- If multiple events fire rapidly, the IO action is invoked only once, taking
+-- those multiple events as its argument.
 onTreeChange :: Path b t -> ([Event] -> IO ()) -> IO ()
 onTreeChange fp f = do
   withManager $ \mgr -> do
