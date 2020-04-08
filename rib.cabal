@@ -25,13 +25,14 @@ library
     exposed-modules:
         Rib
         Rib.App
+        Rib.Cli
         Rib.Watch
+        Rib.Log
         Rib.Parser.Dhall
         Rib.Parser.MMark
         Rib.Parser.Pandoc
         Rib.Route
         Rib.Shake
-        Rib.Settings
         Rib.Extra.CSS
         Rib.Extra.OpenGraph
     other-modules:

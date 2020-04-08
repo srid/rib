@@ -26,10 +26,11 @@ import Development.Shake
 import Path
 import Path.IO
 import Relude
-import Rib.Settings
+import Rib.Cli (CliConfig)
+import qualified Rib.Cli as Cli
 
 -- | Get rib settings from a shake Action monad.
-ribSettings :: Action RibSettings
+ribSettings :: Action CliConfig
 ribSettings = getShakeExtra >>= \case
   Just v -> pure v
   Nothing -> fail "RibSettings not initialized"
@@ -38,14 +39,14 @@ ribSettings = getShakeExtra >>= \case
 --
 -- This is same as the first argument to `Rib.App.run`
 ribInputDir :: Action (Path Rel Dir)
-ribInputDir = _ribSettings_inputDir <$> ribSettings
+ribInputDir = Cli.inputDir <$> ribSettings
 
 -- | Output directory where files are generated
 --
 -- This is same as the second argument to `Rib.App.run`
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
-  output <- _ribSettings_outputDir <$> ribSettings
+  output <- Cli.outputDir <$> ribSettings
   liftIO $ createDirIfMissing True output
   return output
 
