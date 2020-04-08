@@ -1,4 +1,4 @@
-![Logo](https://raw.githubusercontent.com/srid/rib/master/assets/rib.png)
+<img width="64px" src="./assets/rib.svg">
 
 # rib
 
