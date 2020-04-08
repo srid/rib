@@ -4,7 +4,7 @@ title: Rib
 
 [Rib](https://github.com/srid/rib) is a Haskell static site generator based on Shake. It aims to reuse existing libraries instead of reinventing the wheel.
 
-**TODO**: This site is a work in progress. Check the Github README for details.
+**TODO**: This site is a work in progress.
 
 ## Compared to Hakyll
 
