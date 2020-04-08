@@ -11,4 +11,19 @@ Rib is a Haskell **static site generator** that aims to reuse existing libraries
 
 See <https://rib.srid.ca> for full documentation.
 
-See DEVELOPMENT.md if you want to hack on rib. 
+## Developing rib
+
+Use ghcid for quicker compilation cycles:
+
+```
+nix-shell --run ghcid
+```
+
+To test your changes, clone [rib-sample](https://github.com/srid/rib-sample) and run it using your local rib checkout:
+
+```
+cd ..
+git clone https://github.com/srid/rib-sample.git
+cd rib-sample
+nix-shell --arg rib ../rib --run 'ghcid -T main'
+```
