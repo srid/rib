@@ -19,15 +19,24 @@ import Options.Applicative
 import Path
 import Relude
 
--- TODO: document
 data CliConfig
   = CliConfig
-      { rebuildAll :: Bool,
+      { -- | Whether to rebuild all sources in Shake.
+        rebuildAll :: Bool,
+        -- | Whether to monitor `inputDir` for changes and re-generate
         watch :: Bool,
+        -- | Whether to run a HTTP server on `outputDir`
         serve :: Maybe Int,
+        -- | Shake's verbosity level.
+        --
+        -- Setting this to `Silent` will affect Rib's own logging as well.
         verbosity :: Verbosity,
+        -- | Directory from which source content will be read.
         inputDir :: Path Rel Dir,
+        -- | The path where static files will be generated.  Rib's server uses this
+        -- directory when serving files.
         outputDir :: Path Rel Dir,
+        -- | Path to shake's database directory.
         shakeDbDir :: Path Rel Dir
       }
   deriving (Show, Eq, Generic, Typeable)

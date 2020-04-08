@@ -10,8 +10,7 @@
 --
 -- Mostly you would only need `Rib.App.run`, passing it your Shake build action.
 module Rib.App
-  ( CliConfig (..),
-    run,
+  ( run,
     runWith,
   )
 where
@@ -34,10 +33,9 @@ import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Run Rib using arguments passed in the command line.
 run ::
-  -- | Directory from which source content will be read.
+  -- | Default value for `Cli.inputDir`
   Path Rel Dir ->
-  -- | The path where static files will be generated.  Rib's server uses this
-  -- directory when serving files.
+  -- | Deault value for `Cli.outputDir`
   Path Rel Dir ->
   -- | Shake build rules for building the static site
   Action () ->
