@@ -52,8 +52,8 @@ cliParser inputDirDefault outputDirDefault = do
     optional
       (option auto (long "serve" <> short 's' <> metavar "PORT" <> help "Run a HTTP server on the generated directory"))
   verbosity <- fmap (bool Verbose Silent) (switch (long "quiet" <> help "Log nothing"))
-  inputDir <- relDirOption (long "input-dir" <> metavar "INPUTDIR" <> value (toFilePath inputDirDefault) <> help "Directory containing the source texts")
-  outputDir <- relDirOption (long "output-dir" <> metavar "OUTPUTDIR" <> value (toFilePath outputDirDefault) <> help "Directory where files will be generated")
+  inputDir <- relDirOption (long "input-dir" <> metavar "INPUTDIR" <> value (toFilePath inputDirDefault) <> help ("Directory containing the source files (" <> "default: " <> toFilePath inputDirDefault <> ")"))
+  outputDir <- relDirOption (long "output-dir" <> metavar "OUTPUTDIR" <> value (toFilePath outputDirDefault) <> help ("Directory where files will be generated (" <> "default: " <> toFilePath outputDirDefault <> ")"))
   -- Keep shake database directory under the src directory instead of the
   -- (default) current working directory, which may not always be a project
   -- root (as in the case of neuron).

@@ -46,7 +46,7 @@ run src dst buildAction = runWith buildAction =<< execParser opts
       info
         (cliParser src dst <**> helper)
         ( fullDesc
-            <> progDesc "Rib static site generator CLI"
+            <> progDesc "Generate a static site at OUTPUTDIR using input from INPUTDIR"
         )
 
 -- | Like `run` but with an explicitly passed `CliConfig`

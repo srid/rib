@@ -34,7 +34,7 @@ import qualified Rib.Cli as Cli
 getCliConfig :: Action CliConfig
 getCliConfig = getShakeExtra >>= \case
   Just v -> pure v
-  Nothing -> fail "RibSettings not initialized"
+  Nothing -> fail "CliConfig not initialized"
 
 -- | Input directory containing source files
 --

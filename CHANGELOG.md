@@ -4,7 +4,7 @@
 
 - Misc changes
   - #145: CLI arguments have been revamped
-    - Added `--input-dir/--output-dir` to override these path
+    - Added `--input-dir/--output-dir` to override these paths
     - Exposed `Rib.Shake.getCliConfig` to get full CLI configuration
   - #141: Allow quiet logging (useful when rib is used as a library)
 
