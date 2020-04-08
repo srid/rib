@@ -1,4 +1,4 @@
-![Logo](https://raw.githubusercontent.com/srid/rib/master/assets/rib.png)
+<img width="64px" src="./assets/rib.svg">
 
 # rib
 
@@ -9,236 +9,21 @@
 
 Rib is a Haskell **static site generator** that aims to reuse existing libraries instead of reinventing the wheel.
 
-How does it compare to the popular static site generator Hakyll?
+See <https://rib.srid.ca> for full documentation.
 
-- Uses the [Shake](https://shakebuild.com/) build system at its core.
-- Write HTML ([Lucid](https://chrisdone.com/posts/lucid2/)) & CSS ([Clay](http://fvisser.nl/clay/)) in Haskell.
-- Built-in support for [Pandoc](https://pandoc.org/) and [MMark](https://github.com/mmark-md/mmark).
-- Remain as simple as possible to use (see example below)
-- Nix-based environment for reproducibility
-- `ghcid` and fsnotify for "hot reload"
+## Developing rib
 
-Rib prioritizes the use of *existing* tools over reinventing them, and enables
-the user to compose them as they wish instead of having to write code to fit a
-custom framework.
+Use ghcid for quicker compilation cycles:
 
-**Table of Contents**
-
-- [Quick Preview](#quick-preview)
-- [Getting Started](#getting-started)
-- [Concepts](#concepts)
-    - [Directory structure](#directory-structure)
-    - [Run the site](#run-the-site)
-    - [How Rib works](#how-rib-works)
-    - [Editing workflow](#editing-workflow)
-    - [What's next?](#whats-next)
-- [Examples](#examples)
-
-## Quick Preview
-
-Here is how your code may look like if you were to generate your static site
-using Rib:
-
-```haskell
--- | Route corresponding to each generated static page.
---
--- The `a` parameter specifies the data (typically Markdown document) used to
--- generate the final page text.
-data Route a where
-  Route_Index :: Route [(Route Pandoc, Pandoc)]
-  Route_Article :: Path Rel File -> Route Pandoc
-
--- | The `IsRoute` instance allows us to determine the target .html path for
--- each route. This affects what `routeUrl` will return.
-instance IsRoute Route where
-  routeFile = \case
-    Route_Index ->
-      pure [relfile|index.html|]
-    Route_Article srcPath ->
-      fmap ([reldir|article|] </>) $
-        replaceExtension ".html" srcPath
-
--- | Main entry point to our generator.
---
--- `Rib.run` handles CLI arguments, and takes three parameters here.
---
--- 1. Directory `content`, from which static files will be read.
--- 2. Directory `dest`, under which target files will be generated.
--- 3. Shake action to run.
---
--- In the shake action you would expect to use the utility functions
--- provided by Rib to do the actual generation of your static site.
-main :: IO ()
-main = withUtf8 $ do
-  Rib.run [reldir|content|] [reldir|dest|] generateSite
-
--- | Shake action for generating the static site
-generateSite :: Action ()
-generateSite = do
-  -- Copy over the static files
-  Rib.buildStaticFiles [[relfile|static/**|]]
-  let writeHtmlRoute :: Route a -> a -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
-  -- Build individual sources, generating .html for each.
-  articles <-
-    Rib.forEvery [[relfile|*.md|]] $ \srcPath -> do
-      let r = Route_Article srcPath
-      doc <- Pandoc.parse Pandoc.readMarkdown srcPath
-      writeHtmlRoute r doc
-      pure (r, doc)
-  writeHtmlRoute Route_Index articles
-
--- | Define your site HTML here
-renderPage :: Route a -> a -> Html ()
-renderPage route val = html_ [lang_ "en"] $ do
-  head_ $ do
-    meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
-    title_ routeTitle
-    style_ [type_ "text/css"] $ C.render pageStyle
-  body_ $ do
-    div_ [class_ "header"] $
-      a_ [href_ "/"] "Back to Home"
-    h1_ routeTitle
-    case route of
-      Route_Index ->
-        div_ $ forM_ val $ \(r, src) ->
-          li_ [class_ "pages"] $ do
-            let meta = getMeta src
-            b_ $ a_ [href_ (Rib.routeUrl r)] $ toHtml $ title meta
-            renderMarkdown `mapM_` description meta
-      Route_Article _ ->
-        article_ $
-          Pandoc.render val
-  where
-    routeTitle :: Html ()
-    routeTitle = case route of
-      Route_Index -> "Rib sample site"
-      Route_Article _ -> toHtml $ title $ getMeta val
-    renderMarkdown :: Text -> Html ()
-    renderMarkdown =
-      Pandoc.render . Pandoc.parsePure Pandoc.readMarkdown
-
--- | Define your site CSS here
-pageStyle :: Css
-pageStyle = C.body ? do
-  C.margin (em 4) (pc 20) (em 1) (pc 20)
-  ".header" ? do
-    C.marginBottom $ em 2
-  "li.pages" ? do
-    C.listStyleType C.none
-    C.marginTop $ em 1
-    "b" ? C.fontSize (em 1.2)
-    "p" ? sym C.margin (px 0)
-
--- | Metadata in our markdown sources
-data SrcMeta
-  = SrcMeta
-      { title :: Text,
-        -- | Description is optional, hence `Maybe`
-        description :: Maybe Text
-      }
-  deriving (Show, Eq, Generic, FromJSON)
+```
+nix-shell --run ghcid
 ```
 
-(View full [`Main.hs`](https://github.com/srid/rib-sample/blob/master/src/Main.hs) at rib-sample)
+To test your changes, clone [rib-sample](https://github.com/srid/rib-sample) and run it using your local rib checkout:
 
-## Getting Started
-
-The easiest way to get started with [Rib](/) is to [use the
-template](https://help.github.com/en/articles/creating-a-repository-from-a-template)
-repository, [**rib-sample**](https://github.com/srid/rib-sample), from Github.
-
-## Concepts
-
-### Directory structure
-
-Let's look at what's in the template repository:
-
-```shell
-$ git clone https://github.com/srid/rib-sample.git mysite
-...
-$ cd mysite
-$ ls -F
-content/  default.nix  Main.hs  README.md  rib-sample.cabal
 ```
-
-The three key items here are:
-
-1. `Main.hs`: Haskell source containing the DSL of the HTML/CSS of your site.
-1. `content/`: The source content (eg: Markdown sources and static files)
-1. `dest/`: The target directory, excluded from the git repository, will contain
-   _generated_ content (i.e., the HTML files, and copied over static content)
-   
-The template repository comes with a few sample posts under `content/`, and a basic
-HTML layout and CSS style defined in `Main.hs`. 
-
-### Run the site
-
-Now let's run them all. 
-
-Clone the sample repository locally, install [Nix](https://nixos.org/nix/) (as
-described in its README) and run your site as follows:
-
-```shell
-nix-shell --run 'ghcid -T ":main serve"'
+cd ..
+git clone https://github.com/srid/rib-sample.git
+cd rib-sample
+nix-shell --arg rib ../rib --run 'ghcid -T main'
 ```
-
-(Note that even though the author recommends it Nix is strictly not required; you may
-simply run `ghcid -T ":main serve"` instead of the above command if you do not wish to
-use Nix.)
-
-Running this command gives you a local HTTP server at http://127.0.0.1:8080
-(serving the generated files) that automatically reloads when either the content
-(`content/`) or the HTML/CSS/build-actions (`Main.hs`) changes. Hot reload, in other
-words.
-
-### How Rib works
-
-How does the aforementioned nix-shell command work?
-
-1. `nix-shell` will run the given command in a shell environment with all of our
-dependencies (notably the Haskell ones including the `rib` library itself)
-installed. 
-
-1. [`ghcid`](https://github.com/ndmitchell/ghcid) will compile your `Main.hs`
-   and run its `main` function.
-
-1. `Main.hs:main` in turn calls `Rib.App.run` which takes as argument your custom 
-   Shake action that will build the static site.
-
-1. `Rib.App.run`: this parses the CLI arguments and runs the rib CLI "app" which
-   can be run in one of a few modes --- generating static files, watching the
-   `content/` directory for changes, starting HTTP server for the `dest/` directory.
-   The "serve" subcommand will run the Shake build action passed as argument on 
-   every file change and spin up a HTTP server.
-   
-Run that command, and visit http://127.0.0.1:8080 to view your site.
-
-### Editing workflow
-
-Now try making some changes to the content, say `content/first-post.md`. You should
-see it reflected when you refresh the page. Or change the HTML or CSS of your
-site in `Main.hs`; this will trigger `ghcid` to rebuild the Haskell source and
-restart the server.
-
-### What's next?
-
-Great, by now you should have your static site generator ready and running! 
-
-Rib recommends writing your Shake actions in the style of being 
-[forward-defined](http://hackage.haskell.org/package/shake-0.18.3/docs/Development-Shake-Forward.html)
-which adds to the simplicity of the entire thing.
-
-## Examples
-
-* [rib-sample](https://github.com/srid/rib-sample): Use this to get started with
-  your own site.
-  
-* [zulip-archive](https://github.com/srid/zulip-archive): Zulip chat archive viewer ([running here](https://funprog.srid.ca/)).
-
-* [open-editions.org](https://github.com/open-editions/open-editions.org) ([running here](https://open-editions.org/)).
-
-* Rib powers the Zettelkasten system [neuron](https://github.com/srid/neuron#neuron)
-  * Example: [www.srid.ca](https://www.srid.ca/)
-  * Example: [neuron.srid.ca](https://neuron.srid.ca/)
-  * Example: [haskell.srid.ca](https://haskell.srid.ca/)
