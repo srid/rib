@@ -1,21 +1,20 @@
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 -- | CLI interface for Rib.
 --
 -- Mostly you would only need `Rib.App.run`, passing it your Shake build action.
 module Rib.App
-  ( Command (..),
-    commandParser,
-    run,
+  ( run,
     runWith,
   )
 where
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race_)
 import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
@@ -24,145 +23,102 @@ import Options.Applicative
 import Path
 import Path.IO
 import Relude
+import Rib.Cli (CliConfig (CliConfig), cliParser)
+import qualified Rib.Cli as Cli
+import Rib.Log
 import qualified Rib.Server as Server
-import Rib.Settings (RibSettings (..))
 import Rib.Watch (onTreeChange)
 import System.FSNotify (Event (..), eventIsDirectory, eventPath)
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
--- | Rib CLI commands
-data Command
-  = -- Run an one-off generation with silent logging
-    -- TODO: Eventually replace this with proper logging mechanism.
-    OneOff
-  | -- | Generate the site once.
-    Generate
-      { -- | Force a full generation of /all/ files even if they were not modified
-        full :: Bool
-      }
-  | -- | Watch for changes in the input directory and run `Generate`
-    Watch
-  | -- | Run a HTTP server serving content from the output directory
-    Serve
-      { -- | Port to bind the server
-        port :: Int,
-        -- | Unless set run `WatchAndGenerate` automatically
-        dontWatch :: Bool
-      }
-  deriving (Show, Eq, Generic)
-
--- | Commandline parser `Parser` for the Rib CLI
-commandParser :: Parser Command
-commandParser =
-  hsubparser $
-    mconcat
-      [ command "generate" $ info generateCommand $ progDesc "Run one-off generation of static files",
-        command "watch" $ info watchCommand $ progDesc "Watch the source directory, and generate when it changes",
-        command "serve" $ info serveCommand $ progDesc "Like watch, but also starts a HTTP server"
-      ]
-  where
-    generateCommand =
-      Generate <$> switch (long "full" <> help "Do a full generation (toggles shakeRebuild)")
-    watchCommand =
-      pure Watch
-    serveCommand =
-      Serve
-        <$> option auto (long "port" <> short 'p' <> help "HTTP server port" <> showDefault <> value 8080 <> metavar "PORT")
-        <*> switch (long "no-watch" <> help "Serve only; don't watch and regenerate")
-
 -- | Run Rib using arguments passed in the command line.
 run ::
-  -- | Directory from which source content will be read.
+  -- | Default value for `Cli.inputDir`
   Path Rel Dir ->
-  -- | The path where static files will be generated.  Rib's server uses this
-  -- directory when serving files.
+  -- | Deault value for `Cli.outputDir`
   Path Rel Dir ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
-run src dst buildAction = runWith src dst buildAction =<< execParser opts
+run src dst buildAction = runWith buildAction =<< execParser opts
   where
     opts =
       info
-        (commandParser <**> helper)
+        (cliParser src dst <**> helper)
         ( fullDesc
-            <> progDesc "Rib static site generator CLI"
+            <> progDesc "Generate a static site at OUTPUTDIR using input from INPUTDIR"
         )
 
--- | Like `run` but with an explicitly passed `Command`
-runWith :: Path Rel Dir -> Path Rel Dir -> Action () -> Command -> IO ()
-runWith src dst buildAction ribCmd = do
-  when (src == currentRelDir) $
+-- | Like `run` but with an explicitly passed `CliConfig`
+runWith :: Action () -> CliConfig -> IO ()
+runWith buildAction cfg@CliConfig {..} = do
+  when (inputDir == currentRelDir) $
     -- Because otherwise our use of `watchTree` can interfere with Shake's file
     -- scaning.
     fail "cannot use '.' as source directory."
   -- For saner output
   flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
-  let ribSettings =
-        case ribCmd of
-          OneOff ->
-            RibSettings src dst Silent False
-          Generate fullGen ->
-            RibSettings src dst Verbose fullGen
-          _ ->
-            RibSettings src dst Verbose False
-  case ribCmd of
-    OneOff ->
-      runShake ribSettings buildAction
-    Generate _ ->
-      -- FIXME: Shouldn't `catch` Shake exceptions when invoked without fsnotify.
-      runShakeBuild ribSettings
-    Watch ->
-      runShakeAndObserve ribSettings
-    Serve p dw -> do
-      race_ (Server.serve p $ toFilePath dst) $ do
-        if dw
-          then threadDelay maxBound
-          else runShakeAndObserve ribSettings
+  case (watch, serve) of
+    (True, Just port) -> do
+      race_
+        (Server.serve cfg port $ toFilePath outputDir)
+        (runShakeAndObserve cfg buildAction)
+    (True, Nothing) ->
+      runShakeAndObserve cfg buildAction
+    (False, Just port) ->
+      Server.serve cfg port $ toFilePath outputDir
+    (False, Nothing) ->
+      runShakeBuild cfg buildAction
   where
     currentRelDir = [reldir|.|]
-    -- Keep shake database directory under the src directory instead of the
-    -- (default) current working directory, which may not always be a project
-    -- root (as in the case of neuron).
-    shakeDatabaseDir :: Path Rel Dir = src </> [reldir|.shake|]
-    runShakeAndObserve ribSettings = do
-      -- Begin with a *full* generation as the HTML layout may have been changed.
-      -- TODO: This assumption is not true when running the program from compiled
-      -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
-      -- by being part of the binary. In this scenario, we should not do full
-      -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
-      -- flag to disable this.
-      runShakeBuild $ ribSettings {_ribSettings_fullGen = True}
-      -- And then every time a file changes under the current directory
-      putStrLn $ "[Rib] Watching " <> toFilePath src <> " for changes"
-      onSrcChange $ runShakeBuild ribSettings
-    runShakeBuild ribSettings = do
-      runShake ribSettings $ do
-        putInfo $ "[Rib] Generating " <> toFilePath src <> " (full=" <> show (_ribSettings_fullGen ribSettings) <> ")"
-        buildAction
-    runShake ribSettings shakeAction = do
-      shakeForward (shakeOptionsFrom ribSettings) shakeAction
-        `catch` handleShakeException
+
+shakeOptionsFrom :: CliConfig -> ShakeOptions
+shakeOptionsFrom cfg'@CliConfig {..} =
+  shakeOptions
+    { shakeVerbosity = verbosity,
+      shakeFiles = toFilePath shakeDbDir,
+      shakeRebuild = bool [] [(RebuildNow, "**")] rebuildAll,
+      shakeLintInside = [""],
+      shakeExtra = addShakeExtra cfg' (shakeExtra shakeOptions)
+    }
+
+runShakeBuild :: CliConfig -> Action () -> IO ()
+runShakeBuild cfg@CliConfig {..} buildAction = do
+  runShake cfg $ do
+    logStrLn cfg $ "[Rib] Generating " <> toFilePath inputDir <> " (rebuildAll=" <> show rebuildAll <> ")"
+    buildAction
+
+runShake :: CliConfig -> Action () -> IO ()
+runShake cfg shakeAction = do
+  shakeForward (shakeOptionsFrom cfg) shakeAction
+    `catch` handleShakeException
+  where
     handleShakeException (e :: ShakeException) =
       -- Gracefully handle any exceptions when running Shake actions. We want
       -- Rib to keep running instead of crashing abruptly.
-      putStrLn $
+      logErr $
         "[Rib] Unhandled exception when building " <> shakeExceptionTarget e <> ": " <> show e
-    shakeOptionsFrom settings =
-      shakeOptions
-        { shakeVerbosity = _ribSettings_verbosity settings,
-          shakeFiles = toFilePath shakeDatabaseDir,
-          shakeRebuild = bool [] [(RebuildNow, "**")] (_ribSettings_fullGen settings),
-          shakeLintInside = [""],
-          shakeExtra = addShakeExtra settings (shakeExtra shakeOptions)
-        }
+
+runShakeAndObserve :: CliConfig -> Action () -> IO ()
+runShakeAndObserve cfg@CliConfig {..} buildAction = do
+  -- Begin with a *full* generation as the HTML layout may have been changed.
+  -- TODO: This assumption is not true when running the program from compiled
+  -- binary (as opposed to say via ghcid) as the HTML layout has become fixed
+  -- by being part of the binary. In this scenario, we should not do full
+  -- generation (i.e., toggle the bool here to False). Perhaps provide a CLI
+  -- flag to disable this.
+  runShakeBuild (cfg {Cli.rebuildAll = True}) buildAction
+  -- And then every time a file changes under the current directory
+  logStrLn cfg $ "[Rib] Watching " <> toFilePath inputDir <> " for changes"
+  onSrcChange $ runShakeBuild cfg buildAction
+  where
     onSrcChange f = do
       workDir <- getCurrentDir
       -- Top-level directories to ignore from notifications
-      dirBlacklist <- traverse makeAbsolute [shakeDatabaseDir, src </> [reldir|.git|]]
+      dirBlacklist <- traverse makeAbsolute [shakeDbDir, inputDir </> [reldir|.git|]]
       let isBlacklisted :: FilePath -> Bool
           isBlacklisted p = or $ flip fmap dirBlacklist $ \b -> toFilePath b `isPrefixOf` p
-      onTreeChange src $ \allEvents -> do
+      onTreeChange inputDir $ \allEvents -> do
         let events = filter (not . isBlacklisted . eventPath) allEvents
         unless (null events) $ do
           -- Log the changed events for diagnosis.
@@ -173,7 +129,7 @@ runWith src dst buildAction ribCmd = do
         if eventIsDirectory e
           then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
           else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
-      putStrLn $ eventLogPrefix e <> " " <> eventRelPath
+      logStrLn cfg $ eventLogPrefix e <> " " <> eventRelPath
     eventLogPrefix = \case
       -- Single character log prefix to indicate file actions is a convention in Rib.
       Added _ _ _ -> "A"
