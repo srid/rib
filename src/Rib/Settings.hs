@@ -17,6 +17,7 @@ where
 import Development.Shake (Verbosity (..))
 import Path
 import Relude
+import System.IO (hPutStrLn)
 
 -- | The settings with which Rib is run
 --
@@ -40,4 +41,4 @@ logStrLn RibSettings {..} s =
 
 logErr :: MonadIO m => String -> m ()
 logErr s =
-  putStrLn s
+  liftIO $ hPutStrLn stderr s
