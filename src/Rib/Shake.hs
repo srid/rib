@@ -16,6 +16,7 @@ module Rib.Shake
     writeFileCached,
 
     -- * Misc
+    getCliConfig,
     ribInputDir,
     ribOutputDir,
     getDirectoryFiles',
@@ -30,8 +31,8 @@ import Rib.Cli (CliConfig)
 import qualified Rib.Cli as Cli
 
 -- | Get rib settings from a shake Action monad.
-ribSettings :: Action CliConfig
-ribSettings = getShakeExtra >>= \case
+getCliConfig :: Action CliConfig
+getCliConfig = getShakeExtra >>= \case
   Just v -> pure v
   Nothing -> fail "RibSettings not initialized"
 
@@ -39,14 +40,14 @@ ribSettings = getShakeExtra >>= \case
 --
 -- This is same as the first argument to `Rib.App.run`
 ribInputDir :: Action (Path Rel Dir)
-ribInputDir = Cli.inputDir <$> ribSettings
+ribInputDir = Cli.inputDir <$> getCliConfig
 
 -- | Output directory where files are generated
 --
 -- This is same as the second argument to `Rib.App.run`
 ribOutputDir :: Action (Path Rel Dir)
 ribOutputDir = do
-  output <- Cli.outputDir <$> ribSettings
+  output <- Cli.outputDir <$> getCliConfig
   liftIO $ createDirIfMissing True output
   return output
 

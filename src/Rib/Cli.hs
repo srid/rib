@@ -19,6 +19,9 @@ import Options.Applicative
 import Path
 import Relude
 
+-- Rib's CLI configuration
+--
+-- Can be retrieved using `Rib.Shake.getCliConfig` in the `Development.Shake.Action` monad.
 data CliConfig
   = CliConfig
       { -- | Whether to rebuild all sources in Shake.

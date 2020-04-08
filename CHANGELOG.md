@@ -3,7 +3,9 @@
 ## 0.9.0.0 (UNRELEASED, DEV)
 
 - Misc changes
-  - #145: CLI arguments have changed
+  - #145: CLI arguments have been revamped
+    - Added `--input-dir/--output-dir` to override these path
+    - Exposed `Rib.Shake.getCliConfig` to get full CLI configuration
   - #141: Allow quiet logging (useful when rib is used as a library)
 
 ## 0.8.0.0
