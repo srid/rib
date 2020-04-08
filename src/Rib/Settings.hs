@@ -3,15 +3,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Rib.Settings
   ( RibSettings (..),
+    logStrLn,
+    logErr,
   )
 where
 
-import Development.Shake (Verbosity)
+import Development.Shake (Verbosity (..))
 import Path
 import Relude
 
@@ -29,3 +32,12 @@ data RibSettings
         _ribSettings_fullGen :: Bool
       }
   deriving (Typeable)
+
+logStrLn :: MonadIO m => RibSettings -> String -> m ()
+logStrLn RibSettings {..} s =
+  unless (_ribSettings_verbosity == Silent) $ do
+    putStrLn s
+
+logErr :: MonadIO m => String -> m ()
+logErr s =
+  putStrLn s
