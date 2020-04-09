@@ -113,7 +113,7 @@ hostPortParser = do
   host <-
     optional $
       M.string "localhost"
-        <|> parseIP
+        <|> M.try parseIP
   void $ M.char ':'
   port <- parseNumRange 1 65535
   pure (fromMaybe "127.0.0.1" host, port)
