@@ -8,6 +8,9 @@
 module Rib.Cli
   ( CliConfig (..),
     cliParser,
+
+    -- * Internal
+    parseHostPort,
   )
 where
 
@@ -16,6 +19,8 @@ import Options.Applicative
 import Path
 import Relude
 import Relude.Extra.Tuple
+import qualified Text.Megaparsec as M
+import qualified Text.Megaparsec.Char as M
 
 -- Rib's CLI configuration
 --
@@ -27,7 +32,7 @@ data CliConfig
         -- | Whether to monitor `inputDir` for changes and re-generate
         watch :: Bool,
         -- | Whether to run a HTTP server on `outputDir`
-        serve :: Maybe Int,
+        serve :: Maybe (Text, Int),
         -- | Shake's verbosity level.
         --
         -- Setting this to `Silent` will affect Rib's own logging as well.
@@ -57,13 +62,13 @@ cliParser inputDirDefault outputDirDefault = do
       )
   serve <-
     optional
-      ( option
-          auto
-          ( long "serve"
-              <> short 's'
-              <> metavar "PORT"
-              <> help "Run a HTTP server on the generated directory"
-          )
+      ( fmap parseHostPort $
+          strOption
+            ( long "serve"
+                <> short 's'
+                <> metavar "[HOST]:PORT"
+                <> help "Run a HTTP server on the generated directory"
+            )
       )
   verbosity <-
     fmap
@@ -98,3 +103,32 @@ shakeDbDirFrom inputDir =
   -- (default) current working directory, which may not always be a project
   -- root (as in the case of neuron).
   inputDir </> [reldir|.shake|]
+
+parseHostPort :: Text -> (Text, Int)
+parseHostPort =
+  parse $ do
+    host <-
+      optional $
+        M.string "localhost"
+          <|> parseIP
+    void $ M.char ':'
+    port <- parseNumRange 1 65535
+    pure (fromMaybe "127.0.0.1" host, port)
+  where
+    readNum = fromMaybe (error "Not a number") . readMaybe
+    parseIP :: M.Parsec Void Text Text
+    parseIP = do
+      a <- parseNumRange 0 255 <* M.char '.'
+      b <- parseNumRange 0 255 <* M.char '.'
+      c <- parseNumRange 0 255 <* M.char '.'
+      d <- parseNumRange 0 255
+      pure $ toText $ intercalate "." $ show <$> [a, b, c, d]
+    parseNumRange :: Int -> Int -> M.Parsec Void Text Int
+    parseNumRange a b = do
+      n <- fmap readNum $ M.some M.digitChar
+      if a <= n && n <= b
+        then pure n
+        else fail $ "Number not in range: " <> show a <> "-" <> show b
+    -- Handy utility for parsing
+    parse :: M.Parsec Void Text a -> Text -> a
+    parse p = either (error . toText . M.errorBundlePretty) id . M.parse p "<user input>"

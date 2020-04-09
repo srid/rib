@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 2.4
 name: rib
 version: 0.9.0.0
 license: BSD-3-Clause
@@ -21,22 +21,7 @@ source-repository head
     type: git
     location: https://github.com/srid/rib
 
-library
-    exposed-modules:
-        Rib
-        Rib.App
-        Rib.Cli
-        Rib.Watch
-        Rib.Log
-        Rib.Parser.Dhall
-        Rib.Parser.MMark
-        Rib.Parser.Pandoc
-        Rib.Route
-        Rib.Shake
-        Rib.Extra.CSS
-        Rib.Extra.OpenGraph
-    other-modules:
-        Rib.Server
+common library-common
     hs-source-dirs: src
     default-language: Haskell2010
     default-extensions: NoImplicitPrelude
@@ -78,3 +63,33 @@ library
         wai >=3.2.2 && <3.3,
         wai-app-static >=3.1.6 && <3.2,
         warp
+
+library
+  import: library-common
+  exposed-modules:
+      Rib
+      Rib.App
+      Rib.Cli
+      Rib.Watch
+      Rib.Log
+      Rib.Parser.Dhall
+      Rib.Parser.MMark
+      Rib.Parser.Pandoc
+      Rib.Route
+      Rib.Shake
+      Rib.Extra.CSS
+      Rib.Extra.OpenGraph
+  other-modules:
+      Rib.Server
+
+test-suite rib-test 
+  import: library-common
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test 
+  main-is: Spec.hs
+  build-depends:
+    base,
+    relude,
+    hspec,
+    QuickCheck
+

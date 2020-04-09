@@ -59,14 +59,14 @@ runWith buildAction cfg@CliConfig {..} = do
   -- For saner output
   flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
   case (watch, serve) of
-    (True, Just port) -> do
+    (True, Just (host, port)) -> do
       race_
-        (Server.serve cfg port $ toFilePath outputDir)
+        (Server.serve cfg host port $ toFilePath outputDir)
         (runShakeAndObserve cfg buildAction)
     (True, Nothing) ->
       runShakeAndObserve cfg buildAction
-    (False, Just port) ->
-      Server.serve cfg port $ toFilePath outputDir
+    (False, Just (host, port)) ->
+      Server.serve cfg host port $ toFilePath outputDir
     (False, Nothing) ->
       runShakeBuild cfg buildAction
   where
