@@ -10,7 +10,7 @@ module Rib.Cli
     cliParser,
 
     -- * Internal
-    parseHostPort,
+    hostPortParser,
   )
 where
 
@@ -62,13 +62,13 @@ cliParser inputDirDefault outputDirDefault = do
       )
   serve <-
     optional
-      ( fmap parseHostPort $
-          strOption
-            ( long "serve"
-                <> short 's'
-                <> metavar "[HOST]:PORT"
-                <> help "Run a HTTP server on the generated directory"
-            )
+      ( option
+          (megaparsecReader hostPortParser)
+          ( long "serve"
+              <> short 's'
+              <> metavar "[HOST]:PORT"
+              <> help "Run a HTTP server on the generated directory"
+          )
       )
   verbosity <-
     fmap
@@ -104,18 +104,21 @@ shakeDbDirFrom inputDir =
   -- root (as in the case of neuron).
   inputDir </> [reldir|.shake|]
 
-parseHostPort :: Text -> (Text, Int)
-parseHostPort =
-  parse $ do
-    host <-
-      optional $
-        M.string "localhost"
-          <|> parseIP
-    void $ M.char ':'
-    port <- parseNumRange 1 65535
-    pure (fromMaybe "127.0.0.1" host, port)
+megaparsecReader :: M.Parsec Void Text a -> ReadM a
+megaparsecReader p =
+  eitherReader (first M.errorBundlePretty . M.parse p "<optparse-input>" . toText)
+
+hostPortParser :: M.Parsec Void Text (Text, Int)
+hostPortParser = do
+  host <-
+    optional $
+      M.string "localhost"
+        <|> parseIP
+  void $ M.char ':'
+  port <- parseNumRange 1 65535
+  pure (fromMaybe "127.0.0.1" host, port)
   where
-    readNum = fromMaybe (error "Not a number") . readMaybe
+    readNum = maybe (fail "Not a number") pure . readMaybe
     parseIP :: M.Parsec Void Text Text
     parseIP = do
       a <- parseNumRange 0 255 <* M.char '.'
@@ -125,10 +128,7 @@ parseHostPort =
       pure $ toText $ intercalate "." $ show <$> [a, b, c, d]
     parseNumRange :: Int -> Int -> M.Parsec Void Text Int
     parseNumRange a b = do
-      n <- fmap readNum $ M.some M.digitChar
+      n <- readNum =<< M.some M.digitChar
       if a <= n && n <= b
         then pure n
         else fail $ "Number not in range: " <> show a <> "-" <> show b
-    -- Handy utility for parsing
-    parse :: M.Parsec Void Text a -> Text -> a
-    parse p = either (error . toText . M.errorBundlePretty) id . M.parse p "<user input>"
