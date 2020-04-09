@@ -18,18 +18,19 @@ import Rib.Log
 -- Binds the server to host 127.0.0.1.
 serve ::
   CliConfig ->
+  -- | Host
+  Text ->
   -- | Port number to bind to
   Int ->
   -- | Directory to serve.
   FilePath ->
   IO ()
-serve cfg port path = do
-  logStrLn cfg $ "[Rib] Serving " <> path <> " at http://" <> host <> ":" <> show port
+serve cfg host port path = do
+  logStrLn cfg $ "[Rib] Serving " <> path <> " at http://" <> toString host <> ":" <> show port
   Warp.runSettings settings app
   where
     app = staticApp $ defaultFileServerSettings path
-    host = "127.0.0.1"
     settings =
-      Warp.setHost (fromString host)
+      Warp.setHost (fromString $ toString host)
         $ Warp.setPort port
         $ Warp.defaultSettings
