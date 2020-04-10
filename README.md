@@ -25,5 +25,5 @@ To test your changes, clone [rib-sample](https://github.com/srid/rib-sample) and
 cd ..
 git clone https://github.com/srid/rib-sample.git
 cd rib-sample
-nix-shell --arg rib ../rib --run 'ghcid -T main'
+nix-shell --arg rib ../rib --run 'ghcid -T ":main -wS"'
 ```
