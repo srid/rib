@@ -112,6 +112,9 @@ serveOption =
             <> help "Run a HTTP server on the generated directory"
         )
     )
+    <|> ( fmap (bool Nothing $ Just (defaultHost, 8080)) $
+            switch (short 'S' <> help ("Like `-s " <> toString defaultHost <> ":8080`"))
+        )
 
 builtinWatchIgnores :: [FilePath]
 builtinWatchIgnores =
@@ -142,7 +145,7 @@ hostPortParser = do
         <|> M.try parseIP
   void $ M.char ':'
   port <- parseNumRange 1 65535
-  pure (fromMaybe "127.0.0.1" host, port)
+  pure (fromMaybe defaultHost host, port)
   where
     readNum = maybe (fail "Not a number") pure . readMaybe
     parseIP :: M.Parsec Void Text Text
@@ -158,3 +161,6 @@ hostPortParser = do
       if a <= n && n <= b
         then pure n
         else fail $ "Number not in range: " <> show a <> "-" <> show b
+
+defaultHost :: Text
+defaultHost = "127.0.0.1"

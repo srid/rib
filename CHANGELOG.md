@@ -7,6 +7,7 @@
     - This also lifts the restriction with absolute paths
 - Misc changes
   - #145: CLI arguments have been revamped
+    - `serve` subcommand is replaced by the options `-wS`.
     - Added `--input-dir/--output-dir` to override these paths
     - Accept host string in addition to port number
     - Exposed `Rib.Shake.getCliConfig` to get full CLI configuration
