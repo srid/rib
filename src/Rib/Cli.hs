@@ -10,6 +10,7 @@ module Rib.Cli
   ( CliConfig (..),
     cliParser,
     Verbosity (..),
+    directoryReader,
 
     -- * Internal
     hostPortParser,
@@ -84,14 +85,16 @@ cliParser inputDirDefault outputDirDefault = do
       )
   ~(inputDir, shakeDbDir) <-
     fmap (mapToSnd shakeDbDirFrom) $
-      strOption
+      option
+        directoryReader
         ( long "input-dir"
             <> metavar "INPUTDIR"
             <> value inputDirDefault
             <> help ("Directory containing the source files (" <> "default: " <> inputDirDefault <> ")")
         )
   outputDir <-
-    strOption
+    option
+      directoryReader
       ( long "output-dir"
           <> metavar "OUTPUTDIR"
           <> value outputDirDefault
@@ -112,6 +115,10 @@ shakeDbDirFrom inputDir =
   -- (default) current working directory, which may not always be a project
   -- root (as in the case of neuron).
   inputDir </> ".shake"
+
+-- | Like `str` but adds a trailing slash if there isn't one.
+directoryReader :: ReadM FilePath
+directoryReader = fmap addTrailingPathSeparator str
 
 megaparsecReader :: M.Parsec Void Text a -> ReadM a
 megaparsecReader p =
