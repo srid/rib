@@ -9,6 +9,7 @@
 module Rib.Cli
   ( CliConfig (..),
     cliParser,
+    Verbosity (..),
 
     -- * Internal
     hostPortParser,
@@ -44,7 +45,9 @@ data CliConfig
         -- directory when serving files.
         outputDir :: FilePath,
         -- | Path to shake's database directory.
-        shakeDbDir :: FilePath
+        shakeDbDir :: FilePath,
+        -- | List of relative paths to ignore when watching the source directory
+        watchIgnore :: [FilePath]
       }
   deriving (Show, Eq, Generic, Typeable)
 
@@ -94,7 +97,14 @@ cliParser inputDirDefault outputDirDefault = do
           <> value outputDirDefault
           <> help ("Directory where files will be generated (" <> "default: " <> outputDirDefault <> ")")
       )
+  ~(watchIgnore) <- pure builtinWatchIgnores
   pure CliConfig {..}
+
+builtinWatchIgnores :: [FilePath]
+builtinWatchIgnores =
+  [ ".shake",
+    ".git"
+  ]
 
 shakeDbDirFrom :: FilePath -> FilePath
 shakeDbDirFrom inputDir =

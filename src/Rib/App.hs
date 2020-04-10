@@ -26,7 +26,6 @@ import qualified Rib.Cli as Cli
 import Rib.Log
 import qualified Rib.Server as Server
 import Rib.Watch (onTreeChange)
-import System.Directory
 import System.FSNotify (Event (..), eventPath)
 import System.FilePath
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
@@ -108,21 +107,18 @@ runShakeAndObserve cfg@CliConfig {..} buildAction = do
   where
     onSrcChange :: IO () -> IO ()
     onSrcChange f = do
-      workDir <- getCurrentDirectory
       -- Top-level directories to ignore from notifications
-      dirBlacklist <- traverse makeAbsolute [shakeDbDir, inputDir </> ".git"]
       let isBlacklisted :: FilePath -> Bool
-          isBlacklisted p = or $ flip fmap dirBlacklist $ \b -> b `isPrefixOf` p
+          isBlacklisted p = or $ flip fmap watchIgnore $ \b -> (inputDir </> b) `isPrefixOf` p
       onTreeChange inputDir $ \allEvents -> do
         let events = filter (not . isBlacklisted . eventPath) allEvents
         unless (null events) $ do
           -- Log the changed events for diagnosis.
-          logEvent workDir `mapM_` events
+          logEvent `mapM_` events
           f
-    logEvent :: FilePath -> Event -> IO ()
-    logEvent workDir e = do
-      let eventRelPath = makeRelative workDir $ eventPath e
-      logStrLn cfg $ eventLogPrefix e <> " " <> eventRelPath
+    logEvent :: Event -> IO ()
+    logEvent e = do
+      logStrLn cfg $ eventLogPrefix e <> " " <> eventPath e
     eventLogPrefix = \case
       -- Single character log prefix to indicate file actions is a convention in Rib.
       Added _ _ _ -> "A"
