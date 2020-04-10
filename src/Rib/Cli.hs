@@ -10,7 +10,11 @@ module Rib.Cli
   ( CliConfig (..),
     cliParser,
     Verbosity (..),
+
+    -- * Parser helpers
     directoryReader,
+    watchOption,
+    serveOption,
 
     -- * Internal
     hostPortParser,
@@ -59,22 +63,8 @@ cliParser inputDirDefault outputDirDefault = do
       ( long "rebuild-all"
           <> help "Rebuild all sources"
       )
-  watch <-
-    switch
-      ( long "watch"
-          <> short 'w'
-          <> help "Watch for changes and regenerate"
-      )
-  serve <-
-    optional
-      ( option
-          (megaparsecReader hostPortParser)
-          ( long "serve"
-              <> short 's'
-              <> metavar "[HOST]:PORT"
-              <> help "Run a HTTP server on the generated directory"
-          )
-      )
+  watch <- watchOption
+  serve <- serveOption
   verbosity <-
     fmap
       (bool Verbose Silent)
@@ -102,6 +92,26 @@ cliParser inputDirDefault outputDirDefault = do
       )
   ~(watchIgnore) <- pure builtinWatchIgnores
   pure CliConfig {..}
+
+watchOption :: Parser Bool
+watchOption =
+  switch
+    ( long "watch"
+        <> short 'w'
+        <> help "Watch for changes and regenerate"
+    )
+
+serveOption :: Parser (Maybe (Text, Int))
+serveOption =
+  optional
+    ( option
+        (megaparsecReader hostPortParser)
+        ( long "serve"
+            <> short 's'
+            <> metavar "[HOST]:PORT"
+            <> help "Run a HTTP server on the generated directory"
+        )
+    )
 
 builtinWatchIgnores :: [FilePath]
 builtinWatchIgnores =
