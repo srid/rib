@@ -19,16 +19,17 @@ module Rib.Shake
     getCliConfig,
     ribInputDir,
     ribOutputDir,
-    getDirectoryFiles',
   )
 where
 
+import Control.Monad.Catch
 import Development.Shake
-import Path
-import Path.IO
 import Relude
 import Rib.Cli (CliConfig)
 import qualified Rib.Cli as Cli
+import System.Directory
+import System.FilePath
+import System.IO.Error (isDoesNotExistError)
 
 -- | Get rib settings from a shake Action monad.
 getCliConfig :: Action CliConfig
@@ -39,47 +40,44 @@ getCliConfig = getShakeExtra >>= \case
 -- | Input directory containing source files
 --
 -- This is same as the first argument to `Rib.App.run`
-ribInputDir :: Action (Path Rel Dir)
+ribInputDir :: Action FilePath
 ribInputDir = Cli.inputDir <$> getCliConfig
 
 -- | Output directory where files are generated
 --
 -- This is same as the second argument to `Rib.App.run`
-ribOutputDir :: Action (Path Rel Dir)
+ribOutputDir :: Action FilePath
 ribOutputDir = do
   output <- Cli.outputDir <$> getCliConfig
-  liftIO $ createDirIfMissing True output
+  liftIO $ createDirectoryIfMissing True output
   return output
 
 -- | Shake action to copy static files as is.
-buildStaticFiles :: [Path Rel File] -> Action ()
+buildStaticFiles :: [FilePath] -> Action ()
 buildStaticFiles staticFilePatterns = do
   input <- ribInputDir
   output <- ribOutputDir
-  files <- getDirectoryFiles' input staticFilePatterns
+  files <- getDirectoryFiles input staticFilePatterns
   void $ forP files $ \f ->
-    copyFileChanged' (input </> f) (output </> f)
-  where
-    copyFileChanged' (toFilePath -> old) (toFilePath -> new) =
-      copyFileChanged old new
+    copyFileChanged (input </> f) (output </> f)
 
 -- | Run the given action when any file matching the patterns changes
 forEvery ::
   -- | Source file patterns (relative to `ribInputDir`)
-  [Path Rel File] ->
-  (Path Rel File -> Action a) ->
+  [FilePath] ->
+  (FilePath -> Action a) ->
   Action [a]
 forEvery pats f = do
   input <- ribInputDir
-  fs <- getDirectoryFiles' input pats
+  fs <- getDirectoryFiles input pats
   forP fs f
 
 -- | Write the given file but only when it has been modified.
 --
 -- Also, always writes under ribOutputDir
-writeFileCached :: Path Rel File -> String -> Action ()
+writeFileCached :: FilePath -> String -> Action ()
 writeFileCached !k !s = do
-  f <- fmap (toFilePath . (</> k)) ribOutputDir
+  f <- fmap (</> k) ribOutputDir
   currentS <- liftIO $ forgivingAbsence $ readFile f
   unless (Just s == currentS) $ do
     writeFile' f $! s
@@ -87,7 +85,12 @@ writeFileCached !k !s = do
     -- logging modified files being read.
     putInfo $ "+ " <> f
 
--- | Like `getDirectoryFiles` but works with `Path`
-getDirectoryFiles' :: Typeable b => Path b Dir -> [Path Rel File] -> Action [Path Rel File]
-getDirectoryFiles' (toFilePath -> dir) (fmap toFilePath -> pat) =
-  traverse (liftIO . parseRelFile) =<< getDirectoryFiles dir pat
+-- | If argument of the function throws a
+-- 'System.IO.Error.doesNotExistErrorType', 'Nothing' is returned (other
+-- exceptions propagate). Otherwise the result is returned inside a 'Just'.
+forgivingAbsence :: (MonadIO m, MonadCatch m) => m a -> m (Maybe a)
+forgivingAbsence f =
+  catchIf
+    isDoesNotExistError
+    (Just <$> f)
+    (const $ return Nothing)

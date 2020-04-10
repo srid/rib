@@ -20,23 +20,23 @@ import Control.Exception.Safe (catch)
 import Development.Shake hiding (command)
 import Development.Shake.Forward (shakeForward)
 import Options.Applicative
-import Path
-import Path.IO
 import Relude
 import Rib.Cli (CliConfig (CliConfig), cliParser)
 import qualified Rib.Cli as Cli
 import Rib.Log
 import qualified Rib.Server as Server
 import Rib.Watch (onTreeChange)
-import System.FSNotify (Event (..), eventIsDirectory, eventPath)
+import System.Directory
+import System.FSNotify (Event (..), eventPath)
+import System.FilePath
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
 
 -- | Run Rib using arguments passed in the command line.
 run ::
   -- | Default value for `Cli.inputDir`
-  Path Rel Dir ->
+  FilePath ->
   -- | Deault value for `Cli.outputDir`
-  Path Rel Dir ->
+  FilePath ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()
@@ -52,31 +52,25 @@ run src dst buildAction = runWith buildAction =<< execParser opts
 -- | Like `run` but with an explicitly passed `CliConfig`
 runWith :: Action () -> CliConfig -> IO ()
 runWith buildAction cfg@CliConfig {..} = do
-  when (inputDir == currentRelDir) $
-    -- Because otherwise our use of `watchTree` can interfere with Shake's file
-    -- scaning.
-    fail "cannot use '.' as source directory."
   -- For saner output
   flip hSetBuffering LineBuffering `mapM_` [stdout, stderr]
   case (watch, serve) of
     (True, Just (host, port)) -> do
       race_
-        (Server.serve cfg host port $ toFilePath outputDir)
+        (Server.serve cfg host port $ outputDir)
         (runShakeAndObserve cfg buildAction)
     (True, Nothing) ->
       runShakeAndObserve cfg buildAction
     (False, Just (host, port)) ->
-      Server.serve cfg host port $ toFilePath outputDir
+      Server.serve cfg host port $ outputDir
     (False, Nothing) ->
       runShakeBuild cfg buildAction
-  where
-    currentRelDir = [reldir|.|]
 
 shakeOptionsFrom :: CliConfig -> ShakeOptions
 shakeOptionsFrom cfg'@CliConfig {..} =
   shakeOptions
     { shakeVerbosity = verbosity,
-      shakeFiles = toFilePath shakeDbDir,
+      shakeFiles = shakeDbDir,
       shakeRebuild = bool [] [(RebuildNow, "**")] rebuildAll,
       shakeLintInside = [""],
       shakeExtra = addShakeExtra cfg' (shakeExtra shakeOptions)
@@ -85,7 +79,7 @@ shakeOptionsFrom cfg'@CliConfig {..} =
 runShakeBuild :: CliConfig -> Action () -> IO ()
 runShakeBuild cfg@CliConfig {..} buildAction = do
   runShake cfg $ do
-    logStrLn cfg $ "[Rib] Generating " <> toFilePath inputDir <> " (rebuildAll=" <> show rebuildAll <> ")"
+    logStrLn cfg $ "[Rib] Generating " <> inputDir <> " (rebuildAll=" <> show rebuildAll <> ")"
     buildAction
 
 runShake :: CliConfig -> Action () -> IO ()
@@ -109,27 +103,25 @@ runShakeAndObserve cfg@CliConfig {..} buildAction = do
   -- flag to disable this.
   runShakeBuild (cfg {Cli.rebuildAll = True}) buildAction
   -- And then every time a file changes under the current directory
-  logStrLn cfg $ "[Rib] Watching " <> toFilePath inputDir <> " for changes"
+  logStrLn cfg $ "[Rib] Watching " <> inputDir <> " for changes"
   onSrcChange $ runShakeBuild cfg buildAction
   where
+    onSrcChange :: IO () -> IO ()
     onSrcChange f = do
-      workDir <- getCurrentDir
+      -- Canonicalizing path is important as we are comparing path ancestor using isPrefixOf
+      dir <- canonicalizePath inputDir
       -- Top-level directories to ignore from notifications
-      dirBlacklist <- traverse makeAbsolute [shakeDbDir, inputDir </> [reldir|.git|]]
       let isBlacklisted :: FilePath -> Bool
-          isBlacklisted p = or $ flip fmap dirBlacklist $ \b -> toFilePath b `isPrefixOf` p
-      onTreeChange inputDir $ \allEvents -> do
+          isBlacklisted p = or $ flip fmap watchIgnore $ \b -> (dir </> b) `isPrefixOf` p
+      onTreeChange dir $ \allEvents -> do
         let events = filter (not . isBlacklisted . eventPath) allEvents
         unless (null events) $ do
           -- Log the changed events for diagnosis.
-          logEvent workDir `mapM_` events
+          logEvent `mapM_` events
           f
-    logEvent workDir e = do
-      eventRelPath <-
-        if eventIsDirectory e
-          then fmap toFilePath . makeRelative workDir =<< parseAbsDir (eventPath e)
-          else fmap toFilePath . makeRelative workDir =<< parseAbsFile (eventPath e)
-      logStrLn cfg $ eventLogPrefix e <> " " <> eventRelPath
+    logEvent :: Event -> IO ()
+    logEvent e = do
+      logStrLn cfg $ eventLogPrefix e <> " " <> eventPath e
     eventLogPrefix = \case
       -- Single character log prefix to indicate file actions is a convention in Rib.
       Added _ _ _ -> "A"

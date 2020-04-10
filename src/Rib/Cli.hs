@@ -4,10 +4,17 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Rib.Cli
   ( CliConfig (..),
     cliParser,
+    Verbosity (..),
+
+    -- * Parser helpers
+    directoryReader,
+    watchOption,
+    serveOption,
 
     -- * Internal
     hostPortParser,
@@ -16,9 +23,9 @@ where
 
 import Development.Shake (Verbosity (..))
 import Options.Applicative
-import Path
 import Relude
 import Relude.Extra.Tuple
+import System.FilePath
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 
@@ -38,38 +45,26 @@ data CliConfig
         -- Setting this to `Silent` will affect Rib's own logging as well.
         verbosity :: Verbosity,
         -- | Directory from which source content will be read.
-        inputDir :: Path Rel Dir,
+        inputDir :: FilePath,
         -- | The path where static files will be generated.  Rib's server uses this
         -- directory when serving files.
-        outputDir :: Path Rel Dir,
+        outputDir :: FilePath,
         -- | Path to shake's database directory.
-        shakeDbDir :: Path Rel Dir
+        shakeDbDir :: FilePath,
+        -- | List of relative paths to ignore when watching the source directory
+        watchIgnore :: [FilePath]
       }
   deriving (Show, Eq, Generic, Typeable)
 
-cliParser :: Path Rel Dir -> Path Rel Dir -> Parser CliConfig
+cliParser :: FilePath -> FilePath -> Parser CliConfig
 cliParser inputDirDefault outputDirDefault = do
   rebuildAll <-
     switch
       ( long "rebuild-all"
           <> help "Rebuild all sources"
       )
-  watch <-
-    switch
-      ( long "watch"
-          <> short 'w'
-          <> help "Watch for changes and regenerate"
-      )
-  serve <-
-    optional
-      ( option
-          (megaparsecReader hostPortParser)
-          ( long "serve"
-              <> short 's'
-              <> metavar "[HOST]:PORT"
-              <> help "Run a HTTP server on the generated directory"
-          )
-      )
+  watch <- watchOption
+  serve <- serveOption
   verbosity <-
     fmap
       (bool Verbose Silent)
@@ -80,29 +75,63 @@ cliParser inputDirDefault outputDirDefault = do
       )
   ~(inputDir, shakeDbDir) <-
     fmap (mapToSnd shakeDbDirFrom) $
-      relDirOption
+      option
+        directoryReader
         ( long "input-dir"
             <> metavar "INPUTDIR"
-            <> value (toFilePath inputDirDefault)
-            <> help ("Directory containing the source files (" <> "default: " <> toFilePath inputDirDefault <> ")")
+            <> value inputDirDefault
+            <> help ("Directory containing the source files (" <> "default: " <> inputDirDefault <> ")")
         )
   outputDir <-
-    relDirOption
+    option
+      directoryReader
       ( long "output-dir"
           <> metavar "OUTPUTDIR"
-          <> value (toFilePath outputDirDefault)
-          <> help ("Directory where files will be generated (" <> "default: " <> toFilePath outputDirDefault <> ")")
+          <> value outputDirDefault
+          <> help ("Directory where files will be generated (" <> "default: " <> outputDirDefault <> ")")
       )
+  ~(watchIgnore) <- pure builtinWatchIgnores
   pure CliConfig {..}
-  where
-    relDirOption = fmap (either (error . toText . displayException) id . parseRelDir) . strOption
 
-shakeDbDirFrom :: Path Rel Dir -> Path Rel Dir
+watchOption :: Parser Bool
+watchOption =
+  switch
+    ( long "watch"
+        <> short 'w'
+        <> help "Watch for changes and regenerate"
+    )
+
+serveOption :: Parser (Maybe (Text, Int))
+serveOption =
+  optional
+    ( option
+        (megaparsecReader hostPortParser)
+        ( long "serve"
+            <> short 's'
+            <> metavar "[HOST]:PORT"
+            <> help "Run a HTTP server on the generated directory"
+        )
+    )
+    <|> ( fmap (bool Nothing $ Just (defaultHost, 8080)) $
+            switch (short 'S' <> help ("Like `-s " <> toString defaultHost <> ":8080`"))
+        )
+
+builtinWatchIgnores :: [FilePath]
+builtinWatchIgnores =
+  [ ".shake",
+    ".git"
+  ]
+
+shakeDbDirFrom :: FilePath -> FilePath
 shakeDbDirFrom inputDir =
   -- Keep shake database directory under the src directory instead of the
   -- (default) current working directory, which may not always be a project
   -- root (as in the case of neuron).
-  inputDir </> [reldir|.shake|]
+  inputDir </> ".shake"
+
+-- | Like `str` but adds a trailing slash if there isn't one.
+directoryReader :: ReadM FilePath
+directoryReader = fmap addTrailingPathSeparator str
 
 megaparsecReader :: M.Parsec Void Text a -> ReadM a
 megaparsecReader p =
@@ -116,7 +145,7 @@ hostPortParser = do
         <|> M.try parseIP
   void $ M.char ':'
   port <- parseNumRange 1 65535
-  pure (fromMaybe "127.0.0.1" host, port)
+  pure (fromMaybe defaultHost host, port)
   where
     readNum = maybe (fail "Not a number") pure . readMaybe
     parseIP :: M.Parsec Void Text Text
@@ -132,3 +161,6 @@ hostPortParser = do
       if a <= n && n <= b
         then pure n
         else fail $ "Number not in range: " <> show a <> "-" <> show b
+
+defaultHost :: Text
+defaultHost = "127.0.0.1"
