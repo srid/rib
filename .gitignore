@@ -1,5 +1,4 @@
 dist-newstyle
 dist
 result
-.shake
-guide.output
+guide/.neuron

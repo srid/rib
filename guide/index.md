@@ -27,17 +27,16 @@ using Rib:
 -- generate the final page text.
 data Route a where
   Route_Index :: Route [(Route Pandoc, Pandoc)]
-  Route_Article :: Path Rel File -> Route Pandoc
+  Route_Article :: FilePath -> Route Pandoc
 
 -- | The `IsRoute` instance allows us to determine the target .html path for
 -- each route. This affects what `routeUrl` will return.
 instance IsRoute Route where
   routeFile = \case
     Route_Index ->
-      pure [relfile|index.html|]
+      pure "index.html"
     Route_Article srcPath ->
-      fmap ([reldir|article|] </>) $
-        replaceExtension ".html" srcPath
+      pure $ "article" </> srcPath -<.> ".html"
 
 -- | Main entry point to our generator.
 --
@@ -51,18 +50,18 @@ instance IsRoute Route where
 -- provided by Rib to do the actual generation of your static site.
 main :: IO ()
 main = withUtf8 $ do
-  Rib.run [reldir|content|] [reldir|dest|] generateSite
+  Rib.run "content" "dest" generateSite
 
 -- | Shake action for generating the static site
 generateSite :: Action ()
 generateSite = do
   -- Copy over the static files
-  Rib.buildStaticFiles [[relfile|static/**|]]
+  Rib.buildStaticFiles ["static/**"]
   let writeHtmlRoute :: Route a -> a -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
   -- Build individual sources, generating .html for each.
   articles <-
-    Rib.forEvery [[relfile|*.md|]] $ \srcPath -> do
+    Rib.forEvery ["*.md"] $ \srcPath -> do
       let r = Route_Article srcPath
       doc <- Pandoc.parse Pandoc.readMarkdown srcPath
       writeHtmlRoute r doc
