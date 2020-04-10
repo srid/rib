@@ -26,6 +26,7 @@ import qualified Rib.Cli as Cli
 import Rib.Log
 import qualified Rib.Server as Server
 import Rib.Watch (onTreeChange)
+import System.Directory
 import System.FSNotify (Event (..), eventPath)
 import System.FilePath
 import System.IO (BufferMode (LineBuffering), hSetBuffering)
@@ -107,10 +108,12 @@ runShakeAndObserve cfg@CliConfig {..} buildAction = do
   where
     onSrcChange :: IO () -> IO ()
     onSrcChange f = do
+      -- Canonicalizing path is important as we are comparing path ancestor using isPrefixOf
+      dir <- canonicalizePath inputDir
       -- Top-level directories to ignore from notifications
       let isBlacklisted :: FilePath -> Bool
-          isBlacklisted p = or $ flip fmap watchIgnore $ \b -> (inputDir </> b) `isPrefixOf` p
-      onTreeChange inputDir $ \allEvents -> do
+          isBlacklisted p = or $ flip fmap watchIgnore $ \b -> (dir </> b) `isPrefixOf` p
+      onTreeChange dir $ \allEvents -> do
         let events = filter (not . isBlacklisted . eventPath) allEvents
         unless (null events) $ do
           -- Log the changed events for diagnosis.
