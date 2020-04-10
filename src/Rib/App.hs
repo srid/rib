@@ -34,9 +34,9 @@ import System.IO (BufferMode (LineBuffering), hSetBuffering)
 -- | Run Rib using arguments passed in the command line.
 run ::
   -- | Default value for `Cli.inputDir`
-  Path Rel Dir ->
+  Path Abs Dir ->
   -- | Deault value for `Cli.outputDir`
-  Path Rel Dir ->
+  Path Abs Dir ->
   -- | Shake build rules for building the static site
   Action () ->
   IO ()

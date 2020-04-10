@@ -39,13 +39,13 @@ getCliConfig = getShakeExtra >>= \case
 -- | Input directory containing source files
 --
 -- This is same as the first argument to `Rib.App.run`
-ribInputDir :: Action (Path Rel Dir)
+ribInputDir :: Action (Path Abs Dir)
 ribInputDir = Cli.inputDir <$> getCliConfig
 
 -- | Output directory where files are generated
 --
 -- This is same as the second argument to `Rib.App.run`
-ribOutputDir :: Action (Path Rel Dir)
+ribOutputDir :: Action (Path Abs Dir)
 ribOutputDir = do
   output <- Cli.outputDir <$> getCliConfig
   liftIO $ createDirIfMissing True output

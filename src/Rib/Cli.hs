@@ -4,6 +4,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Rib.Cli
   ( CliConfig (..),
@@ -38,16 +39,16 @@ data CliConfig
         -- Setting this to `Silent` will affect Rib's own logging as well.
         verbosity :: Verbosity,
         -- | Directory from which source content will be read.
-        inputDir :: Path Rel Dir,
+        inputDir :: Path Abs Dir,
         -- | The path where static files will be generated.  Rib's server uses this
         -- directory when serving files.
-        outputDir :: Path Rel Dir,
+        outputDir :: Path Abs Dir,
         -- | Path to shake's database directory.
-        shakeDbDir :: Path Rel Dir
+        shakeDbDir :: Path Abs Dir
       }
   deriving (Show, Eq, Generic, Typeable)
 
-cliParser :: Path Rel Dir -> Path Rel Dir -> Parser CliConfig
+cliParser :: Path Abs Dir -> Path Abs Dir -> Parser CliConfig
 cliParser inputDirDefault outputDirDefault = do
   rebuildAll <-
     switch
@@ -80,24 +81,26 @@ cliParser inputDirDefault outputDirDefault = do
       )
   ~(inputDir, shakeDbDir) <-
     fmap (mapToSnd shakeDbDirFrom) $
-      relDirOption
+      option
+        absDirReader
         ( long "input-dir"
             <> metavar "INPUTDIR"
-            <> value (toFilePath inputDirDefault)
+            <> value inputDirDefault
             <> help ("Directory containing the source files (" <> "default: " <> toFilePath inputDirDefault <> ")")
         )
   outputDir <-
-    relDirOption
+    option
+      absDirReader
       ( long "output-dir"
           <> metavar "OUTPUTDIR"
-          <> value (toFilePath outputDirDefault)
+          <> value outputDirDefault
           <> help ("Directory where files will be generated (" <> "default: " <> toFilePath outputDirDefault <> ")")
       )
   pure CliConfig {..}
   where
-    relDirOption = fmap (either (error . toText . displayException) id . parseRelDir) . strOption
+    absDirReader = eitherReader $ first (toString . displayException) . parseAbsDir
 
-shakeDbDirFrom :: Path Rel Dir -> Path Rel Dir
+shakeDbDirFrom :: Path Abs Dir -> Path Abs Dir
 shakeDbDirFrom inputDir =
   -- Keep shake database directory under the src directory instead of the
   -- (default) current working directory, which may not always be a project
