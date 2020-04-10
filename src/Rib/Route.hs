@@ -23,9 +23,9 @@ import Control.Monad.Catch
 import Data.Kind
 import qualified Data.Text as T
 import Development.Shake (Action)
-import Path
 import Relude
 import Rib.Shake (writeFileCached)
+import System.FilePath
 
 -- | A route is a GADT which represents the individual routes in a static site.
 --
@@ -33,16 +33,16 @@ import Rib.Shake (writeFileCached)
 class IsRoute (r :: Type -> Type) where
   -- | Return the filepath (relative to `Rib.Shake.ribInputDir`) where the
   -- generated content for this route should be written.
-  routeFile :: MonadThrow m => r a -> m (Path Rel File)
+  routeFile :: MonadThrow m => r a -> m (FilePath)
 
 data UrlType = Relative | Absolute
 
-path2Url :: Path Rel File -> UrlType -> Text
-path2Url fp = toText . toFilePath . \case
+path2Url :: FilePath -> UrlType -> Text
+path2Url fp = toText . \case
   Relative ->
     fp
   Absolute ->
-    [absdir|/|] </> fp
+    "/" </> fp
 
 -- | The absolute URL to this route (relative to site root)
 routeUrl :: IsRoute r => r a -> Text

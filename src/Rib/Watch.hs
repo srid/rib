@@ -13,7 +13,6 @@ where
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
 import Control.Concurrent.Chan
-import Path
 import Relude
 import System.FSNotify (Event (..), watchTreeChan, withManager)
 
@@ -22,11 +21,11 @@ import System.FSNotify (Event (..), watchTreeChan, withManager)
 --
 -- If multiple events fire rapidly, the IO action is invoked only once, taking
 -- those multiple events as its argument.
-onTreeChange :: Path b t -> ([Event] -> IO ()) -> IO ()
+onTreeChange :: FilePath -> ([Event] -> IO ()) -> IO ()
 onTreeChange fp f = do
   withManager $ \mgr -> do
     eventCh <- newChan
-    void $ watchTreeChan mgr (toFilePath fp) (const True) eventCh
+    void $ watchTreeChan mgr fp (const True) eventCh
     forever $ do
       firstEvent <- readChan eventCh
       events <- debounce 100 [firstEvent] $ readChan eventCh

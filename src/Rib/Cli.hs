@@ -17,9 +17,9 @@ where
 
 import Development.Shake (Verbosity (..))
 import Options.Applicative
-import Path
 import Relude
 import Relude.Extra.Tuple
+import System.FilePath
 import qualified Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 
@@ -39,16 +39,16 @@ data CliConfig
         -- Setting this to `Silent` will affect Rib's own logging as well.
         verbosity :: Verbosity,
         -- | Directory from which source content will be read.
-        inputDir :: Path Abs Dir,
+        inputDir :: FilePath,
         -- | The path where static files will be generated.  Rib's server uses this
         -- directory when serving files.
-        outputDir :: Path Abs Dir,
+        outputDir :: FilePath,
         -- | Path to shake's database directory.
-        shakeDbDir :: Path Abs Dir
+        shakeDbDir :: FilePath
       }
   deriving (Show, Eq, Generic, Typeable)
 
-cliParser :: Path Abs Dir -> Path Abs Dir -> Parser CliConfig
+cliParser :: FilePath -> FilePath -> Parser CliConfig
 cliParser inputDirDefault outputDirDefault = do
   rebuildAll <-
     switch
@@ -81,31 +81,27 @@ cliParser inputDirDefault outputDirDefault = do
       )
   ~(inputDir, shakeDbDir) <-
     fmap (mapToSnd shakeDbDirFrom) $
-      option
-        absDirReader
+      strOption
         ( long "input-dir"
             <> metavar "INPUTDIR"
             <> value inputDirDefault
-            <> help ("Directory containing the source files (" <> "default: " <> toFilePath inputDirDefault <> ")")
+            <> help ("Directory containing the source files (" <> "default: " <> inputDirDefault <> ")")
         )
   outputDir <-
-    option
-      absDirReader
+    strOption
       ( long "output-dir"
           <> metavar "OUTPUTDIR"
           <> value outputDirDefault
-          <> help ("Directory where files will be generated (" <> "default: " <> toFilePath outputDirDefault <> ")")
+          <> help ("Directory where files will be generated (" <> "default: " <> outputDirDefault <> ")")
       )
   pure CliConfig {..}
-  where
-    absDirReader = eitherReader $ first (toString . displayException) . parseAbsDir
 
-shakeDbDirFrom :: Path Abs Dir -> Path Abs Dir
+shakeDbDirFrom :: FilePath -> FilePath
 shakeDbDirFrom inputDir =
   -- Keep shake database directory under the src directory instead of the
   -- (default) current working directory, which may not always be a project
   -- root (as in the case of neuron).
-  inputDir </> [reldir|.shake|]
+  inputDir </> ".shake"
 
 megaparsecReader :: M.Parsec Void Text a -> ReadM a
 megaparsecReader p =

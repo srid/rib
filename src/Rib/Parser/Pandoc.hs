@@ -32,9 +32,9 @@ import Control.Monad.Except (MonadError, liftEither, runExcept)
 import Data.Aeson
 import Development.Shake (Action, readFile')
 import Lucid (HtmlT, toHtmlRaw)
-import Path
 import Relude
 import Rib.Shake (ribInputDir)
+import System.FilePath
 import Text.Pandoc
 import Text.Pandoc.Filter.IncludeCode (includeCode)
 import qualified Text.Pandoc.Readers
@@ -54,12 +54,12 @@ parsePure textReader s =
 parse ::
   -- | The pandoc text reader function to use, eg: `readMarkdown`
   (ReaderOptions -> Text -> PandocIO Pandoc) ->
-  Path Rel File ->
+  FilePath ->
   Action Pandoc
 parse textReader f =
   either fail pure =<< do
     inputDir <- ribInputDir
-    content <- toText <$> readFile' (toFilePath $ inputDir </> f)
+    content <- toText <$> readFile' (inputDir </> f)
     fmap (first show) $ runExceptT $ do
       v' <- runIO' $ textReader readerSettings content
       liftIO $ walkM includeSources v'

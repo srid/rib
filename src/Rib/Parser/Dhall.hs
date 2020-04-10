@@ -15,22 +15,22 @@ where
 
 import Development.Shake
 import Dhall (FromDhall, auto, input)
-import Path
 import Relude
 import Rib.Shake (ribInputDir)
 import System.Directory
+import System.FilePath
 
 -- | Parse a Dhall file as Haskell type.
 parse ::
   FromDhall a =>
   -- | Dependent .dhall files, which must trigger a rebuild
-  [Path Rel File] ->
+  [FilePath] ->
   -- | The Dhall file to parse. Relative to `ribInputDir`.
-  Path Rel File ->
+  FilePath ->
   Action a
-parse (map toFilePath -> deps) f = do
+parse deps f = do
   inputDir <- ribInputDir
   need deps
-  s <- toText <$> readFile' (toFilePath $ inputDir </> f)
-  liftIO $ withCurrentDirectory (toFilePath inputDir) $
+  s <- toText <$> readFile' (inputDir </> f)
+  liftIO $ withCurrentDirectory inputDir $
     input auto s
