@@ -7,7 +7,7 @@
 [![built with nix](https://img.shields.io/badge/builtwith-nix-purple.svg)](https://builtwithnix.org)
 [![Zulip chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://funprog.zulipchat.com/#narrow/stream/218047-Rib)
 
-Rib is a Haskell **static site generator** that aims to reuse existing libraries instead of reinventing the wheel.
+Rib is a Haskell **static site generator** based on Shake, with a delightful workflow.
 
 See <https://rib.srid.ca> for full documentation.
 

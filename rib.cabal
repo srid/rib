@@ -8,9 +8,9 @@ author: Sridhar Ratnakumar
 homepage: https://github.com/srid/rib#readme
 bug-reports: https://github.com/srid/rib/issues
 synopsis:
-    Static site generator using Shake
+    Static site generator based on Shake
 description:
-    Easily composable Haskell static site generator library based on Shake.
+    Haskell static site generator based on Shake, with a delightful development experience.
 category: Web
 build-type: Simple
 extra-source-files:
