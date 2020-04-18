@@ -11,12 +11,11 @@ Rib composes existing tools designed to do their task well, instead of
 reinventing their capabilities. Time spent using rib is time spent learning them.
 
 - Use [Shake](https://shakebuild.com/) as the core build engine.
-- Write HTML & CSS in Haskell with natural flow (using [Lucid](https://chrisdone.com/posts/lucid2/)) &
-  ([Clay](http://fvisser.nl/clay/))
-  - Optional route system for safe construction of site routes
-- Parse Markdown or any of the formats supported by
-  [Pandoc](https://pandoc.org/) ([MMark](https://github.com/mmark-md/mmark) is
-  supported as well)
+- Write HTML & CSS in Haskell with natural flow (using [Lucid](https://chrisdone.com/posts/lucid2/) &
+  [Clay](http://fvisser.nl/clay/))
+  - Optional route system for type-safe construction of your site routes.
+- Parse Markdown and other formats supported by
+  [Pandoc](https://pandoc.org/) / [MMark](https://github.com/mmark-md/mmark).
 - Remain as simple as possible to use
 - Reproducible and a delightful workflow enabled by Nix, ghcid and fsnotify.
 
@@ -31,7 +30,7 @@ repository, [**rib-sample**](https://github.com/srid/rib-sample), from Github.
 
 ## Next
 
-* [2014301](z://concepts)
+* [2014301](z://tutorial)
 * [2015602](z://guide) 
 * [2014302](z://examples)
 
