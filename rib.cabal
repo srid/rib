@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: rib
-version: 0.9.0.0
+version: 0.10.0.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -86,7 +86,7 @@ test-suite rib-test
   hs-source-dirs: test 
   main-is: Spec.hs
   build-depends:
-    base,
+    base-noprelude >=4.7 && <5,
     relude,
     hspec,
     QuickCheck

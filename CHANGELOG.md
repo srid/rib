@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## 0.9.0.0 (UNRELEASED, DEV)
+## 0.10.0.0
 
 - API
   - Dropped `path` and `path-io` in favour of good ol' `FilePath`
