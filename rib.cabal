@@ -51,7 +51,6 @@ common library-common
         mtl >=2.2.2 && <2.3,
         optparse-applicative >= 0.15,
         pandoc >=2.7 && <3,
-        pandoc-include-code >=1.5 && <1.6,
         pandoc-types >=1.20,
         relude >= 0.6 && < 0.7,
         safe-exceptions,

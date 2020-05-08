@@ -1,5 +1,9 @@
 # Change Log for rib
 
+## UNRELEASED
+
+- Removed pandoc-include-code
+
 ## 0.10.0.0
 
 - API

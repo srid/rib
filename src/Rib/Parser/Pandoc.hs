@@ -3,8 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ViewPatterns #-}
 
 -- | Helpers for working with Pandoc documents
 module Rib.Parser.Pandoc
@@ -36,7 +34,6 @@ import Relude
 import Rib.Shake (ribInputDir)
 import System.FilePath
 import Text.Pandoc
-import Text.Pandoc.Filter.IncludeCode (includeCode)
 import qualified Text.Pandoc.Readers
 import Text.Pandoc.Walk (query, walkM)
 import Text.Pandoc.Writers.Shared (toTableOfContents)
@@ -61,10 +58,7 @@ parse textReader f =
     inputDir <- ribInputDir
     content <- toText <$> readFile' (inputDir </> f)
     fmap (first show) $ runExceptT $ do
-      v' <- runIO' $ textReader readerSettings content
-      liftIO $ walkM includeSources v'
-  where
-    includeSources = includeCode $ Just $ Format "html5"
+      runIO' $ textReader readerSettings content
 
 -- | Render a Pandoc document to HTML
 render :: Monad m => Pandoc -> HtmlT m ()
