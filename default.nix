@@ -16,7 +16,6 @@ in {
 , ...
 }:
 let
-  pipe = pkgs.lib.trivial.pipe;
   optionals = pkgs.lib.lists.optionals;
 in
 compiler.developPackage {
@@ -25,6 +24,7 @@ compiler.developPackage {
     rib = ribRoot;
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
+    with-utf8 = super.callHackage "with-utf8" "1.0.1.0" {};
   } // (overrides self super);
   modifier = with pkgs.haskell.lib;
     let
@@ -42,8 +42,5 @@ compiler.developPackage {
           # macOS.
           ++ optionals (builtins.currentSystem == "x86_64-linux") [pkgs.fsatrace]
         );
-    in drv: pipe drv [
-      addRibDeps
-      dontHaddock
-    ];
+    in drv: addRibDeps (dontHaddock drv);
 }
