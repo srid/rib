@@ -1,8 +1,9 @@
 # Change Log for rib
 
-## UNRELEASED
+## 0.11 (UNRELEASED)
 
 - Removed pandoc-include-code
+- default.nix: Allow overriding compiler
 
 ## 0.10.0.0
 

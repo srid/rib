@@ -7,7 +7,7 @@ let
   ribRoot = gitignoreSource ./.;
 in { 
   pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
-, compiler ? "default"
+, compiler ? pkgs.haskellPackages
 , root ? ribRoot
 , name ? "rib"
 , source-overrides ? {}
@@ -19,7 +19,7 @@ let
   pipe = pkgs.lib.trivial.pipe;
   optionals = pkgs.lib.lists.optionals;
 in
-pkgs.haskellPackages.developPackage {
+compiler.developPackage {
   inherit root name;
   source-overrides = {
     rib = ribRoot;
