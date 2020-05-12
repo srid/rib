@@ -12,7 +12,7 @@ module Rib.Extra.OpenGraph
 where
 
 import Data.Time (UTCTime)
-import Data.Time.Format.ISO8601 (formatShow, iso8601Format)
+import Data.Time.ISO8601 (formatISO8601)
 import Lucid
 import Lucid.Base (makeAttribute)
 import Relude
@@ -84,7 +84,7 @@ instance ToHtml Article where
     metaOg "article:tag" `mapM_` _article_tag
     where
       metaOgTime k t =
-        metaOg k $ toText $ formatShow iso8601Format t
+        metaOg k $ toText $ formatISO8601 t
 
 -- Open graph meta element
 metaOg :: Applicative m => Text -> Text -> HtmlT m ()
