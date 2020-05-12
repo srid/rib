@@ -1,7 +1,7 @@
 let
   # Use https://status.nixos.org// to find the next hash to update nixpkgs to.
   # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "05f0934825c2";
+  nixpkgsRev = "cfe68f2b68b7";
 
   inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
   ribRoot = gitignoreSource ./.;
@@ -24,7 +24,6 @@ compiler.developPackage {
     rib = ribRoot;
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
-    with-utf8 = super.callHackage "with-utf8" "1.0.1.0" {};
   } // (overrides self super);
   modifier = with pkgs.haskell.lib;
     let

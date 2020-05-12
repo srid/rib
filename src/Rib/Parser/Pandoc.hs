@@ -35,7 +35,7 @@ import Rib.Shake (ribInputDir)
 import System.FilePath
 import Text.Pandoc
 import qualified Text.Pandoc.Readers
-import Text.Pandoc.Walk (query, walkM)
+import Text.Pandoc.Walk (query)
 import Text.Pandoc.Writers.Shared (toTableOfContents)
 
 -- | Pure version of `parse`
