@@ -15,13 +15,13 @@ See <https://rib.srid.ca> for full documentation.
 
 Use ghcid for quicker compilation cycles:
 
-```
+```bash
 nix-shell --run ghcid
 ```
 
 To test your changes, clone [rib-sample](https://github.com/srid/rib-sample) and run it using your local rib checkout:
 
-```
+```bash
 cd ..
 git clone https://github.com/srid/rib-sample.git
 cd rib-sample
