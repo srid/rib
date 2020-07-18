@@ -10,7 +10,7 @@ jobs:
         os: [macos-latest, ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v9
+    - uses: cachix/install-nix-action@v10
     # This also runs nix-build.
     - uses: cachix/cachix-action@v6
       with:
