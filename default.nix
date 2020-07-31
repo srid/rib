@@ -22,6 +22,7 @@ compiler.developPackage {
   inherit root name;
   source-overrides = {
     rib = ribRoot + "/rib";
+    rib-core = ribRoot + "/rib-core";
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
   } // (overrides self super);

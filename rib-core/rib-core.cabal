@@ -1,5 +1,5 @@
 cabal-version: 2.4
-name: rib
+name: rib-core
 version: 0.13.0.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
@@ -18,7 +18,7 @@ source-repository head
     type: git
     location: https://github.com/srid/rib
 
-common library-common
+library
     hs-source-dirs: src
     default-language: Haskell2010
     default-extensions: NoImplicitPrelude
@@ -31,24 +31,17 @@ common library-common
         async,
         base-noprelude >=4.12 && <4.14,
         binary >=0.8.6 && <0.9,
-        clay >=0.13.3,
         cmdargs >=0.10.20 && <0.11,
         containers >=0.6.0 && <0.7,
-        dhall >= 1.30 && <1.33,
         directory >= 1.0 && <2.0,
         exceptions,
         foldl,
         fsnotify >=0.3.0 && <0.4,
         filepath,
-        lucid >=2.9.11 && <2.10,
         megaparsec >= 8.0,
-        mmark >= 0.0.7.2,
-        mmark-ext >= 0.2.1.0,
         modern-uri,
         mtl >=2.2.2 && <2.3,
         optparse-applicative >= 0.15,
-        pandoc >=2.7 && <3,
-        pandoc-types >=1.20,
         relude >= 0.6 && < 0.8,
         safe-exceptions,
         shake >= 0.18.5,
@@ -57,27 +50,13 @@ common library-common
         iso8601-time,
         wai >=3.2.2 && <3.3,
         wai-app-static >=3.1.6 && <3.2,
-        warp,
-        rib-core
-
-library
-  import: library-common
+        warp
   exposed-modules:
-      Rib
-      Rib.Parser.Dhall
-      Rib.Parser.MMark
-      Rib.Parser.Pandoc
-      Rib.Extra.CSS
-      Rib.Extra.OpenGraph
-
-test-suite rib-test 
-  import: library-common
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test 
-  main-is: Spec.hs
-  build-depends:
-    base-noprelude >=4.12 && <4.14,
-    relude,
-    hspec,
-    QuickCheck
-
+      Rib.App
+      Rib.Cli
+      Rib.Watch
+      Rib.Log
+      Rib.Route
+      Rib.Shake
+  other-modules:
+      Rib.Server

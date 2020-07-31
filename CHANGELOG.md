@@ -1,5 +1,9 @@
 # Change Log for rib
 
+## Unreleased
+
+- Split packages into `rib` and `rib-core`
+
 ## 0.12
 
 - Removed pandoc-include-code
