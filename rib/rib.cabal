@@ -1,6 +1,6 @@
 cabal-version: 2.4
 name: rib
-version: 0.12.0.0
+version: 0.13.0.0
 license: BSD-3-Clause
 copyright: 2019 Sridhar Ratnakumar
 maintainer: srid@srid.ca
@@ -13,9 +13,6 @@ description:
     Haskell static site generator based on Shake, with a delightful development experience.
 category: Web
 build-type: Simple
-extra-source-files:
-    README.md
-    CHANGELOG.md
 
 source-repository head
     type: git
@@ -60,25 +57,18 @@ common library-common
         iso8601-time,
         wai >=3.2.2 && <3.3,
         wai-app-static >=3.1.6 && <3.2,
-        warp
+        warp,
+        rib-core
 
 library
   import: library-common
   exposed-modules:
       Rib
-      Rib.App
-      Rib.Cli
-      Rib.Watch
-      Rib.Log
       Rib.Parser.Dhall
       Rib.Parser.MMark
       Rib.Parser.Pandoc
-      Rib.Route
-      Rib.Shake
       Rib.Extra.CSS
       Rib.Extra.OpenGraph
-  other-modules:
-      Rib.Server
 
 test-suite rib-test 
   import: library-common

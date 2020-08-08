@@ -8,7 +8,7 @@ let
 in { 
   pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
 , compiler ? pkgs.haskellPackages
-, root ? ribRoot
+, root ? (ribRoot + "/rib")
 , name ? "rib"
 , source-overrides ? {}
 , overrides ? self: super: {}
@@ -21,7 +21,8 @@ in
 compiler.developPackage {
   inherit root name;
   source-overrides = {
-    rib = ribRoot;
+    rib = ribRoot + "/rib";
+    rib-core = ribRoot + "/rib-core";
   } // source-overrides;
   overrides = self: super: with pkgs.haskell.lib; {
   } // (overrides self super);

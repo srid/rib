@@ -1,0 +1,62 @@
+cabal-version: 2.4
+name: rib-core
+version: 0.13.0.0
+license: BSD-3-Clause
+copyright: 2019 Sridhar Ratnakumar
+maintainer: srid@srid.ca
+author: Sridhar Ratnakumar
+homepage: https://github.com/srid/rib#readme
+bug-reports: https://github.com/srid/rib/issues
+synopsis:
+    Static site generator based on Shake
+description:
+    Haskell static site generator based on Shake, with a delightful development experience.
+category: Web
+build-type: Simple
+
+source-repository head
+    type: git
+    location: https://github.com/srid/rib
+
+library
+    hs-source-dirs: src
+    default-language: Haskell2010
+    default-extensions: NoImplicitPrelude
+    ghc-options:
+        -Wall
+        -Wincomplete-record-updates
+        -Wincomplete-uni-patterns
+    build-depends:
+        aeson >=1.4.2 && <1.5,
+        async,
+        base-noprelude >=4.12 && <4.14,
+        binary >=0.8.6 && <0.9,
+        cmdargs >=0.10.20 && <0.11,
+        containers >=0.6.0 && <0.7,
+        directory >= 1.0 && <2.0,
+        exceptions,
+        foldl,
+        fsnotify >=0.3.0 && <0.4,
+        filepath,
+        megaparsec >= 8.0,
+        modern-uri,
+        mtl >=2.2.2 && <2.3,
+        optparse-applicative >= 0.15,
+        relude >= 0.6 && < 0.8,
+        safe-exceptions,
+        shake >= 0.18.5,
+        text >=1.2.3 && <1.3,
+        time,
+        iso8601-time,
+        wai >=3.2.2 && <3.3,
+        wai-app-static >=3.1.6 && <3.2,
+        warp
+  exposed-modules:
+      Rib.App
+      Rib.Cli
+      Rib.Watch
+      Rib.Log
+      Rib.Route
+      Rib.Shake
+  other-modules:
+      Rib.Server
