@@ -1,12 +1,21 @@
 let
   # Use https://status.nixos.org// to find the next hash to update nixpkgs to.
   # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "cfe68f2b68b7";
+  nixpkgsRev = "6d4b93323e7f";
+  nixpkgsSrc = builtins.fetchTarball {
+    url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
+    sha256 = "0g2j41cx2w2an5d9kkqvgmada7ssdxqz1zvjd7hi5vif8ag0v5la";
+  };
 
-  inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
+  gitignoreSrc = builtins.fetchTarball { 
+    url = "https://github.com/hercules-ci/gitignore/archive/c4662e6.tar.gz";
+    sha256 = "1npnx0h6bd0d7ql93ka7azhj40zgjp815fw2r6smg8ch9p7mzdlx";
+  };
+  inherit (import gitignoreSrc { }) gitignoreSource;
+
   ribRoot = gitignoreSource ./.;
 in { 
-  pkgs ? import (builtins.fetchTarball "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz") {}
+  pkgs ? import nixpkgsSrc {}
 , compiler ? pkgs.haskellPackages
 , root ? (ribRoot + "/rib")
 , name ? "rib"
