@@ -1,6 +1,4 @@
----
-title: Quick Preview
----
+# Quick Preview
 
 Here is how your code may look like if you were to generate your static site
 using Rib:

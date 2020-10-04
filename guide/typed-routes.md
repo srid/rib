@@ -1,8 +1,9 @@
 ---
-title: Typed Routes
 tags:
     - guide
 ---
+
+# Typed Routes
 
 Rib includes an optional route system based on
 [GADT](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/gadt.html)s than

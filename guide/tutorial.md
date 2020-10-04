@@ -1,6 +1,4 @@
----
-title: Tutorial
----
+# Tutorial
 
 Although Rib is at its core a Haskell library (and meant to be used as one, rather than as a framework), it provides toolset (based on nix, ghcid, fsnotify, etc.) to make working with static sites pleasant.
 

@@ -1,6 +1,4 @@
----
-title: Examples
----
+# Examples
 
 * [rib-sample](https://github.com/srid/rib-sample): Use this to get started with
   your own site.
