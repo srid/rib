@@ -74,7 +74,7 @@ cliParser inputDirDefault outputDirDefault = do
           )
       )
   ~(inputDir, shakeDbDir) <-
-    fmap (mapToSnd shakeDbDirFrom) $
+    fmap (toSnd shakeDbDirFrom) $
       option
         directoryReader
         ( long "input-dir"
