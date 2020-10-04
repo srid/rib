@@ -1,6 +1,6 @@
 # Change Log for rib
 
-## Unreleased
+## 1.0
 
 - Split packages into `rib` and `rib-core`
 
