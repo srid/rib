@@ -1,6 +1,4 @@
----
-title: Tutorial
----
+# Tutorial
 
 Although Rib is at its core a Haskell library (and meant to be used as one, rather than as a framework), it provides toolset (based on nix, ghcid, fsnotify, etc.) to make working with static sites pleasant.
 
@@ -19,7 +17,7 @@ content/  default.nix  Main.hs  README.md  rib-sample.cabal
 The three key items here are:
 
 1. `Main.hs`: Haskell source containing the DSL of the HTML/CSS of your site.
-   See [[2015601]].
+   See [[preview]].
 2. `content/`: The source content (eg: Markdown sources and static files)
 3. `dest/`: The target directory, excluded from the git repository, will contain
    _generated_ content (i.e., the HTML files, and copied over static content)

@@ -1,14 +1,15 @@
 ---
-title: Typed Routes
 tags:
     - guide
 ---
 
+# Typed Routes
+
 Rib includes an optional route system based on
 [GADT](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/gadt.html)s than
 can be used to define safe and structured routes for your site. The sample repo
-used in [[2014301]] already uses routes, and you can see the entire code in
-[[2015601]] to see all of this would fit together in a static site
+used in [[tutorial]] already uses routes, and you can see the entire code in
+[[preview]] to see all of this would fit together in a static site
 generator.
 
 

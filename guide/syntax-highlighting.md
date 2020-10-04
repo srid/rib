@@ -1,8 +1,9 @@
 ---
-title: Enable Syntax Highlighting
 tags:
     - guide
 ---
+
+# Enable Syntax Highlighting
 
 Use Pandoc to add syntax highlighting support to your rib site.
 
