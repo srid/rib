@@ -1,10 +1,10 @@
 let
   # Use https://status.nixos.org// to find the next hash to update nixpkgs to.
   # Look for the "Last updated" commit hash for the entry `nixpkgs-unstable`
-  nixpkgsRev = "6d4b93323e7f";
+  nixpkgsRev = "502845c3e31e";
   nixpkgsSrc = builtins.fetchTarball {
     url = "https://github.com/nixos/nixpkgs/archive/${nixpkgsRev}.tar.gz";
-    sha256 = "0g2j41cx2w2an5d9kkqvgmada7ssdxqz1zvjd7hi5vif8ag0v5la";
+    sha256 = "0fcqpsy6y7dgn0y0wgpa56gsg0b0p8avlpjrd79fp4mp9bl18nda";
   };
 
   gitignoreSrc = builtins.fetchTarball { 
@@ -41,6 +41,7 @@ compiler.developPackage {
         addBuildTools drv (with pkgs.haskellPackages;
           [ cabal-install
             ghcid
+            haskell-language-server
           ] 
           # Additional packages would be available in `nix-build` as well, only
           # as long as the built executable references it. When using as a
