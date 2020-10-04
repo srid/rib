@@ -19,7 +19,7 @@ reinventing their capabilities. Time spent using rib is time spent learning them
 - Remain as simple as possible to use
 - Reproducible and a delightful workflow enabled by Nix, ghcid and fsnotify.
 
-See [[[2015601]]] to get a feel for what your code may look like.
+See [[[preview]]] to get a feel for what your code may look like.
 
 
 ## Getting Started
@@ -30,7 +30,7 @@ repository, [**rib-sample**](https://github.com/srid/rib-sample), from Github.
 
 ## Next
 
-* [[[2014301]]]
-* [[[2015602]]]
-* [[[2014302]]]
+* [[[tutorial]]]
+* [[[guide]]]
+* [[[examples]]]
 
