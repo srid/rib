@@ -33,7 +33,7 @@ Clone the sample repository locally, install [Nix](https://nixos.org/nix/) (as
 described in its README) and run your site as follows:
 
 ```bash
-nix-shell --run 'ghcid -T ":main serve"'
+nix-shell --run 'ghcid -T ":main -wS"'
 ```
 
 Running this command gives you a local HTTP server at <http://127.0.0.1:8080>
@@ -58,7 +58,7 @@ installed.
 4. `Rib.App.run`: this parses the CLI arguments and runs the rib CLI "app" which
    can be run in one of a few modes --- generating static files, watching the
    `content/` directory for changes, starting HTTP server for the `dest/` directory.
-   The "serve" subcommand will run the Shake build action passed as argument on 
+   The "-wS" options will run the Shake build action passed as argument on 
    every file change and spin up a HTTP server.
    
 Run that command, and visit <http://127.0.0.1:8080> to view your site.
