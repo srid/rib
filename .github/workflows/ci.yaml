@@ -10,9 +10,9 @@ jobs:
         os: [macos-latest, ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v10
+    - uses: cachix/install-nix-action@v12
     # This also runs nix-build.
-    - uses: cachix/cachix-action@v6
+    - uses: cachix/cachix-action@v8
       with:
         name: srid
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'

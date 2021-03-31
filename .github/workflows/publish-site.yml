@@ -9,19 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v9
-    - uses: cachix/cachix-action@v6
+    - uses: cachix/install-nix-action@v12
+    - uses: cachix/cachix-action@v8
       with:
         name: srid
-    # This builds neuron, as well as run tests
-    - name: Install neuron 
-      run: nix-env -j 4 -if https://github.com/srid/neuron/archive/master.tar.gz 
     - name: Build neuron site 🔧
       run: |
-        neuron --version
-        neuron -d guide rib
+        cd ./guide
+        mkdir -p .neuron/output && touch .neuron/output/.nojekyll
+        docker run -v $PWD:/notes sridca/neuron neuron gen --pretty-urls
     - name: Deploy to GitHub Pages 🚀
-      uses: JamesIves/github-pages-deploy-action@3.5.6
+      uses: JamesIves/github-pages-deploy-action@3.7.1
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: gh-pages
