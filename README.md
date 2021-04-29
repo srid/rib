@@ -11,6 +11,8 @@ Rib is a Haskell **static site generator** based on [Shake](https://shakebuild.c
 
 See <https://rib.srid.ca> for full documentation.
 
+**UPDATE (Apr, 2021)**: Rib is superceded by [Ema](https://ema.srid.ca/)
+
 ## Developing rib
 
 Use ghcid for quicker compilation cycles:
