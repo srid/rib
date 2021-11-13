@@ -13,7 +13,7 @@
     packages.x86_64-linux.rib =
       with import nixpkgs { system = "x86_64-linux"; config = { allowBroken = true; doCheck = false; }; };
       pkgs.haskellPackages.developPackage {
-        root = ./.;
+        root = ./rib;
         name = "rib";
         modifier = drv:
           pkgs.haskell.lib.addBuildTools drv (with pkgs.haskellPackages;
@@ -25,7 +25,6 @@
               ormolu
               haskell-language-server
               zlib
-              lua51Packages.lpeg
             ]);
         overrides = self: super: {
           mmark-ext = pkgs.haskell.lib.dontCheck super.mmark-ext;
@@ -35,18 +34,8 @@
           lucid = pkgs.haskell.lib.dontCheck super.lucid;
         };
         source-overrides = {
-
-          # hashable = pkgs.fetchFromGitHub { owner = "haskell-unordered-containers";
-          #                                   repo = "hashable";
-          #                                   rev = "10c9b57dba7a168d4e7ba8d601e6047a1a3bd47f";
-          #                                   sha256 = "JiU/82LLl61ofJklGtT74I4KXBNWdjnKH5Hc5r29NO0=";
-          #                                 };
-          # with-utf8 = pkgs.fetchFromGitHub { owner = "serokell";
-          #                                    repo = "haskell-with-utf8";
-          #                                    rev = "b60991303f9cf3f2891479c581549c2d54f45a0e";
-          #                                    sha256 = "GRYyW8oi4A8xGcZ4FeZMhlSDOy4LIVEC/Vch8DvSgAw=";
-          #                                  };
-
+          rib = ./rib;
+          rib-core = ./rib-core;
         };
       };
     defaultPackage.x86_64-linux = self.packages.x86_64-linux.rib;
