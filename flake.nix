@@ -3,7 +3,7 @@
   inputs = {
     flake-compat = { url = "github:edolstra/flake-compat"; flake = false; };
     # Pin nixpkgs to nixos-unstable as of 2021-11-12
-    nixpkgs = { url = "github:NixOS/nixpkgs/92204897f3d80e7034168d883741dffae99ede5c"; };
+    nixpkgs = { url = "github:NixOS/nixpkgs/92204897f3d80e7034168d883741dffae99ede5c"; flake = false; };
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, ... }@inputs: {
