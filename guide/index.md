@@ -14,8 +14,7 @@ reinventing their capabilities. Time spent using rib is time spent learning them
 - Write HTML & CSS in Haskell with natural flow (using [Lucid](https://chrisdone.com/posts/lucid2/) &
   [Clay](http://fvisser.nl/clay/))
   - Optional route system for type-safe construction of your site routes.
-- Parse Markdown and other formats supported by
-  [Pandoc](https://pandoc.org/) / [MMark](https://github.com/mmark-md/mmark).
+- Parse Markdown and other formats supported by [Pandoc](https://pandoc.org/) 
 - Remain as simple as possible to use
 - Reproducible and a delightful workflow enabled by Nix, ghcid and fsnotify.
 
